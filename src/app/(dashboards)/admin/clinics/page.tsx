@@ -52,7 +52,7 @@ function OnboardClinicForm({
             REGISTER CLINIC
           </DialogTitle>
         </DialogHeader>
-        <div className="px-4 md:px-6 pb-4 md:pb-6 space-y-2">
+        <div className="px-4 md:px-6 space-y-2">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
             <div className="space-y-1">
               <Label htmlFor="clinicName" className="text-[10px] font-semibold text-gray-600">CLINIC NAME</Label>
@@ -81,7 +81,7 @@ function OnboardClinicForm({
             </div>
             <div className="space-y-1 col-span-1 md:col-span-2">
               <Label htmlFor="address" className="text-[10px] font-semibold text-gray-600">ADDRESS</Label>
-              <Textarea id="address" rows={2} className="text-xs" />
+              <Textarea id="address" rows={1} className="text-xs" />
             </div>
              <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
                 <div className="space-y-1">
@@ -99,7 +99,7 @@ function OnboardClinicForm({
             </div>
           </div>
         </div>
-        <DialogFooter className="bg-gray-50 px-4 md:px-6 py-3 flex justify-end gap-2">
+        <DialogFooter className="bg-gray-50 px-4 md:px-6 py-3 flex justify-end gap-2 mt-4">
           <Button variant="destructive" onClick={onClose} size="sm">
             CANCEL
           </Button>
