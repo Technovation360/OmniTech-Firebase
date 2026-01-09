@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Monitor, Stethoscope, User, UserPlus, QrCode } from "lucide-react";
+import { ArrowRight, Monitor, Stethoscope, User, UserPlus, QrCode, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Logo } from "@/components/logo";
@@ -8,19 +8,19 @@ const roles = [
   {
     name: "Admin",
     description: "Manage clinics, doctors, and ads.",
-    href: "/admin",
+    href: "/login",
     icon: Stethoscope,
   },
   {
     name: "Doctor",
     description: "View queue and manage consultations.",
-    href: "/doctor/doc_ashish",
+    href: "/login",
     icon: User,
   },
   {
     name: "Assistant",
     description: "Register patients on their behalf.",
-    href: "/assistant/asst_sunita",
+    href: "/login",
     icon: UserPlus,
   },
   {
@@ -34,6 +34,12 @@ const roles = [
     description: "Register for a consultation.",
     href: "/register/select-group",
     icon: QrCode,
+  },
+  {
+    name: "Staff Login",
+    description: "Access for all staff members.",
+    href: "/login",
+    icon: Lock,
   },
 ];
 
@@ -71,7 +77,8 @@ export default function Home() {
                     <p className="text-sm text-muted-foreground mb-4">{role.description}</p>
                     <Button asChild className="w-full">
                       <Link href={role.href}>
-                        Go to {role.name} view <ArrowRight className="ml-2 h-4 w-4" />
+                        {role.name === 'Staff Login' ? 'Login' : `Go to ${role.name} view`}
+                        <ArrowRight className="ml-2 h-4 w-4" />
                       </Link>
                     </Button>
                   </CardContent>
