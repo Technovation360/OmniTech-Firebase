@@ -46,18 +46,18 @@ function DashboardHeader() {
   const { toggleSidebar } = useSidebar();
   
   return (
-    <header className="p-3 bg-primary text-primary-foreground flex items-center justify-between border-b border-primary-foreground/20">
+    <header className="p-2 bg-primary text-primary-foreground flex items-center justify-between border-b border-primary-foreground/20">
       <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/20 hover:text-white">
           <PanelLeft onClick={toggleSidebar} />
       </Button>
       
-      <div className="flex items-center gap-4">
-        <Avatar className="h-9 w-9">
+      <div className="flex items-center gap-3">
+        <Avatar className="h-8 w-8">
           <AvatarFallback className="bg-background text-foreground">A</AvatarFallback>
         </Avatar>
-        <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-white/20 hover:text-white" asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/20 hover:text-white" asChild>
           <Link href="/">
-            <LogOut className="w-5 h-5" />
+            <LogOut className="w-4 h-4" />
           </Link>
         </Button>
       </div>
