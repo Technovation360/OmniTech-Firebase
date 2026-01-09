@@ -8,7 +8,6 @@ import {
 } from '@/components/ui/card';
 import { Building, Ticket, Megaphone, Film, Users, Monitor, Stethoscope, List, Eye } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ClinicsTab } from '@/components/admin/clinics-tab';
 import { UsersTab } from '@/components/admin/users-tab';
 import { LiveQueueTab } from '@/components/admin/live-queue-tab';
 
@@ -45,18 +44,14 @@ export default function AdminPage() {
        <h1 className="text-3xl font-bold font-headline">Central Admin Dashboard</h1>
 
         <Tabs defaultValue="insights">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
                 <TabsTrigger value="insights"><Eye className="mr-2" /> Insights</TabsTrigger>
-                <TabsTrigger value="clinics"><Building className="mr-2" /> Clinics</TabsTrigger>
                 <TabsTrigger value="users"><Users className="mr-2" /> Users</TabsTrigger>
                 <TabsTrigger value="live-queue"><Monitor className="mr-2" /> Live Queue</TabsTrigger>
                 <TabsTrigger value="patient-details"><List className="mr-2" /> Patient Registry</TabsTrigger>
             </TabsList>
             <TabsContent value="insights" className="mt-6">
                 <InsightsTab />
-            </TabsContent>
-            <TabsContent value="clinics" className="mt-6">
-                <ClinicsTab />
             </TabsContent>
             <TabsContent value="users" className="mt-6">
                 <UsersTab />

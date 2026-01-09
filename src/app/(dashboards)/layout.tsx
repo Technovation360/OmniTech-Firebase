@@ -24,11 +24,9 @@ import {
   Megaphone,
   LogOut,
   Stethoscope,
-  UserPlus,
   PanelLeft,
   List,
   HeartPulse,
-  Presentation,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -82,7 +80,7 @@ function DashboardSidebar() {
 
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/users')}>
-              <Link href="/admin">
+              <Link href="#">
                 <Users />
                 Users
               </Link>
@@ -100,8 +98,8 @@ function DashboardSidebar() {
                 <CollapsibleContent>
                     <SidebarMenuSub>
                         <SidebarMenuSubItem>
-                            <SidebarMenuSubButton asChild>
-                                <Link href="#">
+                            <SidebarMenuSubButton asChild isActive={pathname === '/admin/clinics'}>
+                                <Link href="/admin/clinics">
                                     <Building/>
                                     Clinics
                                 </Link>
