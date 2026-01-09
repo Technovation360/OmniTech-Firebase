@@ -102,7 +102,7 @@ export default function LoginPage() {
         <Card className="mt-6">
             <CardHeader>
                 <CardTitle className="text-lg">Sample Credentials</CardTitle>
-                <CardDescription>Use any password to log in.</CardDescription>
+                <CardDescription>You can use any password to log in with these sample accounts.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Table>
