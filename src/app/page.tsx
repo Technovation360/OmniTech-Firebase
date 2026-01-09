@@ -1,96 +1,133 @@
-import Link from "next/link";
-import { ArrowRight, Monitor, Stethoscope, User, UserPlus, QrCode, Lock } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Logo } from "@/components/logo";
+'use client';
 
-const roles = [
-  {
-    name: "Admin",
-    description: "Manage clinics, doctors, and ads.",
-    href: "/login",
-    icon: Stethoscope,
-  },
-  {
-    name: "Doctor",
-    description: "View queue and manage consultations.",
-    href: "/login",
-    icon: User,
-  },
-  {
-    name: "Assistant",
-    description: "Register patients on their behalf.",
-    href: "/login",
-    icon: UserPlus,
-  },
-  {
-    name: "Queue Display",
-    description: "Show queue on a TV screen.",
-    href: "/display/scr_main_hall",
-    icon: Monitor,
-  },
-   {
-    name: "Patient",
-    description: "Register for a consultation.",
-    href: "/register/select-group",
-    icon: QrCode,
-  },
-  {
-    name: "Staff Login",
-    description: "Access for all staff members.",
-    href: "/login",
-    icon: Lock,
-  },
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Logo } from '@/components/logo';
+import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
+import { handleLogin } from '@/lib/auth-actions';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+
+const sampleCredentials = [
+    { role: 'Central Admin', email: 'admin@omni.com' },
+    { role: 'Doctor (Dr. Ashish)', email: 'doc_ashish@omni.com' },
+    { role: 'Assistant (Sunita)', email: 'asst_sunita@omni.com' },
+    { role: 'Advertiser', email: 'advertiser@omni.com' },
 ];
 
-export default function Home() {
+export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const onLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const { success, message, redirectUrl } = await handleLogin(email, password);
+
+    setLoading(false);
+
+    if (success && redirectUrl) {
+      router.push(redirectUrl);
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: message,
+      });
+    }
+  };
+
   return (
-    <div className="flex flex-col min-h-screen">
-      <header className="p-4 border-b">
-        <Logo />
-      </header>
-      <main className="flex-1 bg-gray-50/50">
-        <section className="w-full py-12 md:py-24 lg:py-32">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center space-y-4 text-center">
+    <div className="min-h-screen bg-gray-50/50 flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-md mx-auto">
+        <header className="flex justify-between items-center py-8">
+            <h1 className="text-2xl font-bold">Portal Login</h1>
+            <Button variant="link" asChild>
+                <Link href="/register/select-group">Patient Portal</Link>
+            </Button>
+        </header>
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <form onSubmit={onLogin} className="space-y-6">
               <div className="space-y-2">
-                <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none font-headline">
-                  Welcome to Clinic Flow
-                </h1>
-                <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
-                  Select your role to get started. The modern way to manage patient flow and clinic operations.
-                </p>
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="admin@omni.com"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
-            </div>
-          </div>
-        </section>
-        <section className="w-full pb-12 md:pb-24 lg:pb-32">
-          <div className="container grid gap-6 md:gap-8 px-4 md:px-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {roles.map((role) => (
-                <Card key={role.name} className="hover:shadow-lg transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-lg font-medium">{role.name}</CardTitle>
-                    <role.icon className="w-6 h-6 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-4">{role.description}</p>
-                    <Button asChild className="w-full">
-                      <Link href={role.href}>
-                        {role.name === 'Staff Login' ? 'Login' : `Go to ${role.name} view`}
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
-      </main>
-      <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
-        <p className="text-xs text-muted-foreground">&copy; 2024 Clinic Flow. All rights reserved.</p>
-      </footer>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder='any password will work'
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Signing In...' : 'Sign In'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card className="mt-6">
+            <CardHeader>
+                <CardTitle className="text-lg">Sample Credentials</CardTitle>
+                <CardDescription>You can use any password to log in with these sample accounts.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Role</TableHead>
+                            <TableHead>Email</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {sampleCredentials.map((cred) => (
+                            <TableRow key={cred.email}>
+                                <TableCell className="font-medium">{cred.role}</TableCell>
+                                <TableCell>{cred.email}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+        
+        <footer className="text-center text-muted-foreground text-sm mt-8">
+            &copy; 2024 OMNITOKEN
+        </footer>
+      </div>
     </div>
   );
 }
