@@ -47,7 +47,7 @@ function OnboardClinicForm({
 }) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[800px] p-0">
+      <DialogContent className="sm:max-w-lg p-0">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="text-xl font-bold tracking-normal">
             REGISTER CLINIC
