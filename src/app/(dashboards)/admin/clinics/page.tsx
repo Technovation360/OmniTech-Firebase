@@ -22,7 +22,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogClose,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -49,28 +48,28 @@ function OnboardClinicForm({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg p-0">
         <DialogHeader className="p-6 pb-0">
-          <DialogTitle className="text-xl font-bold tracking-normal">
+          <DialogTitle className="text-lg font-bold tracking-normal">
             REGISTER CLINIC
           </DialogTitle>
         </DialogHeader>
-        <div className="p-6 space-y-6">
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="clinicName" className="font-semibold text-gray-600">CLINIC NAME</Label>
-              <Input id="clinicName" />
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1 col-span-2">
+              <Label htmlFor="clinicName" className="text-xs font-semibold text-gray-600">CLINIC NAME</Label>
+              <Input id="clinicName" className="h-9 text-sm" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email" className="font-semibold text-gray-600">EMAIL</Label>
-              <Input id="email" type="email" />
+            <div className="space-y-1">
+              <Label htmlFor="email" className="text-xs font-semibold text-gray-600">EMAIL</Label>
+              <Input id="email" type="email" className="h-9 text-sm" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone" className="font-semibold text-gray-600">PHONE</Label>
-              <Input id="phone" type="tel" />
+            <div className="space-y-1">
+              <Label htmlFor="phone" className="text-xs font-semibold text-gray-600">PHONE</Label>
+              <Input id="phone" type="tel" className="h-9 text-sm" />
             </div>
-             <div className="space-y-2 col-span-2">
-                <Label htmlFor="specialties" className="font-semibold text-gray-600">SPECIALTIES</Label>
+             <div className="space-y-1 col-span-2">
+                <Label htmlFor="specialties" className="text-xs font-semibold text-gray-600">SPECIALTIES</Label>
                 <Select>
-                    <SelectTrigger id="specialties">
+                    <SelectTrigger id="specialties" className="h-9 text-sm">
                         <SelectValue placeholder="Select..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -80,29 +79,29 @@ function OnboardClinicForm({
                     </SelectContent>
                 </Select>
             </div>
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="address" className="font-semibold text-gray-600">ADDRESS</Label>
-              <Textarea id="address" rows={3} />
+            <div className="space-y-1 col-span-2">
+              <Label htmlFor="address" className="text-xs font-semibold text-gray-600">ADDRESS</Label>
+              <Textarea id="address" rows={2} className="text-sm" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="city" className="font-semibold text-gray-600">CITY</Label>
-              <Input id="city" />
+            <div className="space-y-1">
+              <Label htmlFor="city" className="text-xs font-semibold text-gray-600">CITY</Label>
+              <Input id="city" className="h-9 text-sm" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="state" className="font-semibold text-gray-600">STATE</Label>
-              <Input id="state" />
+            <div className="space-y-1">
+              <Label htmlFor="state" className="text-xs font-semibold text-gray-600">STATE</Label>
+              <Input id="state" className="h-9 text-sm" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="pin" className="font-semibold text-gray-600">PIN</Label>
-              <Input id="pin" />
+            <div className="space-y-1">
+              <Label htmlFor="pin" className="text-xs font-semibold text-gray-600">PIN</Label>
+              <Input id="pin" className="h-9 text-sm" />
             </div>
           </div>
         </div>
-        <DialogFooter className="bg-gray-50 px-6 py-4 flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>
+        <DialogFooter className="bg-gray-50 px-6 py-3 flex justify-end gap-2">
+          <Button variant="ghost" onClick={onClose} size="sm">
             CANCEL
           </Button>
-          <Button>CONFIRM</Button>
+          <Button size="sm">CONFIRM</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
