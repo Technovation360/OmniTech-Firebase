@@ -1,101 +1,44 @@
-import { getClinicGroups } from '@/lib/data';
+'use client';
+
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { Copy, QrCode } from 'lucide-react';
+import { Building, Ticket, Megaphone, Film } from 'lucide-react';
+import { useSidebar } from '@/components/ui/sidebar';
 
-export default async function AdminPage() {
-  const clinicGroups = await getClinicGroups();
+const stats = [
+    { title: "CLINICS", value: "1", icon: Building },
+    { title: "ACTIVE TOKENS", value: "31", icon: Ticket },
+    { title: "ADVERTISERS", value: "2", icon: Megaphone },
+    { title: "CAMPAIGNS", value: "2", icon: Film },
+];
+
+export default function AdminPage() {
+  const { setOpen } = useSidebar();
+
+  // This is a workaround to keep sidebar open on this page as per the design
+  // In a real app this might be handled differently, e.g. based on user preference
+  // or screen size.
+  typeof window !== 'undefined' && window.setTimeout(() => setOpen(true), 1);
+
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold font-headline">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage your clinic groups and operations.</p>
-        </div>
-        <Button>Add New Group</Button>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat) => (
+          <Card key={stat.title} className="shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+               <div className="p-3 bg-accent rounded-md">
+                 <stat.icon className="h-5 w-5 text-accent-foreground" />
+               </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-xs uppercase text-muted-foreground font-semibold tracking-wider">{stat.title}</div>
+              <div className="text-4xl font-bold mt-1">{stat.value}</div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Clinic Groups</CardTitle>
-          <CardDescription>
-            View and manage all clinic groups. Each group has its own registration QR code.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Group Name</TableHead>
-                <TableHead>Doctor</TableHead>
-                <TableHead>Cabin</TableHead>
-                <TableHead>Registration Link</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {clinicGroups.map((group) => (
-                <TableRow key={group.id}>
-                  <TableCell className="font-medium">{group.name}</TableCell>
-                  <TableCell>{group.doctor.name}</TableCell>
-                  <TableCell>{group.cabin.name}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                       <Button variant="outline" size="sm" asChild>
-                         <Link href={`/register/${group.id}`} target="_blank">
-                          <QrCode className="mr-2 h-4 w-4" />
-                          Show QR
-                        </Link>
-                       </Button>
-                       <Button variant="ghost" size="icon">
-                         <Copy className="h-4 w-4" />
-                       </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Master QR Code</CardTitle>
-          <CardDescription>
-            Use this master link to allow patients to choose their desired clinic group upon registration.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4 p-4 bg-muted rounded-md">
-            <p className="text-sm font-mono flex-1">/register/select-group</p>
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/register/select-group" target="_blank">
-                <QrCode className="mr-2 h-4 w-4" />
-                View Page
-              </Link>
-            </Button>
-            <Button variant="ghost" size="icon">
-              <Copy className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
   );
 }
