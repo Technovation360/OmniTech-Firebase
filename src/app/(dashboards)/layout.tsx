@@ -30,31 +30,12 @@ import {
   UserPlus,
   Eye,
   List,
+  PanelLeft,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { cn } from '@/lib/utils';
-import { useState } from 'react';
-
-const clinicalsSubMenu = [
-  { href: '/admin/clinics', label: 'Clinics', icon: Building },
-  { href: '/admin/specialties', label: 'Specialties', icon: Stethoscope },
-  { href: '/admin/live-queue', label: 'Live Queue', icon: Monitor },
-  { href: '/admin/central-register', label: 'Central Register', icon: List },
-];
-
-const advertisingSubMenu = [
-  { href: '/admin/advertising', label: 'Campaigns', icon: Megaphone },
-  { href: '/admin/advertisers', label: 'Advertisers', icon: Users },
-]
-
 
 function DashboardSidebar() {
   const pathname = usePathname();
@@ -180,34 +161,39 @@ function DashboardSidebar() {
   );
 }
 
+function DashboardHeader() {
+  const { toggleSidebar } = useSidebar();
+  
+  return (
+    <header className="p-3 bg-background flex items-center justify-between border-b">
+      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleSidebar}>
+          <PanelLeft />
+      </Button>
+      
+      <div className="flex items-center gap-4">
+        <Avatar className="h-9 w-9">
+          <AvatarFallback>A</AvatarFallback>
+        </Avatar>
+        <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
+          <Link href="/">
+            <LogOut className="w-5 h-5" />
+          </Link>
+        </Button>
+      </div>
+    </header>
+  );
+}
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { toggleSidebar } = useSidebar();
-  
   return (
     <SidebarProvider>
       <DashboardSidebar />
       <SidebarInset className="flex flex-col bg-muted/30">
-        <header className="p-3 bg-background flex items-center justify-between border-b">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleSidebar}>
-              <PanelLeft />
-          </Button>
-          
-          <div className="flex items-center gap-4">
-            <Avatar className="h-9 w-9">
-              <AvatarFallback>A</AvatarFallback>
-            </Avatar>
-            <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
-              <Link href="/">
-                <LogOut className="w-5 h-5" />
-              </Link>
-            </Button>
-          </div>
-        </header>
+        <DashboardHeader />
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
           {children}
         </main>
