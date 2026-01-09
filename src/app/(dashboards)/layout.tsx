@@ -33,7 +33,6 @@ import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import React from 'react';
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 
 function DashboardHeader() {
   const { toggleSidebar } = useSidebar();
@@ -61,6 +60,7 @@ function DashboardHeader() {
 
 function DashboardSidebar() {
   const pathname = usePathname();
+  const isClinicalActive = pathname.startsWith('/admin/clinics') || pathname.startsWith('/admin/live-queue') || pathname.startsWith('/admin/patient-registry');
 
   return (
     <Sidebar>
@@ -88,50 +88,44 @@ function DashboardSidebar() {
           </SidebarMenuItem>
 
           <SidebarMenuItem>
-             <Collapsible>
-                <CollapsibleTrigger asChild>
-                    <SidebarMenuButton>
-                        <HeartPulse />
-                        Clinical
-                    </SidebarMenuButton>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                    <SidebarMenuSub>
-                        <SidebarMenuSubItem>
-                            <SidebarMenuSubButton asChild isActive={pathname === '/admin/clinics'}>
-                                <Link href="/admin/clinics">
-                                    <Building/>
-                                    Clinics
-                                </Link>
-                            </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                           <SidebarMenuSubButton asChild>
-                                <Link href="#">
-                                    <Stethoscope/>
-                                    Specialties
-                                </Link>
-                            </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                            <SidebarMenuSubButton asChild isActive={pathname === '/admin/live-queue'}>
-                                <Link href="/admin/live-queue">
-                                    <Monitor/>
-                                    Live Queue
-                                </Link>
-                            </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                            <SidebarMenuSubButton asChild isActive={pathname === '/admin/patient-registry'}>
-                                <Link href="/admin/patient-registry">
-                                    <List/>
-                                    Central Register
-                                </Link>
-                            </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                    </SidebarMenuSub>
-                </CollapsibleContent>
-            </Collapsible>
+            <SidebarMenuButton isActive={isClinicalActive}>
+              <HeartPulse />
+              Clinical
+            </SidebarMenuButton>
+            <SidebarMenuSub>
+              <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild isActive={pathname === '/admin/clinics'}>
+                      <Link href="/admin/clinics">
+                          <Building/>
+                          Clinics
+                      </Link>
+                  </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+              <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild>
+                      <Link href="#">
+                          <Stethoscope/>
+                          Specialties
+                      </Link>
+                  </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+              <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild isActive={pathname === '/admin/live-queue'}>
+                      <Link href="/admin/live-queue">
+                          <Monitor/>
+                          Live Queue
+                      </Link>
+                  </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+              <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild isActive={pathname === '/admin/patient-registry'}>
+                      <Link href="/admin/patient-registry">
+                          <List/>
+                          Central Register
+                      </Link>
+                  </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+            </SidebarMenuSub>
           </SidebarMenuItem>
 
           <SidebarMenuItem>
