@@ -23,6 +23,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -40,27 +50,31 @@ import type { ClinicGroup } from '@/lib/types';
 function OnboardClinicForm({
   isOpen,
   onClose,
+  clinic,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  clinic: ClinicGroup | null;
 }) {
+  const isEditMode = !!clinic;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md p-0">
         <DialogHeader className="p-4 pb-2">
           <DialogTitle className="text-base font-bold tracking-normal">
-            REGISTER CLINIC
+            {isEditMode ? 'EDIT CLINIC' : 'REGISTER CLINIC'}
           </DialogTitle>
         </DialogHeader>
         <div className="px-4 pb-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
             <div className="space-y-1">
               <Label htmlFor="clinicName" className="text-[10px] font-semibold text-gray-600">CLINIC NAME</Label>
-              <Input id="clinicName" className="h-7 text-xs" />
+              <Input id="clinicName" className="h-7 text-xs" defaultValue={clinic?.name} />
             </div>
              <div className="space-y-1">
                 <Label htmlFor="specialties" className="text-[10px] font-semibold text-gray-600">SPECIALTIES</Label>
-                <Select>
+                <Select defaultValue={clinic?.name.toLowerCase().includes('cardio') ? 'cardiology' : 'orthopedics'}>
                     <SelectTrigger id="specialties" className="h-7 text-xs">
                         <SelectValue placeholder="Select..." />
                     </SelectTrigger>
@@ -111,13 +125,76 @@ function OnboardClinicForm({
 }
 
 
+function DeleteClinicDialog({
+  isOpen,
+  onClose,
+  onConfirm,
+  clinicName,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  clinicName: string;
+}) {
+  return (
+    <AlertDialog open={isOpen} onOpenChange={onClose}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This will permanently delete the clinic group "{clinicName}".
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={onClose}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm}>Delete</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+
 export default function ClinicsPage() {
   const [clinics, setClinics] = useState<ClinicGroup[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [clinicToEdit, setClinicToEdit] = useState<ClinicGroup | null>(null);
+  const [clinicToDelete, setClinicToDelete] = useState<ClinicGroup | null>(null);
 
   useEffect(() => {
     getClinicGroups().then(setClinics);
   }, []);
+  
+  const openEditModal = (clinic: ClinicGroup) => {
+    setClinicToEdit(clinic);
+    setIsModalOpen(true);
+  }
+
+  const openCreateModal = () => {
+    setClinicToEdit(null);
+    setIsModalOpen(true);
+  }
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setClinicToEdit(null);
+  }
+  
+  const openDeleteDialog = (clinic: ClinicGroup) => {
+    setClinicToDelete(clinic);
+  }
+
+  const closeDeleteDialog = () => {
+    setClinicToDelete(null);
+  }
+
+  const handleDeleteConfirm = () => {
+    if (clinicToDelete) {
+      // In a real app, call an API to delete. Here we filter the state.
+      setClinics(clinics.filter(c => c.id !== clinicToDelete.id));
+      closeDeleteDialog();
+    }
+  }
 
   return (
     <>
@@ -127,7 +204,7 @@ export default function ClinicsPage() {
             <CardTitle className="text-xl">Clinics Management</CardTitle>
             <CardDescription>Onboard, edit, and manage clinic groups.</CardDescription>
           </div>
-          <Button onClick={() => setIsModalOpen(true)}>Onboard Clinic</Button>
+          <Button onClick={openCreateModal}>Onboard Clinic</Button>
         </CardHeader>
         <CardContent>
           <Table>
@@ -146,10 +223,10 @@ export default function ClinicsPage() {
                   <TableCell className="py-2">{clinic.doctor.name}</TableCell>
                   <TableCell className="py-2">{clinic.cabin.name}</TableCell>
                   <TableCell className="flex gap-2 py-2">
-                    <Button variant="outline" size="icon-sm">
+                    <Button variant="outline" size="icon-sm" onClick={() => openEditModal(clinic)}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="destructive" size="icon-sm">
+                    <Button variant="destructive" size="icon-sm" onClick={() => openDeleteDialog(clinic)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>
@@ -161,7 +238,14 @@ export default function ClinicsPage() {
       </Card>
       <OnboardClinicForm 
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={closeModal}
+        clinic={clinicToEdit}
+      />
+      <DeleteClinicDialog 
+        isOpen={!!clinicToDelete}
+        onClose={closeDeleteDialog}
+        onConfirm={handleDeleteConfirm}
+        clinicName={clinicToDelete?.name || ''}
       />
     </>
   )
