@@ -24,7 +24,7 @@ function InsightsTab() {
              <CardTitle className="text-sm font-medium uppercase text-muted-foreground tracking-wider">{stat.title}</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-center gap-4">
-            <div className="p-3 bg-accent rounded-md">
+            <div className="p-3 bg-accent rounded-full">
                <stat.icon className="h-6 w-6 text-accent-foreground" />
             </div>
             <div className="text-4xl font-bold">{stat.value}</div>
@@ -40,7 +40,9 @@ export default function AdminPage() {
     <div className="space-y-6">
        <h1 className="text-3xl font-bold font-headline">Central Admin Dashboard</h1>
        <p className="text-muted-foreground">Welcome to the central hub for managing the OmniToken platform.</p>
-       <InsightsTab />
+       <div className="max-w-4xl mx-auto">
+        <InsightsTab />
+       </div>
     </div>
   );
 }
