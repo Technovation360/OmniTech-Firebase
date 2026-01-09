@@ -52,7 +52,7 @@ function OnboardClinicForm({
             REGISTER CLINIC
           </DialogTitle>
         </DialogHeader>
-        <div className="px-4 md:px-6 pt-2 pb-4 md:pb-6 space-y-2">
+        <div className="px-4 md:px-6 pb-4 md:pb-6 space-y-2">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
             <div className="space-y-1">
               <Label htmlFor="clinicName" className="text-[10px] font-semibold text-gray-600">CLINIC NAME</Label>
