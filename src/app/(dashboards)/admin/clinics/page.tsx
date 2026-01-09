@@ -60,7 +60,7 @@ function OnboardClinicForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md p-0">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader className="p-4 pb-2">
           <DialogTitle className="text-base font-bold tracking-normal">
             {isEditMode ? 'EDIT CLINIC' : 'REGISTER CLINIC'}
@@ -113,7 +113,7 @@ function OnboardClinicForm({
             </div>
           </div>
         </div>
-        <DialogFooter className="bg-gray-50 px-4 py-2 flex justify-end gap-2">
+        <DialogFooter className="bg-gray-50 px-4 py-2 flex justify-end gap-2 rounded-b-lg">
           <Button variant="destructive" onClick={onClose} size="sm">
             CANCEL
           </Button>
