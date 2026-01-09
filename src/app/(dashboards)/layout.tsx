@@ -13,7 +13,6 @@ import {
   useSidebar,
   SidebarMenuSub,
   SidebarMenuSubButton,
-  SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/logo';
 import {
@@ -33,7 +32,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Collapsible,
   CollapsibleContent,
@@ -69,6 +68,13 @@ function DashboardSidebar() {
   const pathname = usePathname();
   const isClinicalActive = pathname.startsWith('/admin/clinics') || pathname.startsWith('/admin/live-queue') || pathname.startsWith('/admin/patient-registry');
 
+  const [isClinicalOpen, setIsClinicalOpen] = useState(false);
+
+  useEffect(() => {
+    setIsClinicalOpen(isClinicalActive);
+  }, [isClinicalActive]);
+
+
   return (
     <Sidebar>
       <SidebarHeader>
@@ -95,7 +101,7 @@ function DashboardSidebar() {
           </SidebarMenuItem>
 
           <SidebarMenuItem asChild>
-            <Collapsible>
+            <Collapsible open={isClinicalOpen} onOpenChange={setIsClinicalOpen}>
                 <CollapsibleTrigger asChild>
                     <SidebarMenuButton isActive={isClinicalActive} className="justify-between">
                         <div className="flex items-center gap-2">
