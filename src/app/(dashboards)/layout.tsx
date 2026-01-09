@@ -101,7 +101,7 @@ function DashboardSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
 
-          <SidebarMenuItem asChild>
+          <SidebarMenuItem>
             <Collapsible open={isClinicalOpen} onOpenChange={setIsClinicalOpen}>
                 <CollapsibleTrigger asChild>
                     <SidebarMenuButton isActive={isClinicalActive} className="justify-between">
