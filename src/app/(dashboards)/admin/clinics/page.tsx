@@ -204,7 +204,7 @@ export default function ClinicsPage() {
             <CardTitle className="text-lg">Clinics Management</CardTitle>
             <CardDescription className="text-xs">Onboard, edit, and manage clinic groups.</CardDescription>
           </div>
-          <Button onClick={openCreateModal}>Onboard Clinic</Button>
+          <Button onClick={openCreateModal} size="sm">Onboard Clinic</Button>
         </CardHeader>
         <CardContent>
           <Table>
