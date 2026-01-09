@@ -11,6 +11,8 @@ import {
   SidebarInset,
   SidebarFooter,
   useSidebar,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/logo';
 import {
@@ -24,12 +26,15 @@ import {
   UserPlus,
   PanelLeft,
   List,
+  HeartPulse,
+  Presentation,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import React from 'react';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 
 function DashboardHeader() {
   const { toggleSidebar } = useSidebar();
@@ -73,14 +78,54 @@ function DashboardSidebar() {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
+
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/clinics')}>
-              <Link href="/admin">
-                <Building />
-                Clinics
-              </Link>
-            </SidebarMenuButton>
+             <Collapsible>
+                <CollapsibleTrigger asChild>
+                    <SidebarMenuButton>
+                        <HeartPulse />
+                        Clinical
+                    </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                    <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild>
+                                <Link href="#">
+                                    <Building/>
+                                    Clinics
+                                </Link>
+                            </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                           <SidebarMenuSubButton asChild>
+                                <Link href="#">
+                                    <Stethoscope/>
+                                    Specialties
+                                </Link>
+                            </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild>
+                                <Link href="#">
+                                    <Monitor/>
+                                    Live Queue
+                                </Link>
+                            </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild>
+                                <Link href="#">
+                                    <List/>
+                                    Central Register
+                                </Link>
+                            </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                    </SidebarMenuSub>
+                </CollapsibleContent>
+            </Collapsible>
           </SidebarMenuItem>
+
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/users')}>
               <Link href="/admin">
@@ -97,28 +142,12 @@ function DashboardSidebar() {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/patient-registry')}>
-              <Link href="/admin">
-                <List />
-                Patient Registry
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname.startsWith('/display')}>
-              <Link href="/display/scr_main_hall">
-                <Monitor />
-                Live Queue
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
 
           {/* DEMO Links */}
           <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={pathname.startsWith('/doctor')}>
               <Link href="/doctor/doc_ashish">
-                  <Stethoscope />
+                  <Presentation />
                   <span>Doctor</span>
               </Link>
               </SidebarMenuButton>
@@ -130,6 +159,14 @@ function DashboardSidebar() {
                   <span>Assistant</span>
               </Link>
               </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/display')}>
+              <Link href="/display/scr_main_hall">
+                <Monitor />
+                <span>Display</span>
+              </Link>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
