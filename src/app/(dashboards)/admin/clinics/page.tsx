@@ -223,7 +223,7 @@ export default function ClinicsPage() {
                   <TableCell className="py-2 text-xs">{clinic.doctor.name}</TableCell>
                   <TableCell className="py-2 text-xs">{clinic.cabin.name}</TableCell>
                   <TableCell className="flex gap-2 py-2">
-                    <Button variant="outline" size="icon-sm" onClick={() => openEditModal(clinic)}>
+                    <Button variant="default" size="icon-sm" onClick={() => openEditModal(clinic)}>
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button variant="destructive" size="icon-sm" onClick={() => openDeleteDialog(clinic)}>
