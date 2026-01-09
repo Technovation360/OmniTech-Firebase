@@ -17,12 +17,12 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -45,13 +45,13 @@ function OnboardClinicForm({
   onClose: () => void;
 }) {
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-xl p-0">
-        <DialogHeader className="p-4 md:p-6 pb-0">
-          <DialogTitle className="text-base md:text-lg font-bold tracking-normal">
+    <Sheet open={isOpen} onOpenChange={onClose}>
+      <SheetContent className="sm:max-w-xl p-0">
+        <SheetHeader className="p-4 md:p-6 pb-0">
+          <SheetTitle className="text-base md:text-lg font-bold tracking-normal">
             REGISTER CLINIC
-          </DialogTitle>
-        </DialogHeader>
+          </SheetTitle>
+        </SheetHeader>
         <div className="p-4 md:p-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
             <div className="space-y-1">
@@ -99,14 +99,14 @@ function OnboardClinicForm({
             </div>
           </div>
         </div>
-        <DialogFooter className="bg-gray-50 px-4 md:px-6 py-3 flex justify-end gap-2">
+        <SheetFooter className="bg-gray-50 px-4 md:px-6 py-3 flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose} size="sm">
             CANCEL
           </Button>
           <Button size="sm">CONFIRM</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
