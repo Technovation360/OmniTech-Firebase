@@ -55,7 +55,7 @@ function DashboardHeader() {
         <Avatar className="h-8 w-8">
           <AvatarFallback className="bg-background text-foreground">A</AvatarFallback>
         </Avatar>
-        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/20 hover:text-white" asChild>
+        <Button variant="destructive" size="icon" className="h-8 w-8 hover:bg-destructive/80" asChild>
           <Link href="/">
             <LogOut className="w-4 h-4" />
           </Link>
