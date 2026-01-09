@@ -114,10 +114,10 @@ function OnboardClinicForm({
           </div>
         </div>
         <DialogFooter className="bg-gray-50 px-4 py-2 flex justify-end gap-2 rounded-b-lg">
-          <Button variant="destructive" onClick={onClose} size="sm">
+          <Button variant="destructive" onClick={onClose} size="xs">
             CANCEL
           </Button>
-          <Button size="sm">CONFIRM</Button>
+          <Button size="xs">CONFIRM</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
