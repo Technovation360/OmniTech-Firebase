@@ -20,10 +20,10 @@ function InsightsTab() {
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
       {stats.map((stat) => (
         <Card key={stat.title} className="shadow-sm">
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 text-center">
              <CardTitle className="text-sm font-medium uppercase text-muted-foreground tracking-wider">{stat.title}</CardTitle>
           </CardHeader>
-          <CardContent className="flex items-center gap-4">
+          <CardContent className="flex items-center justify-center gap-4">
             <div className="p-3 bg-accent rounded-md">
                <stat.icon className="h-6 w-6 text-accent-foreground" />
             </div>
