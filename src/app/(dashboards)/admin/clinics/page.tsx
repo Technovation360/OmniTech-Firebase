@@ -202,7 +202,7 @@ export default function ClinicsPage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="text-xl">Clinics Management</CardTitle>
-            <CardDescription>Onboard, edit, and manage clinic groups.</CardDescription>
+            <CardDescription className="text-xs">Onboard, edit, and manage clinic groups.</CardDescription>
           </div>
           <Button onClick={openCreateModal}>Onboard Clinic</Button>
         </CardHeader>
