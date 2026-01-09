@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -52,7 +53,7 @@ function DashboardHeader() {
       
       <div className="flex items-center gap-4">
         <Avatar className="h-9 w-9">
-          <AvatarFallback>A</AvatarFallback>
+          <AvatarFallback className="bg-primary text-primary-foreground">A</AvatarFallback>
         </Avatar>
         <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
           <Link href="/">
