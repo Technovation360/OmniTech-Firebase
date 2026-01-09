@@ -4,6 +4,9 @@ let clinicGroups: ClinicGroup[] = [
   {
     id: 'grp_cardiology_01',
     name: 'Cardiology Dept.',
+    location: 'Metro City, California',
+    specialties: ['Cardiology', 'General Medicine'],
+    contact: 'contact@citygeneral.com',
     doctor: { id: 'doc_ashish', name: 'Dr. Ashish' },
     assistants: [{ id: 'asst_sunita', name: 'Sunita' }],
     cabin: { id: 'cab_101', name: 'Cabin 101' },
@@ -12,6 +15,9 @@ let clinicGroups: ClinicGroup[] = [
   {
     id: 'grp_ortho_01',
     name: 'Orthopedics Dept.',
+    location: 'Metro City, California',
+    specialties: ['Orthopedics', 'Pediatrics'],
+    contact: 'ortho@citygeneral.com',
     doctor: { id: 'doc_vijay', name: 'Dr. Vijay' },
     assistants: [{ id: 'asst_rajesh', name: 'Rajesh' }],
     cabin: { id: 'cab_102', name: 'Cabin 102' },

@@ -32,6 +32,9 @@ export type Screen = {
 export type ClinicGroup = {
   id: string;
   name: string;
+  location: string;
+  specialties: string[];
+  contact: string;
   doctor: Doctor;
   assistants: Assistant[];
   cabin: Cabin;

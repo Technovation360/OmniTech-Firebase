@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -74,42 +75,19 @@ function OnboardClinicForm({
             </div>
              <div className="space-y-1">
                 <Label htmlFor="specialties" className="text-[10px] font-semibold text-gray-600">SPECIALTIES</Label>
-                <Select defaultValue={clinic?.name.toLowerCase().includes('cardio') ? 'cardiology' : 'orthopedics'}>
-                    <SelectTrigger id="specialties" className="h-7 text-xs">
-                        <SelectValue placeholder="Select..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="cardiology">Cardiology</SelectItem>
-                        <SelectItem value="orthopedics">Orthopedics</SelectItem>
-                        <SelectItem value="neurology">Neurology</SelectItem>
-                    </SelectContent>
-                </Select>
+                <Input id="specialties" className="h-7 text-xs" defaultValue={clinic?.specialties.join(', ')} />
             </div>
             <div className="space-y-1">
               <Label htmlFor="email" className="text-[10px] font-semibold text-gray-600">EMAIL</Label>
-              <Input id="email" type="email" className="h-7 text-xs" />
+              <Input id="email" type="email" className="h-7 text-xs" defaultValue={clinic?.contact} />
             </div>
             <div className="space-y-1">
               <Label htmlFor="phone" className="text-[10px] font-semibold text-gray-600">PHONE</Label>
               <Input id="phone" type="tel" className="h-7 text-xs" />
             </div>
             <div className="space-y-1 col-span-1 md:col-span-2">
-              <Label htmlFor="address" className="text-[10px] font-semibold text-gray-600">ADDRESS</Label>
-              <Textarea id="address" rows={1} className="text-xs min-h-0" />
-            </div>
-             <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
-                <div className="space-y-1">
-                <Label htmlFor="city" className="text-[10px] font-semibold text-gray-600">CITY</Label>
-                <Input id="city" className="h-7 text-xs" />
-                </div>
-                <div className="space-y-1">
-                <Label htmlFor="state" className="text-[10px] font-semibold text-gray-600">STATE</Label>
-                <Input id="state" className="h-7 text-xs" />
-                </div>
-                <div className="space-y-1">
-                <Label htmlFor="pin" className="text-[10px] font-semibold text-gray-600">PIN</Label>
-                <Input id="pin" className="h-7 text-xs" />
-                </div>
+              <Label htmlFor="address" className="text-[10px] font-semibold text-gray-600">LOCATION</Label>
+              <Textarea id="address" rows={1} className="text-xs min-h-0" defaultValue={clinic?.location} />
             </div>
           </div>
         </div>
@@ -211,8 +189,9 @@ export default function ClinicsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Clinic Name</TableHead>
-                <TableHead>Primary Doctor</TableHead>
-                <TableHead>Cabin</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Specialties</TableHead>
+                <TableHead>Contact</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -220,14 +199,21 @@ export default function ClinicsPage() {
               {clinics.map((clinic) => (
                 <TableRow key={clinic.id}>
                   <TableCell className="font-medium py-2 text-xs">{clinic.name}</TableCell>
-                  <TableCell className="py-2 text-xs">{clinic.doctor.name}</TableCell>
-                  <TableCell className="py-2 text-xs">{clinic.cabin.name}</TableCell>
+                  <TableCell className="py-2 text-xs">{clinic.location}</TableCell>
+                   <TableCell className="py-2 text-xs">
+                    <div className="flex gap-1">
+                      {clinic.specialties.map(specialty => (
+                        <Badge key={specialty} variant="secondary">{specialty}</Badge>
+                      ))}
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-2 text-xs">{clinic.contact}</TableCell>
                   <TableCell className="flex gap-2 py-2">
-                    <Button variant="default" size="icon-xs" onClick={() => openEditModal(clinic)}>
+                    <Button variant="ghost" size="icon-xs" onClick={() => openEditModal(clinic)}>
                       <Edit className="h-3 w-3" />
                     </Button>
-                    <Button variant="destructive" size="icon-xs" onClick={() => openDeleteDialog(clinic)}>
-                      <Trash2 className="h-3 w-3" />
+                    <Button variant="ghost" size="icon-xs" onClick={() => openDeleteDialog(clinic)}>
+                      <Trash2 className="h-3 w-3 text-destructive" />
                     </Button>
                   </TableCell>
                 </TableRow>
