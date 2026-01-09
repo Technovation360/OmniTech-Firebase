@@ -80,7 +80,7 @@ function DashboardSidebar() {
 
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/users')}>
-              <Link href="#">
+              <Link href="/admin/users">
                 <Users />
                 Users
               </Link>
@@ -114,16 +114,16 @@ function DashboardSidebar() {
                             </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>
-                            <SidebarMenuSubButton asChild>
-                                <Link href="#">
+                            <SidebarMenuSubButton asChild isActive={pathname === '/admin/live-queue'}>
+                                <Link href="/admin/live-queue">
                                     <Monitor/>
                                     Live Queue
                                 </Link>
                             </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>
-                            <SidebarMenuSubButton asChild>
-                                <Link href="#">
+                            <SidebarMenuSubButton asChild isActive={pathname === '/admin/patient-registry'}>
+                                <Link href="/admin/patient-registry">
                                     <List/>
                                     Central Register
                                 </Link>

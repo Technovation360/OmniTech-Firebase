@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -18,7 +18,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Edit, Trash2, KeyRound } from 'lucide-react';
-import { getUserRole } from '@/lib/roles';
 import type { UserRole } from '@/lib/roles';
 
 // Mock user data based on lib/roles.ts
@@ -42,7 +41,7 @@ const roleLabels: Record<UserRole, string> = {
   'advertiser': 'Advertiser',
 }
 
-export function UsersTab() {
+export default function UsersPage() {
   // In a real app, this would fetch user data
   const [users, setUsers] = useState(mockUsers);
 

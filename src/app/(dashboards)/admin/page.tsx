@@ -1,15 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import {
   Card,
   CardContent,
   CardHeader,
 } from '@/components/ui/card';
-import { Building, Ticket, Megaphone, Film, Users, Monitor, Stethoscope, List, Eye } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { UsersTab } from '@/components/admin/users-tab';
-import { LiveQueueTab } from '@/components/admin/live-queue-tab';
+import { Building, Ticket, Megaphone, Film } from 'lucide-react';
 
 const stats = [
     { title: "CLINICS", value: "2", icon: Building },
@@ -42,35 +38,8 @@ export default function AdminPage() {
   return (
     <div className="space-y-6">
        <h1 className="text-3xl font-bold font-headline">Central Admin Dashboard</h1>
-
-        <Tabs defaultValue="insights">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
-                <TabsTrigger value="insights"><Eye className="mr-2" /> Insights</TabsTrigger>
-                <TabsTrigger value="users"><Users className="mr-2" /> Users</TabsTrigger>
-                <TabsTrigger value="live-queue"><Monitor className="mr-2" /> Live Queue</TabsTrigger>
-                <TabsTrigger value="patient-details"><List className="mr-2" /> Patient Registry</TabsTrigger>
-            </TabsList>
-            <TabsContent value="insights" className="mt-6">
-                <InsightsTab />
-            </TabsContent>
-            <TabsContent value="users" className="mt-6">
-                <UsersTab />
-            </TabsContent>
-            <TabsContent value="live-queue" className="mt-6">
-                <LiveQueueTab />
-            </TabsContent>
-            <TabsContent value="patient-details" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <h2 className="text-xl font-semibold">Patient Registry</h2>
-                  <p className="text-muted-foreground">This feature is under development.</p>
-                </CardHeader>
-                <CardContent>
-                  <p>The global patient registry will be available here soon.</p>
-                </CardContent>
-              </Card>
-            </TabsContent>
-        </Tabs>
+       <p className="text-muted-foreground">Welcome to the central hub for managing the OmniToken platform.</p>
+       <InsightsTab />
     </div>
   );
 }

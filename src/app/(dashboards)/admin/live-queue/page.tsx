@@ -21,7 +21,7 @@ import type { Patient, ClinicGroup } from '@/lib/types';
 import { format } from 'date-fns';
 
 
-export function LiveQueueTab() {
+export default function LiveQueuePage() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [clinics, setClinics] = useState<ClinicGroup[]>([]);
 
