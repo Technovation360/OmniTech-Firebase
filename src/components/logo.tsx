@@ -8,7 +8,7 @@ export function Logo({ className, variant = 'default' }: { className?: string, v
       </div>
       <div className="flex flex-col">
         <span className="text-base font-bold leading-none">OmniToken</span>
-        {variant === 'enterprise' && <span className="text-xs font-semibold tracking-[0.2em] text-muted-foreground">ENTERPRISE</span>}
+        {variant === 'enterprise' && <span className="text-[10px] font-semibold tracking-[0.2em] text-muted-foreground">ENTERPRISE</span>}
       </div>
     </div>
   );
