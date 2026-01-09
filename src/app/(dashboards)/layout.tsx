@@ -81,6 +81,15 @@ function DashboardSidebar() {
           </SidebarMenuItem>
 
           <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/users')}>
+              <Link href="/admin">
+                <Users />
+                Users
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          <SidebarMenuItem>
              <Collapsible>
                 <CollapsibleTrigger asChild>
                     <SidebarMenuButton>
@@ -128,14 +137,6 @@ function DashboardSidebar() {
           </SidebarMenuItem>
 
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/users')}>
-              <Link href="/admin">
-                <Users />
-                Users
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/advertising')}>
               <Link href="/admin/advertising">
                 <Megaphone />
@@ -144,31 +145,6 @@ function DashboardSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
 
-          {/* DEMO Links */}
-          <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname.startsWith('/doctor')}>
-              <Link href="/doctor/doc_ashish">
-                  <Presentation />
-                  <span>Doctor</span>
-              </Link>
-              </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname.startsWith('/assistant')}>
-              <Link href="/assistant/asst_sunita">
-                  <UserPlus />
-                  <span>Assistant</span>
-              </Link>
-              </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname.startsWith('/display')}>
-              <Link href="/display/scr_main_hall">
-                <Monitor />
-                <span>Display</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
