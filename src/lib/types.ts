@@ -1,0 +1,56 @@
+export type Patient = {
+  id: string;
+  name: string;
+  age: number;
+  gender: 'male' | 'female' | 'other';
+  tokenNumber: string;
+  status: 'waiting' | 'in-consultation' | 'consultation-done' | 'no-show' | 'called';
+  clinicId: string;
+  registeredAt: string; // ISO 8601 date string
+};
+
+export type Doctor = {
+  id: string;
+  name: string;
+};
+
+export type Cabin = {
+  id: string;
+  name: string;
+};
+
+export type Assistant = {
+  id: string;
+  name: string;
+};
+
+export type Screen = {
+  id: string;
+  name: string;
+};
+
+export type ClinicGroup = {
+  id: string;
+  name: string;
+  doctor: Doctor;
+  assistants: Assistant[];
+  cabin: Cabin;
+  screen: Screen;
+};
+
+export type Advertisement = {
+  id: string;
+  advertiser: string;
+  campaign: string;
+  videoUrl: string;
+  impressions: number;
+};
+
+export type Consultation = {
+  id: string;
+  patientId: string;
+  doctorId: string;
+  date: string; // ISO 8601 date string
+  notes: string;
+  summary: string;
+};
