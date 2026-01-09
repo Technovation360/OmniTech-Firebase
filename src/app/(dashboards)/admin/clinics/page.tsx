@@ -46,14 +46,14 @@ function OnboardClinicForm({
 }) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-xl p-0">
-        <DialogHeader className="p-4">
+      <DialogContent className="sm:max-w-md p-0">
+        <DialogHeader className="p-4 pb-2">
           <DialogTitle className="text-base font-bold tracking-normal">
             REGISTER CLINIC
           </DialogTitle>
         </DialogHeader>
         <div className="px-4 pb-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
             <div className="space-y-1">
               <Label htmlFor="clinicName" className="text-[10px] font-semibold text-gray-600">CLINIC NAME</Label>
               <Input id="clinicName" className="h-7 text-xs" />
@@ -83,7 +83,7 @@ function OnboardClinicForm({
               <Label htmlFor="address" className="text-[10px] font-semibold text-gray-600">ADDRESS</Label>
               <Textarea id="address" rows={1} className="text-xs min-h-0" />
             </div>
-             <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-3">
+             <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
                 <div className="space-y-1">
                 <Label htmlFor="city" className="text-[10px] font-semibold text-gray-600">CITY</Label>
                 <Input id="city" className="h-7 text-xs" />
@@ -99,7 +99,7 @@ function OnboardClinicForm({
             </div>
           </div>
         </div>
-        <DialogFooter className="bg-gray-50 px-4 py-3 flex justify-end gap-2">
+        <DialogFooter className="bg-gray-50 px-4 py-2 flex justify-end gap-2">
           <Button variant="destructive" onClick={onClose} size="sm">
             CANCEL
           </Button>
@@ -124,7 +124,7 @@ export default function ClinicsPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Clinics Management</CardTitle>
+            <CardTitle className="text-xl">Clinics Management</CardTitle>
             <CardDescription>Onboard, edit, and manage clinic groups.</CardDescription>
           </div>
           <Button onClick={() => setIsModalOpen(true)}>Onboard Clinic</Button>
