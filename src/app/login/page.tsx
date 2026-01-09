@@ -16,6 +16,21 @@ import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { handleLogin } from '@/lib/auth-actions';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+
+const sampleCredentials = [
+    { role: 'Central Admin', email: 'admin@omni.com' },
+    { role: 'Doctor (Dr. Ashish)', email: 'doc_ashish@omni.com' },
+    { role: 'Assistant (Sunita)', email: 'asst_sunita@omni.com' },
+    { role: 'Advertiser', email: 'advertiser@omni.com' },
+];
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -74,6 +89,7 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  placeholder='any password will work'
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
@@ -82,6 +98,32 @@ export default function LoginPage() {
             </form>
           </CardContent>
         </Card>
+
+        <Card className="mt-6">
+            <CardHeader>
+                <CardTitle className="text-lg">Sample Credentials</CardTitle>
+                <CardDescription>Use any password to log in.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Role</TableHead>
+                            <TableHead>Email</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {sampleCredentials.map((cred) => (
+                            <TableRow key={cred.email}>
+                                <TableCell className="font-medium">{cred.role}</TableCell>
+                                <TableCell>{cred.email}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+        
         <footer className="text-center text-muted-foreground text-sm mt-8">
             &copy; 2024 OMNITOKEN
         </footer>
