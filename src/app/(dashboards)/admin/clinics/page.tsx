@@ -46,27 +46,19 @@ function OnboardClinicForm({
 }) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg p-0">
+      <DialogContent className="sm:max-w-3xl p-0">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="text-lg font-bold tracking-normal">
             REGISTER CLINIC
           </DialogTitle>
         </DialogHeader>
         <div className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1 col-span-2">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+            <div className="space-y-1">
               <Label htmlFor="clinicName" className="text-xs font-semibold text-gray-600">CLINIC NAME</Label>
               <Input id="clinicName" className="h-9 text-sm" />
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="email" className="text-xs font-semibold text-gray-600">EMAIL</Label>
-              <Input id="email" type="email" className="h-9 text-sm" />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="phone" className="text-xs font-semibold text-gray-600">PHONE</Label>
-              <Input id="phone" type="tel" className="h-9 text-sm" />
-            </div>
-             <div className="space-y-1 col-span-2">
+             <div className="space-y-1">
                 <Label htmlFor="specialties" className="text-xs font-semibold text-gray-600">SPECIALTIES</Label>
                 <Select>
                     <SelectTrigger id="specialties" className="h-9 text-sm">
@@ -79,21 +71,31 @@ function OnboardClinicForm({
                     </SelectContent>
                 </Select>
             </div>
+            <div className="space-y-1">
+              <Label htmlFor="email" className="text-xs font-semibold text-gray-600">EMAIL</Label>
+              <Input id="email" type="email" className="h-9 text-sm" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="phone" className="text-xs font-semibold text-gray-600">PHONE</Label>
+              <Input id="phone" type="tel" className="h-9 text-sm" />
+            </div>
             <div className="space-y-1 col-span-2">
               <Label htmlFor="address" className="text-xs font-semibold text-gray-600">ADDRESS</Label>
               <Textarea id="address" rows={2} className="text-sm" />
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="city" className="text-xs font-semibold text-gray-600">CITY</Label>
-              <Input id="city" className="h-9 text-sm" />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="state" className="text-xs font-semibold text-gray-600">STATE</Label>
-              <Input id="state" className="h-9 text-sm" />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="pin" className="text-xs font-semibold text-gray-600">PIN</Label>
-              <Input id="pin" className="h-9 text-sm" />
+             <div className="col-span-2 grid grid-cols-3 gap-x-4">
+                <div className="space-y-1">
+                <Label htmlFor="city" className="text-xs font-semibold text-gray-600">CITY</Label>
+                <Input id="city" className="h-9 text-sm" />
+                </div>
+                <div className="space-y-1">
+                <Label htmlFor="state" className="text-xs font-semibold text-gray-600">STATE</Label>
+                <Input id="state" className="h-9 text-sm" />
+                </div>
+                <div className="space-y-1">
+                <Label htmlFor="pin" className="text-xs font-semibold text-gray-600">PIN</Label>
+                <Input id="pin" className="h-9 text-sm" />
+                </div>
             </div>
           </div>
         </div>
