@@ -4,6 +4,7 @@ import {
   Card,
   CardContent,
   CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import { Building, Ticket, Megaphone, Film } from 'lucide-react';
 
@@ -19,14 +20,14 @@ function InsightsTab() {
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
       {stats.map((stat) => (
         <Card key={stat.title} className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-             <div className="p-3 bg-accent rounded-md">
-               <stat.icon className="h-5 w-5 text-accent-foreground" />
-             </div>
+          <CardHeader className="pb-2">
+             <CardTitle className="text-sm font-medium uppercase text-muted-foreground tracking-wider">{stat.title}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-xs uppercase text-muted-foreground font-semibold tracking-wider">{stat.title}</div>
-            <div className="text-4xl font-bold mt-1">{stat.value}</div>
+          <CardContent className="flex items-center gap-4">
+            <div className="p-3 bg-accent rounded-md">
+               <stat.icon className="h-6 w-6 text-accent-foreground" />
+            </div>
+            <div className="text-4xl font-bold">{stat.value}</div>
           </CardContent>
         </Card>
       ))}
