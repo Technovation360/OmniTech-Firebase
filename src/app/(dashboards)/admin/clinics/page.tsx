@@ -17,12 +17,12 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -45,23 +45,23 @@ function OnboardClinicForm({
   onClose: () => void;
 }) {
   return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="sm:max-w-xl p-0">
-        <SheetHeader className="p-4 md:p-6 pb-0">
-          <SheetTitle className="text-base md:text-lg font-bold tracking-normal">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-xl p-0">
+        <DialogHeader className="p-4 md:p-6 pb-0">
+          <DialogTitle className="text-base md:text-lg font-bold tracking-normal">
             REGISTER CLINIC
-          </SheetTitle>
-        </SheetHeader>
+          </DialogTitle>
+        </DialogHeader>
         <div className="p-4 md:p-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
             <div className="space-y-1">
               <Label htmlFor="clinicName" className="text-[10px] font-semibold text-gray-600">CLINIC NAME</Label>
-              <Input id="clinicName" className="h-9 text-xs" />
+              <Input id="clinicName" className="h-7 text-xs" />
             </div>
              <div className="space-y-1">
                 <Label htmlFor="specialties" className="text-[10px] font-semibold text-gray-600">SPECIALTIES</Label>
                 <Select>
-                    <SelectTrigger id="specialties" className="h-9 text-xs">
+                    <SelectTrigger id="specialties" className="h-7 text-xs">
                         <SelectValue placeholder="Select..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -73,11 +73,11 @@ function OnboardClinicForm({
             </div>
             <div className="space-y-1">
               <Label htmlFor="email" className="text-[10px] font-semibold text-gray-600">EMAIL</Label>
-              <Input id="email" type="email" className="h-9 text-xs" />
+              <Input id="email" type="email" className="h-7 text-xs" />
             </div>
             <div className="space-y-1">
               <Label htmlFor="phone" className="text-[10px] font-semibold text-gray-600">PHONE</Label>
-              <Input id="phone" type="tel" className="h-9 text-xs" />
+              <Input id="phone" type="tel" className="h-7 text-xs" />
             </div>
             <div className="space-y-1 col-span-1 md:col-span-2">
               <Label htmlFor="address" className="text-[10px] font-semibold text-gray-600">ADDRESS</Label>
@@ -86,27 +86,27 @@ function OnboardClinicForm({
              <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-4">
                 <div className="space-y-1">
                 <Label htmlFor="city" className="text-[10px] font-semibold text-gray-600">CITY</Label>
-                <Input id="city" className="h-9 text-xs" />
+                <Input id="city" className="h-7 text-xs" />
                 </div>
                 <div className="space-y-1">
                 <Label htmlFor="state" className="text-[10px] font-semibold text-gray-600">STATE</Label>
-                <Input id="state" className="h-9 text-xs" />
+                <Input id="state" className="h-7 text-xs" />
                 </div>
                 <div className="space-y-1">
                 <Label htmlFor="pin" className="text-[10px] font-semibold text-gray-600">PIN</Label>
-                <Input id="pin" className="h-9 text-xs" />
+                <Input id="pin" className="h-7 text-xs" />
                 </div>
             </div>
           </div>
         </div>
-        <SheetFooter className="bg-gray-50 px-4 md:px-6 py-3 flex justify-end gap-2">
+        <DialogFooter className="bg-gray-50 px-4 md:px-6 py-3 flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose} size="sm">
             CANCEL
           </Button>
           <Button size="sm">CONFIRM</Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
