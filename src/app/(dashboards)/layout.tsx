@@ -15,7 +15,7 @@ import {
   SidebarGroupLabel,
   SidebarMenuSub,
   SidebarMenuSubButton,
-  SidebarGroupContent,
+  SidebarMenuSubContent,
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/logo';
 import {
@@ -37,6 +37,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import React from 'react';
 
 function DashboardSidebar() {
   const pathname = usePathname();
@@ -47,7 +48,9 @@ function DashboardSidebar() {
         <Logo variant="enterprise" />
       </SidebarHeader>
       <SidebarContent>
-        <SidebarMenu>
+        <SidebarGroup>
+          <SidebarGroupLabel>NAVIGATION</SidebarGroupLabel>
+          <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={pathname === '/admin'}>
                 <Link href="/admin">
@@ -56,69 +59,51 @@ function DashboardSidebar() {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            
-            <SidebarGroup>
-                <SidebarGroupLabel>Management</SidebarGroupLabel>
-                <SidebarGroupContent>
-                     <SidebarMenuItem>
-                        <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/clinics-section')}>
-                          <Link href="#">
-                            <Building />
-                            Clinics
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                      <SidebarMenuItem>
-                        <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/patient-details')}>
-                          <Link href="#">
-                            <List />
-                            Patient Details
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                       <SidebarMenuItem>
-                        <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/users')}>
-                          <Link href="#">
-                            <Users />
-                            Users
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                </SidebarGroupContent>
-            </SidebarGroup>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/users')}>
+                <Link href="/admin">
+                  <Users />
+                  Users
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
 
-             <SidebarGroup>
-                <SidebarGroupLabel>Monitoring</SidebarGroupLabel>
-                <SidebarGroupContent>
-                     <SidebarMenuItem>
-                        <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/live-queue-section')}>
-                          <Link href="#">
-                            <Eye />
-                            Live Queue
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                </SidebarGroupContent>
-            </SidebarGroup>
+            <SidebarMenuSub>
+              <SidebarMenuButton>
+                <Building />
+                Clinicals
+              </SidebarMenuButton>
+              <SidebarMenuSubContent>
+                  <SidebarMenuItem>
+                    <SidebarMenuSubButton>
+                      <Link href="#">Clinics</Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuSubButton>
+                      <Link href="#">Patient Details</Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuItem>
+              </SidebarMenuSubContent>
+            </SidebarMenuSub>
 
-            <SidebarGroup>
-                <SidebarGroupLabel>Advertising</SidebarGroupLabel>
-                <SidebarGroupContent>
-                     <SidebarMenuItem>
-                        <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/advertising')}>
-                          <Link href="/admin/advertising">
-                            <Megaphone />
-                            Ad-Campaigns
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                </SidebarGroupContent>
-            </SidebarGroup>
+            <SidebarMenuSub>
+              <SidebarMenuButton>
+                <Megaphone />
+                Advertising
+              </SidebarMenuButton>
+               <SidebarMenuSubContent>
+                  <SidebarMenuItem>
+                    <SidebarMenuSubButton>
+                      <Link href="/admin/advertising">Ad-Campaigns</Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuItem>
+              </SidebarMenuSubContent>
+            </SidebarMenuSub>
 
             {/* DEMO Links */}
             <SidebarGroup>
                 <SidebarGroupLabel>Demo Roles</SidebarGroupLabel>
-                <SidebarGroupContent>
                     <SidebarMenuItem>
                         <SidebarMenuButton asChild isActive={pathname.startsWith('/doctor')}>
                         <Link href="/doctor/doc_ashish">
@@ -143,9 +128,9 @@ function DashboardSidebar() {
                         </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
-                </SidebarGroupContent>
             </SidebarGroup>
-        </SidebarMenu>
+          </SidebarMenu>
+        </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
           <div className="flex items-center gap-3 p-4 border-t border-sidebar-border">
