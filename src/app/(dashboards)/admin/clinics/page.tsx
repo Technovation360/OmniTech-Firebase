@@ -46,14 +46,14 @@ function OnboardClinicForm({
 }) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-3xl p-0">
-        <DialogHeader className="p-6 pb-0">
-          <DialogTitle className="text-lg font-bold tracking-normal">
+      <DialogContent className="sm:max-w-xl p-0">
+        <DialogHeader className="p-4 md:p-6 pb-0">
+          <DialogTitle className="text-base md:text-lg font-bold tracking-normal">
             REGISTER CLINIC
           </DialogTitle>
         </DialogHeader>
-        <div className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+        <div className="p-4 md:p-6 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
             <div className="space-y-1">
               <Label htmlFor="clinicName" className="text-xs font-semibold text-gray-600">CLINIC NAME</Label>
               <Input id="clinicName" className="h-9 text-sm" />
@@ -79,11 +79,11 @@ function OnboardClinicForm({
               <Label htmlFor="phone" className="text-xs font-semibold text-gray-600">PHONE</Label>
               <Input id="phone" type="tel" className="h-9 text-sm" />
             </div>
-            <div className="space-y-1 col-span-2">
+            <div className="space-y-1 col-span-1 md:col-span-2">
               <Label htmlFor="address" className="text-xs font-semibold text-gray-600">ADDRESS</Label>
               <Textarea id="address" rows={2} className="text-sm" />
             </div>
-             <div className="col-span-2 grid grid-cols-3 gap-x-4">
+             <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-4">
                 <div className="space-y-1">
                 <Label htmlFor="city" className="text-xs font-semibold text-gray-600">CITY</Label>
                 <Input id="city" className="h-9 text-sm" />
@@ -99,7 +99,7 @@ function OnboardClinicForm({
             </div>
           </div>
         </div>
-        <DialogFooter className="bg-gray-50 px-6 py-3 flex justify-end gap-2">
+        <DialogFooter className="bg-gray-50 px-4 md:px-6 py-3 flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose} size="sm">
             CANCEL
           </Button>
