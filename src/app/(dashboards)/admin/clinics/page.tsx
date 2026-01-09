@@ -203,7 +203,7 @@ export default function ClinicsPage() {
                    <TableCell className="py-2 text-xs">
                     <div className="flex gap-1">
                       {clinic.specialties.map(specialty => (
-                        <Badge key={specialty} variant="secondary">{specialty}</Badge>
+                        <Badge key={specialty} variant="secondary" className="text-[10px]">{specialty}</Badge>
                       ))}
                     </div>
                   </TableCell>
