@@ -83,7 +83,7 @@ function AdminSidebar() {
           ))}
         </SidebarMenu>
         
-        <div className="flex flex-col gap-2 px-4 pt-4">
+        <div className="flex flex-col gap-2 px-4 pt-2">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Clinical
           </span>
@@ -101,7 +101,7 @@ function AdminSidebar() {
           ))}
         </SidebarMenu>
 
-        <div className="flex flex-col gap-2 px-4 pt-4">
+        <div className="flex flex-col gap-2 px-4 pt-2">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Advertisers
           </span>
@@ -119,7 +119,7 @@ function AdminSidebar() {
           ))}
         </SidebarMenu>
 
-        <div className="flex flex-col gap-2 px-4 pt-4">
+        <div className="flex flex-col gap-2 px-4 pt-2">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Administration
           </span>
