@@ -2,7 +2,8 @@ export type UserRole = 'central-admin' | 'clinic-admin' | 'doctor' | 'assistant'
 
 const userRoles: Record<string, UserRole> = {
     'admin@omni.com': 'central-admin',
-    'clinic-admin@omni.com': 'clinic-admin',
+    'clinic-admin-city@omni.com': 'clinic-admin',
+    'clinic-admin-health@omni.com': 'clinic-admin',
     'doc_ashish@omni.com': 'doctor',
     'doc_vijay@omni.com': 'doctor',
     'asst_sunita@omni.com': 'assistant',
@@ -44,3 +45,5 @@ export function getRedirectUrlForRole(role: UserRole, email: string): string | n
             return null;
     }
 }
+
+    

@@ -27,6 +27,8 @@ import {
 
 const sampleCredentials = [
     { role: 'Central Admin', email: 'admin@omni.com' },
+    { role: 'Clinic Admin (City)', email: 'clinic-admin-city@omni.com' },
+    { role: 'Clinic Admin (Health)', email: 'clinic-admin-health@omni.com' },
     { role: 'Doctor (Dr. Ashish)', email: 'doc_ashish@omni.com' },
     { role: 'Assistant (Sunita)', email: 'asst_sunita@omni.com' },
     { role: 'Advertiser', email: 'advertiser@omni.com' },
@@ -131,3 +133,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    
