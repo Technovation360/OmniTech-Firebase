@@ -258,9 +258,9 @@ export default function PatientRegistryPage() {
                 Global list of all registered patients.
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="flex flex-col gap-2 w-full sm:w-auto sm:w-64">
               <Select value={selectedClinic} onValueChange={setSelectedClinic}>
-                  <SelectTrigger className="h-9 w-full sm:w-48 text-xs">
+                  <SelectTrigger className="h-9 w-full text-xs">
                       <SelectValue placeholder="Filter by Clinic" />
                   </SelectTrigger>
                   <SelectContent>
@@ -270,7 +270,7 @@ export default function PatientRegistryPage() {
                       ))}
                   </SelectContent>
               </Select>
-              <div className="relative w-full sm:w-64">
+              <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search by name or token..."
