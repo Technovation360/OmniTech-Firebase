@@ -109,12 +109,14 @@ function UserForm({
 }) {
   const isEditMode = !!user;
   const [clinics, setClinics] = useState<ClinicGroup[]>([]);
+  const [selectedRole, setSelectedRole] = useState<UserRole | string | undefined>(user?.role);
 
   useEffect(() => {
     if (isOpen) {
       getClinicGroups().then(setClinics);
+      setSelectedRole(user?.role);
     }
-  }, [isOpen]);
+  }, [isOpen, user]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -125,10 +127,10 @@ function UserForm({
           </DialogTitle>
         </DialogHeader>
         <div className="p-4 pb-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
             <div className="space-y-1">
               <Label htmlFor="role" className="text-[10px] font-semibold text-gray-600">ROLE</Label>
-               <Select defaultValue={user?.role}>
+               <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as UserRole)}>
                 <SelectTrigger className="h-7 text-[11px]">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
@@ -152,6 +154,22 @@ function UserForm({
                 </SelectContent>
               </Select>
             </div>
+            {selectedRole === 'doctor' && (
+               <div className="space-y-1">
+                <Label htmlFor="specialties" className="text-[10px] font-semibold text-gray-600">SPECIALTY</Label>
+                <Select>
+                    <SelectTrigger className="h-7 text-[11px]">
+                        <SelectValue placeholder="Select..."/>
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="cardiology" className="text-[11px]">Cardiology</SelectItem>
+                        <SelectItem value="orthopedics" className="text-[11px]">Orthopedics</SelectItem>
+                        <SelectItem value="pediatrics" className="text-[11px]">Pediatrics</SelectItem>
+                        <SelectItem value="general-medicine" className="text-[11px]">General Medicine</SelectItem>
+                    </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-1">
               <Label htmlFor="userName" className="text-[10px] font-semibold text-gray-600">FULL NAME</Label>
               <Input id="userName" className="h-7 text-[11px]" defaultValue={user?.name || ''} />
@@ -355,3 +373,5 @@ export default function UsersPage() {
     </>
   )
 }
+
+    
