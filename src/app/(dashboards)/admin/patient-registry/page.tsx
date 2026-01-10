@@ -58,6 +58,13 @@ const badgeColors: Record<Patient['status'], string> = {
   'no-show': 'bg-red-100 text-red-800',
 };
 
+const genderBadgeColors: Record<Patient['gender'], string> = {
+    'male': "bg-blue-100 text-blue-800",
+    'female': "bg-pink-100 text-pink-800",
+    'other': "bg-purple-100 text-purple-800",
+};
+
+
 function VisitHistoryModal({
   isOpen,
   onClose,
@@ -320,10 +327,10 @@ export default function PatientRegistryPage() {
                    <Button
                     variant="ghost"
                     className="text-xs p-0 hover:bg-transparent"
-                    onClick={() => handleSort('tokenNumber')}
+                    onClick={() => handleSort('registeredAt')}
                   >
-                    Last Token
-                    {getSortIcon('tokenNumber')}
+                    Last Token Generated
+                    {getSortIcon('registeredAt')}
                   </Button>
                 </TableHead>
                 <TableHead>Actions</TableHead>
@@ -334,8 +341,14 @@ export default function PatientRegistryPage() {
                 <TableRow key={patient.id}>
                   <TableCell className="font-medium py-2 text-xs">{patient.name}</TableCell>
                   <TableCell className="py-2 text-xs">{patient.age}</TableCell>
-                  <TableCell className="py-2 text-xs capitalize">{patient.gender}</TableCell>
-                  <TableCell className="py-2 text-xs">{patient.tokenNumber}</TableCell>
+                  <TableCell className="py-2 text-xs capitalize">
+                    <Badge variant="secondary" className={cn('text-[10px] border-transparent capitalize', genderBadgeColors[patient.gender])}>
+                        {patient.gender}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="py-2 text-xs">
+                     {format(new Date(patient.registeredAt), 'P, pp')}
+                  </TableCell>
                   <TableCell className="py-2 text-xs">
                     <Button
                       variant="outline"
