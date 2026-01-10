@@ -14,7 +14,6 @@ import {
   useSidebar,
   SidebarMenuSub,
   SidebarMenuSubButton,
-  SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/logo';
 import {
@@ -28,7 +27,9 @@ import {
   PanelLeft,
   List,
   HeartPulse,
-  ChevronDown
+  ChevronDown,
+  Film,
+  User,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -69,12 +70,18 @@ function DashboardHeader() {
 function DashboardSidebar() {
   const pathname = usePathname();
   const isClinicalActive = pathname.startsWith('/admin/clinics') || pathname.startsWith('/admin/specialties') || pathname.startsWith('/admin/live-queue') || pathname.startsWith('/admin/patient-registry');
+  const isAdvertisingActive = pathname.startsWith('/admin/advertisers') || pathname.startsWith('/admin/campaigns');
 
   const [isClinicalOpen, setIsClinicalOpen] = useState(false);
+  const [isAdvertisingOpen, setIsAdvertisingOpen] = useState(false);
 
   useEffect(() => {
     setIsClinicalOpen(isClinicalActive);
   }, [isClinicalActive]);
+
+  useEffect(() => {
+    setIsAdvertisingOpen(isAdvertisingActive);
+  }, [isAdvertisingActive]);
 
 
   return (
@@ -153,12 +160,37 @@ function DashboardSidebar() {
           </SidebarMenuItem>
 
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/advertising')}>
-              <Link href="/admin/advertising">
-                <Megaphone />
-                Advertising
-              </Link>
-            </SidebarMenuButton>
+            <Collapsible open={isAdvertisingOpen} onOpenChange={setIsAdvertisingOpen}>
+                <CollapsibleTrigger asChild>
+                    <SidebarMenuButton isActive={isAdvertisingActive} className="justify-between">
+                        <div className="flex items-center gap-2">
+                            <Megaphone />
+                            Advertising
+                        </div>
+                        <ChevronDown className="h-4 w-4 transition-transform [&[data-state=open]]:rotate-180" />
+                    </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent asChild>
+                    <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild isActive={pathname.startsWith('/admin/advertisers')}>
+                                <Link href="/admin/advertisers">
+                                    <User/>
+                                    Advertisers
+                                </Link>
+                            </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild isActive={pathname.startsWith('/admin/campaigns')}>
+                                <Link href="/admin/campaigns">
+                                    <Film/>
+                                    Campaigns
+                                </Link>
+                            </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                    </SidebarMenuSub>
+                </CollapsibleContent>
+            </Collapsible>
           </SidebarMenuItem>
 
         </SidebarMenu>
