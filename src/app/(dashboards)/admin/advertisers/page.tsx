@@ -48,7 +48,7 @@ type Advertiser = {
 };
 
 const initialAdvertisers: Advertiser[] = [
-    { id: 'adv_1', name: 'HealthPlus Insurance', campaigns: 1, status: 'active'},
+    { id: 'adv_1', name: 'HealthCare Insurance', campaigns: 1, status: 'active'},
     { id: 'adv_2', name: 'PharmaCure', campaigns: 1, status: 'active'},
     { id: 'adv_3', name: 'Wellness Now', campaigns: 0, status: 'inactive'},
 ]
@@ -175,7 +175,7 @@ export default function AdvertisersPage() {
 
   const openCreateModal = () => {
     setAdvertiserToEdit(null);
-    setIsModalОpen(true);
+    setIsModalOpen(true);
   }
 
   const closeModal = () => {

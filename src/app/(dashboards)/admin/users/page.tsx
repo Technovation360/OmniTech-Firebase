@@ -70,7 +70,7 @@ const mockUsers: User[] = [
     { id: 'user_5', name: 'Sunita', email: 'asst_sunita@omni.com', role: 'assistant', affiliation: 'City Care Clinic' },
     { id: 'user_6', name: 'Rajesh', email: 'asst_rajesh@omni.com', role: 'assistant', affiliation: 'Health Plus Clinic' },
     { id: 'user_7', name: 'Display User', email: 'display@omni.com', role: 'display', affiliation: 'City Care Clinic' },
-    { id: 'user_8', name: 'Advertiser User', email: 'advertiser@omni.com', role: 'advertiser', affiliation: 'HealthPlus Insurance' },
+    { id: 'user_8', name: 'Advertiser User', email: 'advertiser@omni.com', role: 'advertiser', affiliation: 'HealthCare Insurance' },
 ];
 
 const roleLabels: Record<UserRole, string> = {
@@ -186,7 +186,7 @@ function UserForm({
                          <SelectItem key={clinic.id} value={clinic.name} className="text-[11px]">{clinic.name}</SelectItem>
                     ))}
                      <SelectItem value="Omni Platform" className="text-[11px]">Omni Platform</SelectItem>
-                     <SelectItem value="HealthPlus Insurance" className="text-[11px]">HealthPlus Insurance</SelectItem>
+                     <SelectItem value="HealthCare Insurance" className="text-[11px]">HealthCare Insurance</SelectItem>
                 </SelectContent>
               </Select>
             </div>

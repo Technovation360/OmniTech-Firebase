@@ -43,7 +43,7 @@ let consultations: Consultation[] = [
 ];
 
 let advertisements: Advertisement[] = [
-  { id: 'ad_01', advertiser: 'HealthPlus Insurance', campaign: 'Winter Shield 2024', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', impressions: 12534 },
+  { id: 'ad_01', advertiser: 'HealthCare Insurance', campaign: 'Winter Shield 2024', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', impressions: 12534 },
   { id: 'ad_02', advertiser: 'PharmaCure', campaign: 'New Pain Reliever Launch', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4', impressions: 8345 },
 ];
 
