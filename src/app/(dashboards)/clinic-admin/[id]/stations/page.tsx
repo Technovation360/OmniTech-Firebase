@@ -125,8 +125,8 @@ function DeleteCabinDialog({
   );
 }
 
-export default function StationsPage({ params }: { params: { id: string } }) {
-  const { id: clinicId } = params;
+export default function StationsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: clinicId } = use(params);
   const [cabins, setCabins] = useState<Cabin[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [cabinToEdit, setCabinToEdit] = useState<Cabin | null>(null);
