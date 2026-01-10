@@ -27,7 +27,7 @@ const stats = [
 
 function InsightsTab() {
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-6 md:grid-cols-2">
       {stats.map((stat) => (
         <Card key={stat.title} className="shadow-sm">
           <CardHeader className="pb-2 text-center">
