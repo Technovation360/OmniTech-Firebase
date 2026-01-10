@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition, useActionState, useEffect } from 'react';
+import { useState, useTransition, useActionState, useEffect, use } from 'react';
 import {
   getPatientsByClinicId,
   getClinicGroupById,
@@ -63,7 +63,8 @@ type FetchedData = {
 };
 
 // A simple client component to fetch initial data on the client side
-export default function DoctorPageLoader({ params: { id } }: DoctorPageProps) {
+export default function DoctorPageLoader({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const [data, setData] = useState<FetchedData | null>(null);
 
   useEffect(() => {
