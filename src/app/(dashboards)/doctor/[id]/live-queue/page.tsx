@@ -7,7 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Loader } from 'lucide-react';
+import { Loader, Search, ArrowUp, ArrowDown } from 'lucide-react';
+import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 const badgeColors: Record<Patient['status'], string> = {
     'waiting': "bg-blue-100 text-blue-800",
@@ -19,16 +22,57 @@ const badgeColors: Record<Patient['status'], string> = {
 
 export default function DoctorLiveQueuePage({ params }: { params: { id: string } }) {
   const { id: doctorId } = use(params);
-  const [patients, setPatients] = useState<Patient[]>([]);
+  const [allPatients, setAllPatients] = useState<Patient[]>([]);
+  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Patient; direction: 'asc' | 'desc' } | null>({ key: 'tokenNumber', direction: 'asc' });
 
   useEffect(() => {
     const clinicId = doctorId === 'doc_ashish' ? 'grp_cardiology_01' : 'grp_ortho_01';
     getPatientsByClinicId(clinicId).then(data => {
-      setPatients(data.filter(p => ['waiting', 'called', 'in-consultation'].includes(p.status)));
+      setAllPatients(data.filter(p => ['waiting', 'called', 'in-consultation'].includes(p.status)));
       setLoading(false);
     });
   }, [doctorId]);
+
+  useEffect(() => {
+    let filteredData = allPatients;
+    if (searchQuery) {
+        const lowercasedQuery = searchQuery.toLowerCase();
+        filteredData = allPatients.filter(patient => 
+            patient.name.toLowerCase().includes(lowercasedQuery) ||
+            patient.tokenNumber.toLowerCase().includes(lowercasedQuery)
+        );
+    }
+
+    if (sortConfig) {
+      const sorted = [...filteredData].sort((a, b) => {
+        const aVal = a[sortConfig.key];
+        const bVal = b[sortConfig.key];
+        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+      setFilteredPatients(sorted);
+    } else {
+        setFilteredPatients(filteredData);
+    }
+  }, [searchQuery, allPatients, sortConfig]);
+
+  const handleSort = (key: keyof Patient) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key: keyof Patient) => {
+    if (!sortConfig || sortConfig.key !== key) return null;
+    if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3" />;
+    return <ArrowDown className="ml-2 h-3 w-3" />;
+  };
 
   if (loading) {
     return <div className="flex justify-center items-center h-full"><Loader className="animate-spin" /></div>;
@@ -37,24 +81,59 @@ export default function DoctorLiveQueuePage({ params }: { params: { id: string }
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Live Patient Queue</CardTitle>
-        <CardDescription>A real-time view of patients in your queue.</CardDescription>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+                <CardTitle>Live Patient Queue</CardTitle>
+                <CardDescription>A real-time view of patients in your queue.</CardDescription>
+            </div>
+             <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search patients..."
+                  className="pl-9 h-9"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+        </div>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Token</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>
+                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('tokenNumber')}>
+                    Token
+                    {getSortIcon('tokenNumber')}
+                </Button>
+              </TableHead>
+              <TableHead>
+                 <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('name')}>
+                    Name
+                    {getSortIcon('name')}
+                </Button>
+              </TableHead>
+              <TableHead>
+                 <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('registeredAt')}>
+                    Issued At
+                    {getSortIcon('registeredAt')}
+                </Button>
+              </TableHead>
+              <TableHead>
+                 <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('status')}>
+                    Status
+                    {getSortIcon('status')}
+                </Button>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {patients.length > 0 ? patients.map(patient => (
+            {filteredPatients.length > 0 ? filteredPatients.map(patient => (
               <TableRow key={patient.id}>
-                <TableCell className="font-bold">{patient.tokenNumber}</TableCell>
-                <TableCell>{patient.name}</TableCell>
-                <TableCell>
+                <TableCell className="font-bold py-2 text-xs">{patient.tokenNumber}</TableCell>
+                <TableCell className="py-2 text-xs">{patient.name}</TableCell>
+                <TableCell className="py-2 text-xs">{format(new Date(patient.registeredAt), 'hh:mm a')}</TableCell>
+                <TableCell className="py-2 text-xs">
                   <Badge variant="secondary" className={cn("capitalize", badgeColors[patient.status])}>
                     {patient.status.replace('-', ' ')}
                   </Badge>
@@ -62,7 +141,7 @@ export default function DoctorLiveQueuePage({ params }: { params: { id: string }
               </TableRow>
             )) : (
               <TableRow>
-                <TableCell colSpan={3} className="text-center">No patients in the queue.</TableCell>
+                <TableCell colSpan={4} className="text-center py-4">No patients in the queue.</TableCell>
               </TableRow>
             )}
           </TableBody>
