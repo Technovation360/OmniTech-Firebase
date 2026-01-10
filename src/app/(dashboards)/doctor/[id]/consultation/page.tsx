@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useTransition, useActionState, useEffect, use } from 'react';
+import { useState, useEffect, use } from 'react';
 import {
   getPatientsByClinicId,
   getClinicGroupById,
-  getConsultationsByPatientId,
 } from '@/lib/data';
-import type { Patient, ClinicGroup, Consultation, Doctor } from '@/lib/types';
+import type { Patient, ClinicGroup, Doctor } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -15,42 +14,17 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  PhoneCall,
-  Play,
-  Square,
-  UserX,
-  History,
-  FileText,
+  Users,
+  Clock,
+  CheckSquare,
+  XCircle,
   Loader,
-  Sparkles,
-  Save,
-  ArrowUp, 
-  ArrowDown
+  Lock,
 } from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { format } from 'date-fns';
-import { handlePatientAction, createConsultationSummary } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
-
-
-const badgeColors: Record<'waiting' | 'called', string> = {
-    'waiting': "bg-blue-100 text-blue-800",
-    'called': "bg-orange-100 text-orange-800",
-};
 
 type DoctorPageProps = {
   params: { id: string };
@@ -86,163 +60,6 @@ export default function DoctorConsultationPageLoader({ params }: DoctorPageProps
   return <DoctorConsultationDashboard clinicGroup={data.clinicGroup} initialPatients={data.patients} />;
 }
 
-function PatientActions({ patient, onAction }: { patient: Patient, onAction: (patient: Patient, action: 'call' | 'start') => void }) {
-  const [isPending, startTransition] = useTransition();
-
-  const callPatient = () => startTransition(async () => {
-    await handlePatientAction(patient.id, 'call');
-    onAction(patient, 'call');
-  });
-
-  const startConsultation = () => startTransition(async () => {
-    await handlePatientAction(patient.id, 'start');
-    onAction(patient, 'start');
-  });
-
-  if (patient.status === 'waiting') {
-    return (
-      <Button size="sm" onClick={callPatient} disabled={isPending}>
-        <PhoneCall className="mr-2 h-4 w-4" /> Call
-      </Button>
-    );
-  }
-  if (patient.status === 'called') {
-    return (
-      <Button size="sm" onClick={startConsultation} disabled={isPending}>
-        <Play className="mr-2 h-4 w-4" /> Start
-      </Button>
-    );
-  }
-  return null;
-}
-
-function ConsultationPad({
-  patient,
-  doctor,
-  onConsultationEnd,
-}: {
-  patient: Patient;
-  doctor: Doctor;
-  onConsultationEnd: () => void;
-}) {
-  const { toast } = useToast();
-  const [isHistoryVisible, setHistoryVisible] = useState(false);
-  const [pastConsultations, setPastConsultations] = useState<Consultation[]>([]);
-  const [notes, setNotes] = useState('');
-  
-  const [formState, formAction, isSummarizing] = useActionState(createConsultationSummary, { message: "" });
-  
-  const handleShowHistory = async () => {
-    setHistoryVisible(!isHistoryVisible);
-    if (!isHistoryVisible && pastConsultations.length === 0) {
-      const history = await getConsultationsByPatientId(patient.id);
-      setPastConsultations(history);
-    }
-  };
-
-  const endConsultationAction = async () => {
-    await handlePatientAction(patient.id, 'end');
-    onConsultationEnd();
-  }
-
-  const noShowAction = async () => {
-    await handlePatientAction(patient.id, 'no-show');
-    onConsultationEnd();
-  }
-  
-  useEffect(() => {
-    if (formState.success) {
-      toast({ title: "Success", description: "Consultation saved successfully." });
-      onConsultationEnd();
-    }
-  }, [formState, onConsultationEnd, toast]);
-
-  return (
-    <Card className="col-span-1 lg:col-span-2">
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle>Consultation: {patient.name} ({patient.tokenNumber})</CardTitle>
-            <CardDescription>
-              {patient.age} years old, {patient.gender}
-            </CardDescription>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleShowHistory}>
-              <History className="mr-2 h-4 w-4" /> {isHistoryVisible ? 'Hide' : 'Show'} History
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {isHistoryVisible && (
-          <Card className="bg-muted/50">
-            <CardHeader>
-              <CardTitle className="text-lg">Past Consultations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-48">
-                {pastConsultations.length > 0 ? (
-                  pastConsultations.map((c, index) => (
-                    <div key={c.id}>
-                      <p className="font-semibold text-sm">
-                        {format(new Date(c.date), 'PPP')}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Notes: {c.notes}</p>
-                      <p className="text-xs text-accent-foreground font-medium mt-1">Summary: {c.summary}</p>
-                      {index < pastConsultations.length - 1 && <Separator className="my-2" />}
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">No past consultations found.</p>
-                )}
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        )}
-        <form action={formAction} className="space-y-4">
-          <input type="hidden" name="patientId" value={patient.id} />
-          <input type="hidden" name="doctorId" value={doctor.id} />
-          <div>
-            <label htmlFor="notes" className="block text-sm font-medium mb-1">
-              Consultation Notes
-            </label>
-            <Textarea
-              id="notes"
-              name="notes"
-              rows={6}
-              placeholder="Start typing patient notes here..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              required
-            />
-          </div>
-          
-          <div className="flex gap-2">
-            <Button type="submit" disabled={isSummarizing || notes.length < 10}>
-              {isSummarizing ? (
-                <Loader className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="mr-2 h-4 w-4" />
-              )}
-              Summarize & Save
-            </Button>
-          </div>
-          
-          {formState?.message && !formState.success && <p className="text-sm text-destructive">{formState.message}</p>}
-        </form>
-      </CardContent>
-      <CardFooter className="flex justify-end gap-2">
-         <Button variant="destructive" size="sm" onClick={noShowAction}>
-              <UserX className="mr-2 h-4 w-4" /> Mark as No-Show
-            </Button>
-            <Button variant="secondary" size="sm" onClick={endConsultationAction}>
-              <Square className="mr-2 h-4 w-4" /> End Without Saving
-            </Button>
-      </CardFooter>
-    </Card>
-  );
-}
 
 function DoctorConsultationDashboard({
   clinicGroup,
@@ -251,123 +68,69 @@ function DoctorConsultationDashboard({
   clinicGroup: ClinicGroup;
   initialPatients: Patient[];
 }) {
-  const [patients, setPatients] = useState(initialPatients.filter((p) => ['waiting', 'called'].includes(p.status)));
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(
-    initialPatients.find(p => p.status === 'in-consultation') || null
-  );
-  const [sortConfig, setSortConfig] = useState<{ key: keyof Patient; direction: 'asc' | 'desc' } | null>({ key: 'tokenNumber', direction: 'asc' });
+  const totalPatients = initialPatients.length;
+  const inQueue = initialPatients.filter(p => p.status === 'waiting' || p.status === 'called').length;
+  const attended = initialPatients.filter(p => p.status === 'consultation-done').length;
+  const noShows = initialPatients.filter(p => p.status === 'no-show').length;
 
-  const handleAction = (actedOnPatient: Patient, action: 'call' | 'start') => {
-    if (action === 'start') {
-        setSelectedPatient(actedOnPatient);
-        setPatients(prev => prev.filter(p => p.id !== actedOnPatient.id));
-    } else { // 'call'
-        setPatients(prev => prev.map(p => p.id === actedOnPatient.id ? {...p, status: 'called'}: p));
-    }
-  }
-
-  const handleConsultationEnd = () => {
-    const endedPatientId = selectedPatient?.id;
-    setSelectedPatient(null);
-    setPatients(prev => prev.filter(p => p.id !== endedPatientId));
-  }
-
-  const handleSort = (key: keyof Patient) => {
-    let direction: 'asc' | 'desc' = 'asc';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
-
-    const sortedPatients = [...patients].sort((a, b) => {
-      const aVal = a[key] ?? '';
-      const bVal = b[key] ?? '';
-      if (aVal < bVal) return direction === 'asc' ? -1 : 1;
-      if (aVal > bVal) return direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-    setPatients(sortedPatients);
-  };
+  const stats = [
+    { title: 'TOTAL PATIENTS', value: totalPatients, icon: Users, color: 'bg-indigo-100 text-indigo-600' },
+    { title: 'IN QUEUE', value: inQueue, icon: Clock, color: 'bg-yellow-100 text-yellow-600' },
+    { title: 'ATTENDED', value: attended, icon: CheckSquare, color: 'bg-green-100 text-green-600' },
+    { title: 'NO SHOWS', value: noShows, icon: XCircle, color: 'bg-red-100 text-red-600' },
+  ];
   
-  const getSortIcon = (key: keyof Patient) => {
-    if (!sortConfig || sortConfig.key !== key) return null;
-    if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3" />;
-    return <ArrowDown className="ml-2 h-3 w-3" />;
-  };
+  const consultationRooms = ['Consultation Room 1', 'Consultation Room 2', 'Consultation Room 3', 'Consultation Room 4'];
+  const nextToken = initialPatients.find(p => p.status === 'waiting')?.tokenNumber;
+
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <Card className="col-span-1">
-        <CardHeader>
-          <CardTitle>Patient Queue</CardTitle>
-          <CardDescription>Patients waiting for consultation.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>
-                  <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('tokenNumber')}>
-                      Token
-                      {getSortIcon('tokenNumber')}
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('name')}>
-                      Name
-                      {getSortIcon('name')}
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('status')}>
-                      Status
-                      {getSortIcon('status')}
-                  </Button>
-                </TableHead>
-                <TableHead>Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {patients.length > 0 ? (
-                patients.map((patient) => (
-                  <TableRow key={patient.id} onClick={() => patient.status === 'called' && handleAction(patient, 'start')} className={patient.status === 'called' ? 'bg-accent/50 cursor-pointer' : ''}>
-                    <TableCell className="font-bold py-2 text-xs">{patient.tokenNumber}</TableCell>
-                    <TableCell className="py-2 text-xs">{patient.name}</TableCell>
-                    <TableCell className="py-2 text-xs">
-                      <Badge variant={'secondary'} className={cn("text-[10px] border-transparent capitalize", badgeColors[patient.status as 'waiting' | 'called'])}>
-                        {patient.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="py-2 text-xs">
-                      <PatientActions patient={patient} onAction={handleAction} />
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-2 text-xs">
-                    No patients in the queue.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {stats.map((stat) => (
+          <Card key={stat.title}>
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className={`p-3 rounded-lg ${stat.color}`}>
+                <stat.icon className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground font-semibold">{stat.title}</p>
+                <p className="text-2xl font-bold">{stat.value}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-2">
+            <Button>General Medicine <Badge className="ml-2 bg-white text-primary">10</Badge></Button>
+            <Button variant="ghost">Pediatrics <Badge className="ml-2">10</Badge></Button>
+        </div>
+        {nextToken && (
+            <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-muted-foreground">NEXT:</span>
+                <Badge variant="outline" className="text-base font-bold border-primary text-primary">{nextToken}</Badge>
+            </div>
+        )}
+      </div>
 
-      {selectedPatient ? (
-        <ConsultationPad patient={selectedPatient} doctor={clinicGroup.doctor} onConsultationEnd={handleConsultationEnd} />
-      ) : (
-        <Card className="col-span-1 lg:col-span-2 flex items-center justify-center border-dashed">
-          <div className="text-center p-8">
-            <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-medium">No Active Consultation</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Call a patient from the queue to start a consultation.
-            </p>
-          </div>
-        </Card>
-      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {consultationRooms.map(room => (
+            <Card key={room}>
+                <CardHeader className="flex-row items-center justify-between p-3 border-b bg-muted/30">
+                    <CardTitle className="text-sm font-semibold">{room.toUpperCase()}</CardTitle>
+                    <Button size="xs" className="bg-green-600 hover:bg-green-700 h-7">ASSIGN</Button>
+                </CardHeader>
+                <CardContent className="p-4 h-48 flex flex-col items-center justify-center text-center">
+                   <div className="p-3 bg-yellow-100 rounded-full mb-2">
+                     <Lock className="h-6 w-6 text-yellow-500" />
+                   </div>
+                   <p className="text-sm font-semibold text-muted-foreground">ASSIGN ROOM</p>
+                </CardContent>
+            </Card>
+        ))}
+      </div>
     </div>
   );
 }
