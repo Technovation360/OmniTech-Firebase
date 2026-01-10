@@ -74,7 +74,7 @@ function OnboardClinicForm({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
             <div className="space-y-1">
               <Label htmlFor="clinicName" className="text-[10px] font-semibold text-gray-600">CLINIC NAME</Label>
-              <Input id="clinicName" className="h-7 text-[11px]" defaultValue={clinic?.name} />
+              <Input id="clinicName" className="h-7 text-[11px]" defaultValue={clinic?.name || ''} />
             </div>
              <div className="space-y-1">
                 <Label htmlFor="specialties" className="text-[10px] font-semibold text-gray-600">SPECIALTIES</Label>
@@ -92,28 +92,28 @@ function OnboardClinicForm({
             </div>
             <div className="space-y-1">
               <Label htmlFor="email" className="text-[10px] font-semibold text-gray-600">EMAIL</Label>
-              <Input id="email" type="email" className="h-7 text-[11px]" defaultValue={clinic?.contact} />
+              <Input id="email" type="email" className="h-7 text-[11px]" defaultValue={clinic?.contact || ''} />
             </div>
             <div className="space-y-1">
               <Label htmlFor="phone" className="text-[10px] font-semibold text-gray-600">PHONE</Label>
-              <Input id="phone" type="tel" className="h-7 text-[11px]" />
+              <Input id="phone" type="tel" className="h-7 text-[11px]" defaultValue={''} />
             </div>
             <div className="space-y-1 col-span-1 md:col-span-2">
               <Label htmlFor="address" className="text-[10px] font-semibold text-gray-600">ADDRESS</Label>
-              <Textarea id="address" rows={2} className="text-[11px]" defaultValue={clinic?.location} />
+              <Textarea id="address" rows={2} className="text-[11px]" defaultValue={clinic?.location || ''} />
             </div>
             <div className="grid grid-cols-3 gap-x-4 col-span-1 md:col-span-2">
                 <div className="space-y-1">
                     <Label htmlFor="city" className="text-[10px] font-semibold text-gray-600">CITY</Label>
-                    <Input id="city" className="h-7 text-[11px]" />
+                    <Input id="city" className="h-7 text-[11px]" defaultValue={''} />
                 </div>
                 <div className="space-y-1">
                     <Label htmlFor="state" className="text-[10px] font-semibold text-gray-600">STATE</Label>
-                    <Input id="state" className="h-7 text-[11px]" />
+                    <Input id="state" className="h-7 text-[11px]" defaultValue={''} />
                 </div>
                 <div className="space-y-1">
                     <Label htmlFor="pin" className="text-[10px] font-semibold text-gray-600">PIN</Label>
-                    <Input id="pin" className="h-7 text-[11px]" />
+                    <Input id="pin" className="h-7 text-[11px]" defaultValue={''} />
                 </div>
             </div>
           </div>
