@@ -47,6 +47,9 @@ import {
 import { Edit, Trash2, KeyRound, ArrowUp, ArrowDown } from 'lucide-react';
 import type { UserRole } from '@/lib/roles';
 import { cn } from '@/lib/utils';
+import { getClinicGroups } from '@/lib/data';
+import type { ClinicGroup } from '@/lib/types';
+
 
 type User = {
     id: string;
@@ -105,49 +108,73 @@ function UserForm({
   user: User | null;
 }) {
   const isEditMode = !!user;
+  const [clinics, setClinics] = useState<ClinicGroup[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      getClinicGroups().then(setClinics);
+    }
+  }, [isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader className="p-4 pb-2">
-          <DialogTitle className="text-base font-bold tracking-normal">
+      <DialogContent className="sm:max-w-2xl p-0">
+        <DialogHeader className="p-4 border-b">
+          <DialogTitle className="text-sm font-semibold tracking-wider uppercase">
             {isEditMode ? 'EDIT USER' : 'REGISTER USER'}
           </DialogTitle>
         </DialogHeader>
-        <div className="px-4 pb-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
             <div className="space-y-1">
-              <Label htmlFor="userName" className="text-[10px] font-semibold text-gray-600">USER NAME</Label>
-              <Input id="userName" className="h-7 text-xs" defaultValue={user?.name} />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="email" className="text-[10px] font-semibold text-gray-600">EMAIL</Label>
-              <Input id="email" type="email" className="h-7 text-xs" defaultValue={user?.email} />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="affiliation" className="text-[10px] font-semibold text-gray-600">AFFILIATION</Label>
-              <Input id="affiliation" className="h-7 text-xs" defaultValue={user?.affiliation} />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="role" className="text-[10px] font-semibold text-gray-600">ROLE</Label>
+              <Label htmlFor="role" className="text-xs font-semibold text-gray-600">ROLE</Label>
                <Select defaultValue={user?.role}>
-                <SelectTrigger className="h-7 text-xs">
+                <SelectTrigger className="h-9 text-sm">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(roleLabels).map(([role, label]) => (
-                    <SelectItem key={role} value={role} className="text-xs">{label}</SelectItem>
+                    <SelectItem key={role} value={role} className="text-sm">{label}</SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="userName" className="text-xs font-semibold text-gray-600">FULL NAME</Label>
+              <Input id="userName" className="h-9 text-sm" defaultValue={user?.name} />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="email" className="text-xs font-semibold text-gray-600">EMAIL</Label>
+              <Input id="email" type="email" className="h-9 text-sm" defaultValue={user?.email} />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="phone" className="text-xs font-semibold text-gray-600">PHONE</Label>
+              <Input id="phone" type="tel" className="h-9 text-sm" />
+            </div>
+            <div className="space-y-1 md:col-span-2">
+              <Label htmlFor="password" className="text-xs font-semibold text-gray-600">PASSWORD</Label>
+              <Input id="password" type="password" className="h-9 text-sm" />
+            </div>
+            <div className="space-y-1 md:col-span-2">
+              <Label htmlFor="affiliation" className="text-xs font-semibold text-gray-600">AFFILIATED CLINIC</Label>
+              <Select>
+                <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="Select Clinic..."/>
+                </SelectTrigger>
+                <SelectContent>
+                    {clinics.map(clinic => (
+                         <SelectItem key={clinic.id} value={clinic.id} className="text-sm">{clinic.name}</SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
         </div>
-        <DialogFooter className="bg-gray-50 px-4 py-2 flex justify-end gap-2 rounded-b-lg">
-          <Button variant="destructive" onClick={onClose} size="xs">
+        <DialogFooter className="bg-gray-50 px-6 py-4 flex justify-end gap-3 rounded-b-lg">
+          <Button variant="outline" onClick={onClose} className="font-semibold">
             CANCEL
           </Button>
-          <Button size="xs">CONFIRM</Button>
+          <Button onClick={onClose} className="font-semibold">CONFIRM</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -328,3 +355,5 @@ export default function UsersPage() {
     </>
   )
 }
+
+    
