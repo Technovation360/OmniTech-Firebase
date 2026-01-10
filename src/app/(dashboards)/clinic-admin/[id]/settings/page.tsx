@@ -64,15 +64,6 @@ export default function SettingsPage({ params }: { params: Promise<{ id: string 
 
   return (
      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" className="h-9 w-9">
-                <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <div>
-                <h1 className="text-xl font-bold">Settings</h1>
-                <p className="text-sm text-muted-foreground">Home / Settings</p>
-            </div>
-        </div>
       <Card>
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
