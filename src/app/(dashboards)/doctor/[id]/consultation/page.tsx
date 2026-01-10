@@ -24,7 +24,6 @@ import {
   UserX,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { revalidatePath } from 'next/cache';
 import { handlePatientAction } from '@/lib/actions';
 
 type DoctorPageProps = {
