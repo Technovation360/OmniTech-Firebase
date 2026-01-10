@@ -69,7 +69,7 @@ const mockUsers: User[] = [
     { id: 'user_4', name: 'Dr. Vijay', email: 'doc_vijay@omni.com', role: 'doctor', affiliation: 'Health Plus Clinic', specialty: 'Orthopedics' },
     { id: 'user_5', name: 'Sunita', email: 'asst_sunita@omni.com', role: 'assistant', affiliation: 'City Care Clinic' },
     { id: 'user_6', name: 'Rajesh', email: 'asst_rajesh@omni.com', role: 'assistant', affiliation: 'Health Plus Clinic' },
-    { id: 'user_7', name: 'Display User', email: 'display@omni.com', role: 'display', affiliation: 'Main Hall Display' },
+    { id: 'user_7', name: 'Display User', email: 'display@omni.com', role: 'display', affiliation: 'City Care Clinic' },
     { id: 'user_8', name: 'Advertiser User', email: 'advertiser@omni.com', role: 'advertiser', affiliation: 'HealthPlus Insurance' },
 ];
 
@@ -458,6 +458,8 @@ export default function UsersPage() {
     </>
   )
 }
+
+    
 
     
 
