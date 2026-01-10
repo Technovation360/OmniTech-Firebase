@@ -1,8 +1,6 @@
-'use client';
 
-import { useActionState, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+'use client';
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -10,28 +8,168 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { ArrowUp, ArrowDown, Search, History, PlusCircle } from 'lucide-react';
+import {
+  getAllPatients,
+  getClinicGroupById,
+  getPatientHistory,
+} from '@/lib/data';
+import type { Patient, ClinicGroup, PatientHistoryEntry } from '@/lib/types';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { registerPatient } from '@/lib/actions';
-import { getClinicGroupById } from '@/lib/data';
-import type { ClinicGroup } from '@/lib/types';
-import { Loader } from 'lucide-react';
+import { useActionState } from 'react';
 
-function SubmitButton() {
-  return <Button type="submit" className="w-full">Register Patient & Get Token</Button>;
-}
 
-export default function ClinicAdminRegisterPage({ params }: { params: { id: string } }) {
-  const router = useRouter();
-  const { toast } = useToast();
-  const [clinicGroup, setClinicGroup] = useState<ClinicGroup | null>(null);
-  const [state, formAction] = useActionState(registerPatient, null);
+const badgeColors: Record<Patient['status'], string> = {
+  waiting: 'bg-blue-100 text-blue-800',
+  called: 'bg-orange-100 text-orange-800',
+  'in-consultation': 'bg-green-100 text-green-800',
+  'consultation-done': 'bg-gray-100 text-gray-800',
+  'no-show': 'bg-red-100 text-red-800',
+};
+
+const genderBadgeColors: Record<Patient['gender'], string> = {
+    'male': "bg-blue-100 text-blue-800",
+    'female': "bg-pink-100 text-pink-800",
+    'other': "bg-purple-100 text-purple-800",
+};
+
+
+function VisitHistoryModal({
+  isOpen,
+  onClose,
+  patient,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  patient: Patient | null;
+}) {
+  const [history, setHistory] = useState<PatientHistoryEntry[]>([]);
+  const [clinic, setClinic] = useState<ClinicGroup | null>(null);
 
   useEffect(() => {
-    getClinicGroupById(params.id).then(setClinicGroup);
-  }, [params.id]);
+    if (patient) {
+      getPatientHistory(patient.id).then(setHistory);
+      getClinicGroupById(patient.clinicId).then(setClinic);
+    } else {
+      setHistory([]);
+      setClinic(null);
+    }
+
+  }, [patient]);
+
+  if (!patient) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl">
+        <DialogHeader className="p-4 pb-2 border-b">
+          <DialogTitle className="text-base font-bold tracking-normal uppercase">
+            Visit History: {patient.name}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="p-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">Token #</TableHead>
+                <TableHead className="text-xs">Clinic</TableHead>
+                <TableHead className="text-xs">Issued Date/Time</TableHead>
+                <TableHead className="text-xs">Start Time</TableHead>
+                <TableHead className="text-xs">Stop Time</TableHead>
+                <TableHead className="text-xs">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {history.map((item) => (
+                <TableRow key={item.tokenNumber}>
+                  <TableCell className="font-medium text-primary py-2 text-xs">
+                    {item.tokenNumber}
+                  </TableCell>
+                  <TableCell className="py-2 text-xs">{item.clinicName}</TableCell>
+                  <TableCell className="py-2 text-xs">
+                    {format(new Date(item.issuedAt), 'P, pp')}
+                  </TableCell>
+                   <TableCell className="py-2 text-xs">
+                    {item.startTime ? format(new Date(item.startTime), 'pp') : '-'}
+                  </TableCell>
+                  <TableCell className="py-2 text-xs">
+                    {item.endTime ? format(new Date(item.endTime), 'pp') : '-'}
+                  </TableCell>
+                  <TableCell className="py-2 text-xs">
+                    <Badge
+                      variant="secondary"
+                      className={cn(
+                        'text-[10px] border-transparent capitalize',
+                        badgeColors[item.status]
+                      )}
+                    >
+                      {item.status.replace('-', ' ')}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        <DialogFooter className="bg-gray-50 px-4 py-3">
+          <Button onClick={onClose} className="w-full">
+            DONE
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ManualCheckInModal({ 
+    isOpen, 
+    onClose, 
+    clinicId,
+    onPatientRegistered,
+} : {
+    isOpen: boolean;
+    onClose: () => void;
+    clinicId: string;
+    onPatientRegistered: () => void;
+}) {
+  const [state, formAction] = useActionState(registerPatient, null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (state?.success && state.tokenNumber) {
@@ -39,9 +177,8 @@ export default function ClinicAdminRegisterPage({ params }: { params: { id: stri
         title: 'Patient Registered',
         description: `Token number ${state.tokenNumber} has been assigned.`,
       });
-      // A full page reload might not be what you want.
-      // Consider clearing the form instead.
-      router.refresh(); 
+      onPatientRegistered();
+      onClose();
     } else if (state?.message && !state.success) {
       toast({
         variant: 'destructive',
@@ -49,43 +186,32 @@ export default function ClinicAdminRegisterPage({ params }: { params: { id: stri
         description: state.message,
       });
     }
-  }, [state, toast, router]);
-
-  if (!clinicGroup) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <Loader className="animate-spin" />
-      </div>
-    );
-  }
+  }, [state, toast, onClose, onPatientRegistered]);
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold font-headline">Patient Registration</h1>
-        <p className="text-muted-foreground">Create tokens for walk-in patients for {clinicGroup.name}.</p>
-      </div>
-      <div className="flex justify-center">
-        <Card className="w-full max-w-lg">
-          <CardHeader>
-            <CardTitle>New Patient Registration</CardTitle>
+     <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Manual Patient Check-in</DialogTitle>
             <CardDescription>Fill in the details to add a patient to the queue.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form action={formAction} className="space-y-6">
-                <input type="hidden" name="clinicId" value={params.id} />
+          </DialogHeader>
+          <form action={formAction} className="space-y-6 p-4">
+                <input type="hidden" name="clinicId" value={clinicId} />
                 
-              <div className="space-y-2">
-                <Label htmlFor="name">Patient Name</Label>
-                <Input id="name" name="name" placeholder="e.g., John Doe" required />
-                {state?.errors?.name && <p className="text-sm text-destructive">{state.errors.name[0]}</p>}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="name">Patient Name</Label>
+                    <Input id="name" name="name" placeholder="e.g., John Doe" required />
+                    {state?.errors?.name && <p className="text-sm text-destructive">{state.errors.name[0]}</p>}
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="age">Age</Label>
+                    <Input id="age" name="age" type="number" placeholder="e.g., 42" required />
+                    {state?.errors?.age && <p className="text-sm text-destructive">{state.errors.age[0]}</p>}
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="age">Age</Label>
-                <Input id="age" name="age" type="number" placeholder="e.g., 42" required />
-                {state?.errors?.age && <p className="text-sm text-destructive">{state.errors.age[0]}</p>}
-              </div>
 
               <div className="space-y-2">
                 <Label>Gender</Label>
@@ -105,12 +231,242 @@ export default function ClinicAdminRegisterPage({ params }: { params: { id: stri
                 </RadioGroup>
                 {state?.errors?.gender && <p className="text-sm text-destructive">{state.errors.gender[0]}</p>}
               </div>
-
-              <SubmitButton />
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={onClose}>Cancel</Button>
+                <Button type="submit">Register Patient</Button>
+              </DialogFooter>
             </form>
-          </CardContent>
-        </Card>
-      </div>
+        </DialogContent>
+      </Dialog>
+  );
+}
+
+
+export default function PatientRegistryPage({ params }: { params: { id: string } }) {
+  const { id: clinicId } = params;
+  const [allPatients, setAllPatients] = useState<Patient[]>([]);
+  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
+  const [clinic, setClinic] = useState<ClinicGroup | null>(null);
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof Patient;
+    direction: 'asc' | 'desc';
+  } | null>({ key: 'name', direction: 'asc' });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [isCheckInModalOpen, setCheckInModalOpen] = useState(false);
+  const { toast } = useToast();
+
+  const fetchPatients = () => {
+    getAllPatients().then((data) => {
+        setAllPatients(data.filter(p => p.clinicId === clinicId));
+    });
+  }
+
+  useEffect(() => {
+    fetchPatients();
+    getClinicGroupById(clinicId).then(setClinic);
+  }, [clinicId]);
+  
+  useEffect(() => {
+    let filteredData = allPatients;
+
+    if (searchQuery) {
+        const lowercasedQuery = searchQuery.toLowerCase();
+        filteredData = filteredData.filter(patient => 
+            patient.name.toLowerCase().includes(lowercasedQuery) ||
+            patient.tokenNumber.toLowerCase().includes(lowercasedQuery) ||
+            patient.contactNumber.toLowerCase().includes(lowercasedQuery) ||
+            patient.emailAddress.toLowerCase().includes(lowercasedQuery)
+        );
+    }
+    
+    if (sortConfig) {
+      const sorted = [...filteredData].sort((a, b) => {
+        const aVal = a[sortConfig.key] || '';
+        const bVal = b[sortConfig.key] || '';
+        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+      setFilteredPatients(sorted);
+    } else {
+        setFilteredPatients(filteredData);
+    }
+
+  }, [searchQuery, allPatients, sortConfig]);
+
+  const handleSort = (key: keyof Patient) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key: keyof Patient) => {
+    if (!sortConfig || sortConfig.key !== key) return null;
+    if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3" />;
+    return <ArrowDown className="ml-2 h-3 w-3" />;
+  };
+
+  const openHistoryModal = (patient: Patient) => {
+    setSelectedPatient(patient);
+  };
+
+  const closeHistoryModal = () => {
+    setSelectedPatient(null);
+  };
+
+  const handleGenerateToken = (patient: Patient) => {
+    toast({
+        title: "Token Generated",
+        description: `New token generated for ${patient.name}.`
+    });
+  }
+
+  return (
+    <div className="space-y-6">
+       <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+             <div className="space-y-1 w-full sm:w-auto">
+              <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">PATIENT SEARCH</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="search"
+                  placeholder="Name, Phone, Email..."
+                  className="pl-9 h-10 w-full sm:w-64"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-4 w-full sm:w-auto">
+              <p className="text-sm font-medium text-muted-foreground whitespace-nowrap">{filteredPatients.length} REGISTERED PATIENTS</p>
+              <Button onClick={() => setCheckInModalOpen(true)} className="h-10 w-full sm:w-auto">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                MANUAL CHECK-IN
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+            <CardTitle className="text-lg">Patients Register</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    className="text-xs p-0 hover:bg-transparent"
+                    onClick={() => handleSort('name')}
+                  >
+                    Patient Name
+                    {getSortIcon('name')}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    className="text-xs p-0 hover:bg-transparent"
+                    onClick={() => handleSort('age')}
+                  >
+                    Age
+                    {getSortIcon('age')}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                   <Button
+                    variant="ghost"
+                    className="text-xs p-0 hover:bg-transparent"
+                    onClick={() => handleSort('gender')}
+                  >
+                    Gender
+                    {getSortIcon('gender')}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                   <Button
+                    variant="ghost"
+                    className="text-xs p-0 hover:bg-transparent"
+                    onClick={() => handleSort('contactNumber')}
+                  >
+                    Mobile
+                    {getSortIcon('contactNumber')}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                   <Button
+                    variant="ghost"
+                    className="text-xs p-0 hover:bg-transparent"
+                    onClick={() => handleSort('emailAddress')}
+                  >
+                    Email
+                    {getSortIcon('emailAddress')}
+                  </Button>
+                </TableHead>
+                <TableHead className="text-center">Token</TableHead>
+                <TableHead className="text-center">History</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredPatients.map((patient) => (
+                <TableRow key={patient.id}>
+                  <TableCell className="font-medium py-2 text-xs">{patient.name}</TableCell>
+                  <TableCell className="py-2 text-xs text-center">{patient.age}</TableCell>
+                  <TableCell className="py-2 text-xs capitalize">
+                    <Badge variant="secondary" className={cn('text-[10px] border-transparent capitalize', genderBadgeColors[patient.gender])}>
+                        {patient.gender}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="py-2 text-xs">{patient.contactNumber}</TableCell>
+                  <TableCell className="py-2 text-xs">{patient.emailAddress || '-'}</TableCell>
+                  <TableCell className="py-2 text-xs text-center">
+                     <Button size="xs" onClick={() => handleGenerateToken(patient)}>GENERATE</Button>
+                  </TableCell>
+                  <TableCell className="py-2 text-xs text-center">
+                    <Button
+                      variant="default"
+                      size="xs"
+                      onClick={() => openHistoryModal(patient)}
+                      className="bg-green-600 hover:bg-green-700 text-white text-[11px] h-7 gap-1"
+                    >
+                      <History className="h-3 w-3" />
+                      Show History
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+               {filteredPatients.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-4 text-sm">
+                        No patients found.
+                    </TableCell>
+                </TableRow>
+             )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <VisitHistoryModal
+        isOpen={!!selectedPatient}
+        onClose={closeHistoryModal}
+        patient={selectedPatient}
+      />
+      <ManualCheckInModal 
+        isOpen={isCheckInModalOpen}
+        onClose={() => setCheckInModalOpen(false)}
+        clinicId={clinicId}
+        onPatientRegistered={fetchPatients}
+      />
     </div>
   );
 }
