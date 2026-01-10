@@ -27,7 +27,7 @@ import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import React, { use } from 'react';
+import React from 'react';
 
 function DoctorSidebar() {
   const pathname = usePathname();
@@ -108,7 +108,8 @@ function DoctorSidebar() {
 
 function DoctorLayoutContent({ children }: { children: React.ReactNode }) {
   const { toggleSidebar } = useSidebar();
-  const { id } = use(useParams());
+  const params = useParams();
+  const id = params.id as string;
   return (
     <>
       <DoctorSidebar />
