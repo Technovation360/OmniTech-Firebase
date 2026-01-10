@@ -42,7 +42,7 @@ function DashboardSidebar() {
       { href: `/clinic-admin/${clinicId}/stations`, icon: Building, label: 'Stations', active: pathname === `/clinic-admin/${clinicId}/stations` },
       { href: `/clinic-admin/${clinicId}/groups`, icon: Folder, label: 'Groups', active: pathname === `/clinic-admin/${clinicId}/groups` },
       { href: `/clinic-admin/${clinicId}/users`, icon: Users, label: 'Users', active: pathname === `/clinic-admin/${clinicId}/users` },
-      { href: '#', icon: Settings, label: 'Settings' },
+      { href: `/clinic-admin/${clinicId}/settings`, icon: Settings, label: 'Settings', active: pathname === `/clinic-admin/${clinicId}/settings` },
   ]
 
   return (
