@@ -73,16 +73,17 @@ function DashboardSidebar() {
   const isClinicalActive = pathname.startsWith('/admin/clinics') || pathname.startsWith('/admin/specialties') || pathname.startsWith('/admin/live-queue') || pathname.startsWith('/admin/patient-registry');
   const isAdvertisingActive = pathname.startsWith('/admin/advertisers') || pathname.startsWith('/admin/campaigns');
 
-  const [isClinicalOpen, setIsClinicalOpen] = useState(false);
-  const [isAdvertisingOpen, setIsAdvertisingOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState<'clinical' | 'advertising' | null>(null);
 
   useEffect(() => {
-    setIsClinicalOpen(isClinicalActive);
-  }, [isClinicalActive]);
-
-  useEffect(() => {
-    setIsAdvertisingOpen(isAdvertisingActive);
-  }, [isAdvertisingActive]);
+    if (isClinicalActive) {
+      setOpenMenu('clinical');
+    } else if (isAdvertisingActive) {
+      setOpenMenu('advertising');
+    } else {
+      setOpenMenu(null);
+    }
+  }, [isClinicalActive, isAdvertisingActive]);
 
 
   return (
@@ -111,7 +112,7 @@ function DashboardSidebar() {
           </SidebarMenuItem>
 
           <SidebarMenuItem>
-            <Collapsible open={isClinicalOpen} onOpenChange={setIsClinicalOpen}>
+            <Collapsible open={openMenu === 'clinical'} onOpenChange={(isOpen) => setOpenMenu(isOpen ? 'clinical' : null)}>
                 <CollapsibleTrigger asChild>
                     <SidebarMenuButton isActive={isClinicalActive} className="justify-between">
                         <div className="flex items-center gap-2">
@@ -161,7 +162,7 @@ function DashboardSidebar() {
           </SidebarMenuItem>
 
           <SidebarMenuItem>
-            <Collapsible open={isAdvertisingOpen} onOpenChange={setIsAdvertisingOpen}>
+            <Collapsible open={openMenu === 'advertising'} onOpenChange={(isOpen) => setOpenMenu(isOpen ? 'advertising' : null)}>
                 <CollapsibleTrigger asChild>
                     <SidebarMenuButton isActive={isAdvertisingActive} className="justify-between">
                         <div className="flex items-center gap-2">
