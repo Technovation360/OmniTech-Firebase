@@ -306,7 +306,7 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
                     {getSortIcon('name')}
                   </Button>
                 </TableHead>
-                <TableHead>
+                <TableHead className="px-2">
                   <Button
                     variant="ghost"
                     className="text-xs p-0 hover:bg-transparent"
@@ -316,7 +316,7 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
                     {getSortIcon('age')}
                   </Button>
                 </TableHead>
-                <TableHead>
+                <TableHead className="px-2">
                    <Button
                     variant="ghost"
                     className="text-xs p-0 hover:bg-transparent"
@@ -326,7 +326,7 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
                     {getSortIcon('gender')}
                   </Button>
                 </TableHead>
-                <TableHead>
+                <TableHead className="px-2">
                    <Button
                     variant="ghost"
                     className="text-xs p-0 hover:bg-transparent"
@@ -336,7 +336,7 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
                     {getSortIcon('contactNumber')}
                   </Button>
                 </TableHead>
-                <TableHead>
+                <TableHead className="px-2">
                    <Button
                     variant="ghost"
                     className="text-xs p-0 hover:bg-transparent"
@@ -363,14 +363,14 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
               {filteredPatients.map((patient) => (
                 <TableRow key={patient.id}>
                   <TableCell className="font-medium py-2 text-xs">{patient.name}</TableCell>
-                  <TableCell className="py-2 text-xs">{patient.age}</TableCell>
-                  <TableCell className="py-2 text-xs capitalize">
+                  <TableCell className="py-2 px-2 text-xs">{patient.age}</TableCell>
+                  <TableCell className="py-2 px-2 text-xs capitalize">
                     <Badge variant="secondary" className={cn('text-[10px] border-transparent capitalize', genderBadgeColors[patient.gender])}>
                         {patient.gender}
                     </Badge>
                   </TableCell>
-                  <TableCell className="py-2 text-xs">{patient.contactNumber}</TableCell>
-                  <TableCell className="py-2 text-xs">{patient.emailAddress}</TableCell>
+                  <TableCell className="py-2 px-2 text-xs">{patient.contactNumber}</TableCell>
+                  <TableCell className="py-2 px-2 text-xs">{patient.emailAddress}</TableCell>
                   <TableCell className="py-2 text-xs">
                      {format(new Date(patient.registeredAt), 'P, pp')}
                   </TableCell>
@@ -407,5 +407,7 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
     </>
   );
 }
+
+    
 
     
