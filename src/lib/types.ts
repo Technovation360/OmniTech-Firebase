@@ -3,6 +3,8 @@ export type Patient = {
   name: string;
   age: number;
   gender: 'male' | 'female' | 'other';
+  contactNumber: string;
+  emailAddress: string;
   tokenNumber: string;
   status: 'waiting' | 'in-consultation' | 'consultation-done' | 'no-show' | 'called';
   clinicId: string;
@@ -64,5 +66,7 @@ export type PatientHistoryEntry = {
     groupName: string;
     doctorName: string;
     issuedAt: string; // ISO 8601 date string
+    startTime?: string; // ISO 8601 date string
+    endTime?: string; // ISO 8601 date string
     status: Patient['status'];
 }

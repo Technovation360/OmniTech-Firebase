@@ -26,9 +26,9 @@ let clinicGroups: ClinicGroup[] = [
 ];
 
 let patients: Patient[] = [
-  { id: 'pat_001', name: 'Rohan Sharma', age: 34, gender: 'male', tokenNumber: 'A101', status: 'waiting', clinicId: 'grp_cardiology_01', registeredAt: new Date().toISOString() },
-  { id: 'pat_002', name: 'Priya Patel', age: 28, gender: 'female', tokenNumber: 'B205', status: 'waiting', clinicId: 'grp_ortho_01', registeredAt: new Date().toISOString() },
-  { id: 'pat_003', name: 'Amit Singh', age: 45, gender: 'male', tokenNumber: 'A102', status: 'waiting', clinicId: 'grp_cardiology_01', registeredAt: new Date().toISOString() },
+  { id: 'pat_001', name: 'Rohan Sharma', age: 34, gender: 'male', contactNumber: '+91 9876543210', emailAddress: 'rohan.sharma@example.com', tokenNumber: 'A101', status: 'waiting', clinicId: 'grp_cardiology_01', registeredAt: new Date().toISOString() },
+  { id: 'pat_002', name: 'Priya Patel', age: 28, gender: 'female', contactNumber: '+91 9876543211', emailAddress: 'priya.patel@example.com', tokenNumber: 'B205', status: 'waiting', clinicId: 'grp_ortho_01', registeredAt: new Date().toISOString() },
+  { id: 'pat_003', name: 'Amit Singh', age: 45, gender: 'male', contactNumber: '+91 9876543212', emailAddress: 'amit.singh@example.com', tokenNumber: 'A102', status: 'waiting', clinicId: 'grp_cardiology_01', registeredAt: new Date().toISOString() },
 ];
 
 let consultations: Consultation[] = [
@@ -104,12 +104,17 @@ export const getPatientHistory = async (patientId: string): Promise<PatientHisto
     const patientVisits = patients.filter(p => p.id === patientId);
     const history = patientVisits.map(visit => {
         const clinic = clinicGroups.find(cg => cg.id === visit.clinicId);
+        const consultation = consultations.find(c => c.patientId === visit.id);
+        const startTime = consultation ? new Date(new Date(consultation.date).getTime() - 10 * 60000).toISOString() : undefined; // apx 10 mins before end time
+        const endTime = consultation ? consultation.date : undefined;
         return {
             tokenNumber: visit.tokenNumber,
             clinicName: clinic?.location || 'Unknown Clinic',
             groupName: clinic?.name || 'Unknown Group',
             doctorName: clinic?.doctor.name || 'Unknown Doctor',
             issuedAt: visit.registeredAt,
+            startTime,
+            endTime,
             status: visit.status,
         };
     });

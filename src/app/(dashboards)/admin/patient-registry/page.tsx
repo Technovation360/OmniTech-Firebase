@@ -138,9 +138,9 @@ function VisitHistoryModal({
               <TableRow>
                 <TableHead className="text-xs">Token #</TableHead>
                 <TableHead className="text-xs">Clinic</TableHead>
-                <TableHead className="text-xs">Group</TableHead>
-                <TableHead className="text-xs">Doctor</TableHead>
                 <TableHead className="text-xs">Issued Date/Time</TableHead>
+                <TableHead className="text-xs">Start Time</TableHead>
+                <TableHead className="text-xs">Stop Time</TableHead>
                 <TableHead className="text-xs">Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -151,10 +151,14 @@ function VisitHistoryModal({
                     {item.tokenNumber}
                   </TableCell>
                   <TableCell className="py-2 text-xs">{item.clinicName}</TableCell>
-                  <TableCell className="py-2 text-xs">{item.groupName}</TableCell>
-                  <TableCell className="py-2 text-xs">{item.doctorName}</TableCell>
                   <TableCell className="py-2 text-xs">
                     {format(new Date(item.issuedAt), 'P, pp')}
+                  </TableCell>
+                   <TableCell className="py-2 text-xs">
+                    {item.startTime ? format(new Date(item.startTime), 'pp') : '-'}
+                  </TableCell>
+                  <TableCell className="py-2 text-xs">
+                    {item.endTime ? format(new Date(item.endTime), 'pp') : '-'}
                   </TableCell>
                   <TableCell className="py-2 text-xs">
                     <Badge
@@ -213,7 +217,9 @@ export default function PatientRegistryPage() {
         const lowercasedQuery = searchQuery.toLowerCase();
         filteredData = filteredData.filter(patient => 
             patient.name.toLowerCase().includes(lowercasedQuery) ||
-            patient.tokenNumber.toLowerCase().includes(lowercasedQuery)
+            patient.tokenNumber.toLowerCase().includes(lowercasedQuery) ||
+            patient.contactNumber.toLowerCase().includes(lowercasedQuery) ||
+            patient.emailAddress.toLowerCase().includes(lowercasedQuery)
         );
     }
     
@@ -280,7 +286,7 @@ export default function PatientRegistryPage() {
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name or token..."
+                  placeholder="Search..."
                   className="pl-9 h-9"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -327,6 +333,26 @@ export default function PatientRegistryPage() {
                    <Button
                     variant="ghost"
                     className="text-xs p-0 hover:bg-transparent"
+                    onClick={() => handleSort('contactNumber')}
+                  >
+                    Contact
+                    {getSortIcon('contactNumber')}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                   <Button
+                    variant="ghost"
+                    className="text-xs p-0 hover:bg-transparent"
+                    onClick={() => handleSort('emailAddress')}
+                  >
+                    Email
+                    {getSortIcon('emailAddress')}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                   <Button
+                    variant="ghost"
+                    className="text-xs p-0 hover:bg-transparent"
                     onClick={() => handleSort('registeredAt')}
                   >
                     Last Token Generated
@@ -346,14 +372,17 @@ export default function PatientRegistryPage() {
                         {patient.gender}
                     </Badge>
                   </TableCell>
+                  <TableCell className="py-2 text-xs">{patient.contactNumber}</TableCell>
+                  <TableCell className="py-2 text-xs">{patient.emailAddress}</TableCell>
                   <TableCell className="py-2 text-xs">
                      {format(new Date(patient.registeredAt), 'P, pp')}
                   </TableCell>
                   <TableCell className="py-2 text-xs">
                     <Button
-                      variant="outline"
+                      variant="default"
                       size="xs"
                       onClick={() => openHistoryModal(patient)}
+                      className="bg-green-600 hover:bg-green-700 text-white"
                     >
                       <History className="mr-2 h-3 w-3" />
                       Visit History
@@ -363,7 +392,7 @@ export default function PatientRegistryPage() {
               ))}
                {filteredPatients.length === 0 && (
                 <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-4 text-sm">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-4 text-sm">
                         No patients found.
                     </TableCell>
                 </TableRow>

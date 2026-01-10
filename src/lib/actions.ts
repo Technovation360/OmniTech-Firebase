@@ -11,6 +11,9 @@ const PatientSchema = z.object({
   age: z.coerce.number().min(0, 'Age must be a positive number.'),
   gender: z.enum(['male', 'female', 'other']),
   clinicId: z.string(),
+  // These are not on the form, but let's add them to the schema for future use, with defaults.
+  contactNumber: z.string().optional().default(''),
+  emailAddress: z.string().email().optional().default(''),
 });
 
 export async function registerPatient(prevState: any, formData: FormData) {
@@ -34,6 +37,8 @@ export async function registerPatient(prevState: any, formData: FormData) {
     // Revalidate paths to update caches
     revalidatePath('/doctor');
     revalidatePath('/display');
+    revalidatePath('/admin/patient-registry');
+
     
     return { success: true, tokenNumber: newPatient.tokenNumber };
 
@@ -55,6 +60,7 @@ export async function handlePatientAction(patientId: string, action: 'call' | 's
     await updatePatientStatus(patientId, status);
     revalidatePath('/doctor');
     revalidatePath('/display');
+    revalidatePath('/admin/patient-registry');
 }
 
 
@@ -96,6 +102,7 @@ export async function createConsultationSummary(prevState: any, formData: FormDa
         await updatePatientStatus(patientId, 'consultation-done');
 
         revalidatePath(`/doctor/${doctorId}`);
+        revalidatePath('/admin/patient-registry');
         return { success: true, message: "Consultation saved and summarized." };
 
     } catch(e) {
