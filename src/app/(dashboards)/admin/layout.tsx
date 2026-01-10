@@ -18,10 +18,8 @@ import {
   LayoutDashboard,
   Users,
   Monitor,
-  List,
   PanelLeft,
   LogOut,
-  Stethoscope,
   Building,
   ClipboardList,
   Megaphone,
@@ -39,16 +37,19 @@ function AdminSidebar() {
   const pathname = usePathname();
   const basePath = '/admin';
 
-  const menuItems = [
+  const platformMenuItems = [
     { href: `${basePath}`, icon: LayoutDashboard, label: 'Dashboard', active: pathname === `${basePath}` },
     { href: `${basePath}/live-queue`, icon: Monitor, label: 'Live Queue', active: pathname === `${basePath}/live-queue` },
     { href: `${basePath}/patient-registry`, icon: ClipboardList, label: 'Patient Registry', active: pathname === `${basePath}/patient-registry` },
+  ];
+
+  const adminMenuItems = [
     { href: `${basePath}/clinics`, icon: Building, label: 'Clinics', active: pathname === `${basePath}/clinics` },
     { href: `${basePath}/users`, icon: Users, label: 'Users', active: pathname === `${basePath}/users` },
     { href: `${basePath}/specialties`, icon: Sparkles, label: 'Specialties', active: pathname === `${basePath}/specialties` },
     { href: `${basePath}/advertisers`, icon: Megaphone, label: 'Advertisers', active: pathname === `${basePath}/advertisers` },
     { href: `${basePath}/campaigns`, icon: Film, label: 'Campaigns', active: pathname === `${basePath}/campaigns` },
-  ];
+  ]
 
   return (
     <Sidebar>
@@ -56,13 +57,13 @@ function AdminSidebar() {
         <Logo variant="enterprise" />
       </SidebarHeader>
       <SidebarContent>
-        <div className="flex flex-col gap-2 p-4">
+        <div className="flex flex-col gap-2 px-4 pt-4">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            NAVIGATION
+            Platform Management
           </span>
         </div>
         <SidebarMenu>
-          {menuItems.map((item) => (
+          {platformMenuItems.map((item) => (
             <SidebarMenuItem key={item.label}>
               <SidebarMenuButton asChild isActive={item.active}>
                 <Link href={item.href}>
@@ -73,6 +74,25 @@ function AdminSidebar() {
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
+        
+        <div className="flex flex-col gap-2 px-4 pt-4">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Administration
+          </span>
+        </div>
+        <SidebarMenu>
+          {adminMenuItems.map((item) => (
+            <SidebarMenuItem key={item.label}>
+              <SidebarMenuButton asChild isActive={item.active}>
+                <Link href={item.href}>
+                  <item.icon />
+                  {item.label}
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+
       </SidebarContent>
       <SidebarFooter>
           <div className="flex items-center gap-3 p-4 border-t border-sidebar-border">
