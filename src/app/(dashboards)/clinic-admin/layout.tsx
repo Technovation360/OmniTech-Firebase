@@ -38,7 +38,7 @@ function DashboardSidebar() {
   const menuItems = [
       { href: `/clinic-admin/${clinicId}`, icon: LayoutDashboard, label: 'Dashboard', active: pathname === `/clinic-admin/${clinicId}` },
       { href: `/clinic-admin/${clinicId}/live-queue`, icon: Monitor, label: 'Live Queue', active: pathname === `/clinic-admin/${clinicId}/live-queue` },
-      { href: '#', icon: Ticket, label: 'Patients Register' },
+      { href: `/clinic-admin/${clinicId}/register`, icon: Ticket, label: 'Patients Register', active: pathname === `/clinic-admin/${clinicId}/register` },
       { href: '#', icon: Building, label: 'Stations' },
       { href: '#', icon: Folder, label: 'Groups' },
       { href: '#', icon: Users, label: 'Users' },
