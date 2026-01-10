@@ -268,6 +268,12 @@ export default function UsersPage() {
                 </Button>
               </TableHead>
               <TableHead>
+                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('email')}>
+                    Email
+                    {getSortIcon('email')}
+                </Button>
+              </TableHead>
+              <TableHead>
                 <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('affiliation')}>
                     Affiliation
                     {getSortIcon('affiliation')}
@@ -285,10 +291,8 @@ export default function UsersPage() {
           <TableBody>
             {users.map((user) => (
               <TableRow key={user.id}>
-                <TableCell className="py-2 text-xs">
-                  <div className="font-medium">{user.name}</div>
-                  <div className="text-muted-foreground">{user.email}</div>
-                </TableCell>
+                <TableCell className="py-2 text-xs font-medium">{user.name}</TableCell>
+                <TableCell className="py-2 text-xs text-muted-foreground">{user.email}</TableCell>
                 <TableCell className="py-2 text-xs">{user.affiliation}</TableCell>
                 <TableCell className="py-2 text-xs">
                   <Badge variant="secondary" className={cn("text-[10px] border-transparent", roleColorMap[user.role as UserRole])}>{roleLabels[user.role as UserRole] || 'Unknown'}</Badge>
