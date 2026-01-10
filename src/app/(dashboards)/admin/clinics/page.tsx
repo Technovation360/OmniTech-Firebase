@@ -224,14 +224,33 @@ export default function ClinicsPage() {
         clinic.contact.toLowerCase().includes(lowercasedQuery)
     );
     setFilteredClinics(filteredData);
-    // Reset sort when searching
+    
     if (searchQuery) {
         setSortConfig(null);
-    } else {
-        handleSort('name'); // Or your default sort
+    } else if (sortConfig) {
+        // Re-apply sorting when search is cleared
+        const sorted = [...filteredData].sort((a, b) => {
+            const aVal = a[sortConfig.key];
+            const bVal = b[sortConfig.key];
+
+            if (Array.isArray(aVal) && Array.isArray(bVal)) {
+                const aFirst = aVal[0] || '';
+                const bFirst = bVal[0] || '';
+                if (aFirst < bFirst) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (aFirst > bFirst) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            }
+
+            const valA = typeof aVal === 'string' ? aVal.toLowerCase() : aVal;
+            const valB = typeof bVal === 'string' ? bVal.toLowerCase() : bVal;
+
+            if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+        setFilteredClinics(sorted);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, allClinics]);
+  }, [searchQuery, allClinics, sortConfig]);
   
   const openEditModal = (clinic: ClinicGroup) => {
     setClinicToEdit(clinic);
