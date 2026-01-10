@@ -1,3 +1,4 @@
+
 'use client';
 
 import { use, useState, useEffect } from 'react';
@@ -270,7 +271,7 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
   return (
     <>
       <Card>
-        <CardHeader>
+        <CardHeader className="p-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <CardTitle className="text-lg">My Patients</CardTitle>
@@ -406,3 +407,5 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
     </>
   );
 }
+
+    
