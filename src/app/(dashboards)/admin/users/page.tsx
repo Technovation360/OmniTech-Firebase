@@ -118,63 +118,63 @@ function UserForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl p-0">
-        <DialogHeader className="p-4 border-b">
-          <DialogTitle className="text-sm font-semibold tracking-wider uppercase">
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader className="p-4 pb-2">
+          <DialogTitle className="text-base font-bold tracking-normal">
             {isEditMode ? 'EDIT USER' : 'REGISTER USER'}
           </DialogTitle>
         </DialogHeader>
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
             <div className="space-y-1">
-              <Label htmlFor="role" className="text-xs font-semibold text-gray-600">ROLE</Label>
+              <Label htmlFor="role" className="text-[10px] font-semibold text-gray-600">ROLE</Label>
                <Select defaultValue={user?.role}>
-                <SelectTrigger className="h-9 text-sm">
+                <SelectTrigger className="h-7 text-[11px]">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(roleLabels).map(([role, label]) => (
-                    <SelectItem key={role} value={role} className="text-sm">{label}</SelectItem>
+                    <SelectItem key={role} value={role} className="text-[11px]">{label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1">
-              <Label htmlFor="userName" className="text-xs font-semibold text-gray-600">FULL NAME</Label>
-              <Input id="userName" className="h-9 text-sm" defaultValue={user?.name} />
+              <Label htmlFor="userName" className="text-[10px] font-semibold text-gray-600">FULL NAME</Label>
+              <Input id="userName" className="h-7 text-[11px]" defaultValue={user?.name} />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="email" className="text-xs font-semibold text-gray-600">EMAIL</Label>
-              <Input id="email" type="email" className="h-9 text-sm" defaultValue={user?.email} />
+              <Label htmlFor="email" className="text-[10px] font-semibold text-gray-600">EMAIL</Label>
+              <Input id="email" type="email" className="h-7 text-[11px]" defaultValue={user?.email} />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="phone" className="text-xs font-semibold text-gray-600">PHONE</Label>
-              <Input id="phone" type="tel" className="h-9 text-sm" />
+              <Label htmlFor="phone" className="text-[10px] font-semibold text-gray-600">PHONE</Label>
+              <Input id="phone" type="tel" className="h-7 text-[11px]" />
             </div>
             <div className="space-y-1 md:col-span-2">
-              <Label htmlFor="password" className="text-xs font-semibold text-gray-600">PASSWORD</Label>
-              <Input id="password" type="password" className="h-9 text-sm" />
+              <Label htmlFor="password" className="text-[10px] font-semibold text-gray-600">PASSWORD</Label>
+              <Input id="password" type="password" className="h-7 text-[11px]" />
             </div>
             <div className="space-y-1 md:col-span-2">
-              <Label htmlFor="affiliation" className="text-xs font-semibold text-gray-600">AFFILIATED CLINIC</Label>
+              <Label htmlFor="affiliation" className="text-[10px] font-semibold text-gray-600">AFFILIATED CLINIC</Label>
               <Select>
-                <SelectTrigger className="h-9 text-sm">
+                <SelectTrigger className="h-7 text-[11px]">
                     <SelectValue placeholder="Select Clinic..."/>
                 </SelectTrigger>
                 <SelectContent>
                     {clinics.map(clinic => (
-                         <SelectItem key={clinic.id} value={clinic.id} className="text-sm">{clinic.name}</SelectItem>
+                         <SelectItem key={clinic.id} value={clinic.id} className="text-[11px]">{clinic.name}</SelectItem>
                     ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
         </div>
-        <DialogFooter className="bg-gray-50 px-6 py-4 flex justify-end gap-3 rounded-b-lg">
-          <Button variant="outline" onClick={onClose} className="font-semibold">
+        <DialogFooter className="bg-gray-50 px-4 py-2 flex justify-end gap-2 rounded-b-lg">
+          <Button variant="destructive" onClick={onClose} size="xs">
             CANCEL
           </Button>
-          <Button onClick={onClose} className="font-semibold">CONFIRM</Button>
+          <Button onClick={onClose} size="xs">CONFIRM</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -355,5 +355,7 @@ export default function UsersPage() {
     </>
   )
 }
+
+    
 
     
