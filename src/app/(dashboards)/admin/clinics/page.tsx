@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import {
@@ -148,6 +149,8 @@ export default function ClinicsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [clinicToEdit, setClinicToEdit] = useState<ClinicGroup | null>(null);
   const [clinicToDelete, setClinicToDelete] = useState<ClinicGroup | null>(null);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
 
   useEffect(() => {
     getClinicGroups().then(setClinics);
@@ -184,6 +187,19 @@ export default function ClinicsPage() {
     }
   }
 
+  const handleSort = () => {
+    const newSortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+    setSortOrder(newSortOrder);
+    
+    const sortedClinics = [...clinics].sort((a, b) => {
+      if (a.name < b.name) return newSortOrder === 'asc' ? -1 : 1;
+      if (a.name > b.name) return newSortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    setClinics(sortedClinics);
+  }
+
   return (
     <>
       <Card>
@@ -199,7 +215,7 @@ export default function ClinicsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>
-                   <Button variant="ghost" className="text-xs text-foreground p-0 hover:bg-transparent">
+                   <Button variant="ghost" className="text-xs text-foreground p-0 hover:bg-transparent" onClick={handleSort}>
                         Clinic Name
                         <ArrowUpDown className="ml-2 h-3 w-3" />
                     </Button>
