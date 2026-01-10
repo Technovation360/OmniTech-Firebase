@@ -1,4 +1,4 @@
-import type { ClinicGroup, Patient, Advertisement, Consultation } from './types';
+import type { ClinicGroup, Patient, Advertisement, Consultation, PatientHistoryEntry } from './types';
 
 let clinicGroups: ClinicGroup[] = [
   {
@@ -60,6 +60,10 @@ export const getClinicGroupById = async (id: string): Promise<ClinicGroup | unde
 };
 
 // Patients
+export const getAllPatients = async (): Promise<Patient[]> => {
+    return Promise.resolve(patients);
+}
+
 export const getPatientByToken = async (token: string): Promise<Patient | undefined> => {
   return Promise.resolve(patients.find(p => p.tokenNumber === token));
 };
@@ -94,6 +98,22 @@ export const updatePatientStatus = async (patientId: string, status: Patient['st
 
     patients[patientIndex].status = status;
     return Promise.resolve(patients[patientIndex]);
+}
+
+export const getPatientHistory = async (patientId: string): Promise<PatientHistoryEntry[]> => {
+    const patientVisits = patients.filter(p => p.id === patientId);
+    const history = patientVisits.map(visit => {
+        const clinic = clinicGroups.find(cg => cg.id === visit.clinicId);
+        return {
+            tokenNumber: visit.tokenNumber,
+            clinicName: clinic?.location || 'Unknown Clinic',
+            groupName: clinic?.name || 'Unknown Group',
+            doctorName: clinic?.doctor.name || 'Unknown Doctor',
+            issuedAt: visit.registeredAt,
+            status: visit.status,
+        };
+    });
+    return Promise.resolve(history.sort((a,b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime()));
 }
 
 

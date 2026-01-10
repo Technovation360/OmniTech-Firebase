@@ -57,3 +57,12 @@ export type Consultation = {
   notes: string;
   summary: string;
 };
+
+export type PatientHistoryEntry = {
+    tokenNumber: string;
+    clinicName: string;
+    groupName: string;
+    doctorName: string;
+    issuedAt: string; // ISO 8601 date string
+    status: Patient['status'];
+}
