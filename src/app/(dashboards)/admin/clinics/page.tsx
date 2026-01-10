@@ -74,46 +74,46 @@ function OnboardClinicForm({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
             <div className="space-y-1">
               <Label htmlFor="clinicName" className="text-[10px] font-semibold text-gray-600">CLINIC NAME</Label>
-              <Input id="clinicName" className="h-7 text-xs" defaultValue={clinic?.name} />
+              <Input id="clinicName" className="h-7 text-[11px]" defaultValue={clinic?.name} />
             </div>
              <div className="space-y-1">
                 <Label htmlFor="specialties" className="text-[10px] font-semibold text-gray-600">SPECIALTIES</Label>
                 <Select>
-                    <SelectTrigger className="h-7 text-xs">
+                    <SelectTrigger className="h-7 text-[11px]">
                         <SelectValue placeholder="Select..." />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="cardiology" className="text-xs">Cardiology</SelectItem>
-                        <SelectItem value="orthopedics" className="text-xs">Orthopedics</SelectItem>
-                        <SelectItem value="pediatrics" className="text-xs">Pediatrics</SelectItem>
-                        <SelectItem value="general-medicine" className="text-xs">General Medicine</SelectItem>
+                        <SelectItem value="cardiology" className="text-[11px]">Cardiology</SelectItem>
+                        <SelectItem value="orthopedics" className="text-[11px]">Orthopedics</SelectItem>
+                        <SelectItem value="pediatrics" className="text-[11px]">Pediatrics</SelectItem>
+                        <SelectItem value="general-medicine" className="text-[11px]">General Medicine</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
             <div className="space-y-1">
               <Label htmlFor="email" className="text-[10px] font-semibold text-gray-600">EMAIL</Label>
-              <Input id="email" type="email" className="h-7 text-xs" defaultValue={clinic?.contact} />
+              <Input id="email" type="email" className="h-7 text-[11px]" defaultValue={clinic?.contact} />
             </div>
             <div className="space-y-1">
               <Label htmlFor="phone" className="text-[10px] font-semibold text-gray-600">PHONE</Label>
-              <Input id="phone" type="tel" className="h-7 text-xs" />
+              <Input id="phone" type="tel" className="h-7 text-[11px]" />
             </div>
             <div className="space-y-1 col-span-1 md:col-span-2">
               <Label htmlFor="address" className="text-[10px] font-semibold text-gray-600">ADDRESS</Label>
-              <Textarea id="address" rows={2} className="text-xs" defaultValue={clinic?.location} />
+              <Textarea id="address" rows={2} className="text-[11px]" defaultValue={clinic?.location} />
             </div>
             <div className="grid grid-cols-3 gap-x-4 col-span-1 md:col-span-2">
                 <div className="space-y-1">
                     <Label htmlFor="city" className="text-[10px] font-semibold text-gray-600">CITY</Label>
-                    <Input id="city" className="h-7 text-xs" />
+                    <Input id="city" className="h-7 text-[11px]" />
                 </div>
                 <div className="space-y-1">
                     <Label htmlFor="state" className="text-[10px] font-semibold text-gray-600">STATE</Label>
-                    <Input id="state" className="h-7 text-xs" />
+                    <Input id="state" className="h-7 text-[11px]" />
                 </div>
                 <div className="space-y-1">
                     <Label htmlFor="pin" className="text-[10px] font-semibold text-gray-600">PIN</Label>
-                    <Input id="pin" className="h-7 text-xs" />
+                    <Input id="pin" className="h-7 text-[11px]" />
                 </div>
             </div>
           </div>
