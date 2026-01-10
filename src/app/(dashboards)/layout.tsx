@@ -47,8 +47,8 @@ function DashboardHeader() {
   
   return (
     <header className="p-2 bg-primary text-primary-foreground flex items-center justify-between border-b border-primary-foreground/20">
-      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/20 hover:text-white">
-          <PanelLeft onClick={toggleSidebar} />
+      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/20 hover:text-white" onClick={toggleSidebar}>
+          <PanelLeft />
       </Button>
       
       <div className="flex items-center gap-3">
