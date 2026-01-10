@@ -53,12 +53,43 @@ function OnboardClinicForm({
   isOpen,
   onClose,
   clinic,
+  onConfirm,
 }: {
   isOpen: boolean;
   onClose: () => void;
   clinic: ClinicGroup | null;
+  onConfirm: (formData: Omit<ClinicGroup, 'id' | 'doctor' | 'assistants' | 'cabin' | 'screen'>) => void;
 }) {
   const isEditMode = !!clinic;
+  const [formData, setFormData] = useState({
+    name: '',
+    specialties: [] as string[],
+    contact: '',
+    location: ''
+  });
+
+  useEffect(() => {
+    if (clinic) {
+      setFormData({
+        name: clinic.name,
+        specialties: clinic.specialties,
+        contact: clinic.contact,
+        location: clinic.location,
+      });
+    } else {
+        setFormData({ name: '', specialties: [], contact: '', location: '' });
+    }
+  }, [clinic]);
+
+  const handleInputChange = (field: string, value: string | string[]) => {
+      setFormData(prev => ({ ...prev, [field]: value}));
+  }
+
+  const handleConfirm = () => {
+    // A more complete version would have validation here
+    onConfirm(formData);
+    onClose();
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -72,25 +103,27 @@ function OnboardClinicForm({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
             <div className="space-y-1">
               <Label htmlFor="clinicName" className="text-[10px] font-semibold text-gray-600">CLINIC NAME</Label>
-              <Input id="clinicName" className="h-7 text-[11px]" defaultValue={clinic?.name || ''} />
+              <Input id="clinicName" className="h-7 text-[11px]" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} />
             </div>
              <div className="space-y-1">
                 <Label htmlFor="specialties" className="text-[10px] font-semibold text-gray-600">SPECIALTIES</Label>
-                <Select>
+                <Select value={formData.specialties[0]} onValueChange={(val) => handleInputChange('specialties', [val])}>
                     <SelectTrigger className="h-7 text-[11px]">
                         <SelectValue placeholder="Select..." />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="cardiology" className="text-[11px]">Cardiology</SelectItem>
-                        <SelectItem value="orthopedics" className="text-[11px]">Orthopedics</SelectItem>
-                        <SelectItem value="pediatrics" className="text-[11px]">Pediatrics</SelectItem>
-                        <SelectItem value="general-medicine" className="text-[11px]">General Medicine</SelectItem>
+                        <SelectItem value="Cardiology" className="text-[11px]">Cardiology</SelectItem>
+                        <SelectItem value="Orthopedics" className="text-[11px]">Orthopedics</SelectItem>
+                        <SelectItem value="Pediatrics" className="text-[11px]">Pediatrics</SelectItem>
+                        <SelectItem value="General Medicine" className="text-[11px]">General Medicine</SelectItem>
+                        <SelectItem value="Dermatology" className="text-[11px]">Dermatology</SelectItem>
+                        <SelectItem value="Neurology" className="text-[11px]">Neurology</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
             <div className="space-y-1">
               <Label htmlFor="email" className="text-[10px] font-semibold text-gray-600">EMAIL</Label>
-              <Input id="email" type="email" className="h-7 text-[11px]" defaultValue={clinic?.contact || ''} />
+              <Input id="email" type="email" className="h-7 text-[11px]" value={formData.contact} onChange={(e) => handleInputChange('contact', e.target.value)} />
             </div>
             <div className="space-y-1">
               <Label htmlFor="phone" className="text-[10px] font-semibold text-gray-600">PHONE</Label>
@@ -98,7 +131,7 @@ function OnboardClinicForm({
             </div>
             <div className="space-y-1 col-span-1 md:col-span-2">
               <Label htmlFor="address" className="text-[10px] font-semibold text-gray-600">ADDRESS</Label>
-              <Textarea id="address" rows={2} className="text-[11px]" defaultValue={clinic?.location || ''} />
+              <Textarea id="address" rows={2} className="text-[11px]" value={formData.location} onChange={(e) => handleInputChange('location', e.target.value)} />
             </div>
             <div className="grid grid-cols-3 gap-x-4 col-span-1 md:col-span-2">
                 <div className="space-y-1">
@@ -120,7 +153,7 @@ function OnboardClinicForm({
           <Button variant="destructive" onClick={onClose} size="xs">
             CANCEL
           </Button>
-          <Button size="xs" onClick={onClose}>CONFIRM</Button>
+          <Button size="xs" onClick={handleConfirm}>CONFIRM</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -204,11 +237,29 @@ export default function ClinicsPage() {
 
   const handleDeleteConfirm = () => {
     if (clinicToDelete) {
-      // In a real app, call an API to delete. Here we filter the state.
       setClinics(clinics.filter(c => c.id !== clinicToDelete.id));
       closeDeleteDialog();
     }
   }
+
+  const handleFormConfirm = (formData: Omit<ClinicGroup, 'id' | 'doctor' | 'assistants' | 'cabin' | 'screen'>) => {
+    if (clinicToEdit) {
+      // Update existing clinic
+      setClinics(clinics.map(c => c.id === clinicToEdit.id ? { ...clinicToEdit, ...formData } : c));
+    } else {
+      // Add new clinic
+      const newClinic: ClinicGroup = {
+        ...formData,
+        id: `grp_${Date.now()}`,
+        doctor: { id: 'doc_new', name: 'New Doctor' }, // Dummy data
+        assistants: [],
+        cabin: { id: 'cab_new', name: 'New Cabin'},
+        screen: { id: 'scr_main_hall', name: 'Main Hall Display'},
+      };
+      setClinics([newClinic, ...clinics]);
+    }
+    closeModal();
+  };
 
   const handleSort = (key: keyof ClinicGroup) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -222,7 +273,6 @@ export default function ClinicsPage() {
       const bVal = b[key];
 
       if (Array.isArray(aVal) && Array.isArray(bVal)) {
-        // Sort by the first specialty for simplicity
          const aFirst = aVal[0] || '';
          const bFirst = bVal[0] || '';
          if (aFirst < bFirst) return direction === 'asc' ? -1 : 1;
@@ -230,8 +280,12 @@ export default function ClinicsPage() {
          return 0;
       }
 
-      if (aVal < bVal) return direction === 'asc' ? -1 : 1;
-      if (aVal > bVal) return direction === 'asc' ? 1 : -1;
+      // Handle string or number sorting
+      const valA = typeof aVal === 'string' ? aVal.toLowerCase() : aVal;
+      const valB = typeof bVal === 'string' ? bVal.toLowerCase() : bVal;
+
+      if (valA < valB) return direction === 'asc' ? -1 : 1;
+      if (valA > valB) return direction === 'asc' ? 1 : -1;
       return 0;
     });
     setClinics(sortedClinics);
@@ -315,6 +369,7 @@ export default function ClinicsPage() {
         isOpen={isModalOpen}
         onClose={closeModal}
         clinic={clinicToEdit}
+        onConfirm={handleFormConfirm}
       />
       <DeleteClinicDialog 
         isOpen={!!clinicToDelete}

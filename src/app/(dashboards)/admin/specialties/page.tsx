@@ -60,12 +60,37 @@ function SpecialtyForm({
   isOpen,
   onClose,
   specialty,
+  onConfirm,
 }: {
   isOpen: boolean;
   onClose: () => void;
   specialty: Specialty | null;
+  onConfirm: (formData: Omit<Specialty, 'id'>) => void;
 }) {
   const isEditMode = !!specialty;
+  const [formData, setFormData] = useState({
+      name: '',
+      forClinic: true,
+      forDoctor: true,
+  });
+
+  useEffect(() => {
+      if (specialty) {
+          setFormData({
+              name: specialty.name,
+              forClinic: specialty.forClinic,
+              forDoctor: specialty.forDoctor,
+          });
+      } else {
+          setFormData({ name: '', forClinic: true, forDoctor: true });
+      }
+  }, [specialty]);
+
+  const handleConfirm = () => {
+    if (formData.name) {
+        onConfirm(formData);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -78,22 +103,22 @@ function SpecialtyForm({
         <div className="p-4 pb-4">
             <div className="space-y-1">
                 <Label htmlFor="specialtyName" className="text-[10px] font-semibold text-gray-600">SPECIALTY NAME</Label>
-                <Input id="specialtyName" className="h-7 text-[11px]" defaultValue={specialty?.name || ''} />
+                <Input id="specialtyName" className="h-7 text-[11px]" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
             </div>
             <div className="mt-4 flex gap-4">
                 <div className="flex items-center gap-2">
-                    <Checkbox id="forClinic" defaultChecked={specialty?.forClinic ?? true} />
+                    <Checkbox id="forClinic" checked={formData.forClinic} onCheckedChange={(checked) => setFormData({...formData, forClinic: !!checked})} />
                     <Label htmlFor="forClinic" className="text-xs font-normal">For Clinic</Label>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Checkbox id="forDoctor" defaultChecked={specialty?.forDoctor ?? true} />
+                    <Checkbox id="forDoctor" checked={formData.forDoctor} onCheckedChange={(checked) => setFormData({...formData, forDoctor: !!checked})} />
                     <Label htmlFor="forDoctor" className="text-xs font-normal">For Doctors</Label>
                 </div>
             </div>
         </div>
         <DialogFooter className="bg-gray-50 px-4 py-2 flex justify-end gap-2 rounded-b-lg">
             <Button variant="destructive" onClick={onClose} size="xs">CANCEL</Button>
-            <Button onClick={onClose} size="xs">CONFIRM</Button>
+            <Button onClick={handleConfirm} size="xs">CONFIRM</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -139,6 +164,7 @@ export default function SpecialtiesPage() {
   useEffect(() => {
     // Initial sort
     handleSort('name');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const openEditModal = (specialty: Specialty) => {
@@ -171,6 +197,19 @@ export default function SpecialtiesPage() {
     }
   }
 
+  const handleFormConfirm = (formData: Omit<Specialty, 'id'>) => {
+    if (specialtyToEdit) {
+        setSpecialties(specialties.map(s => s.id === specialtyToEdit.id ? { ...specialtyToEdit, ...formData } : s));
+    } else {
+        const newSpecialty: Specialty = {
+            ...formData,
+            id: `spec_${Date.now()}`
+        };
+        setSpecialties([newSpecialty, ...specialties]);
+    }
+    closeModal();
+  };
+
   const handleSort = (key: keyof Specialty) => {
     let direction: 'asc' | 'desc' = 'asc';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -179,8 +218,10 @@ export default function SpecialtiesPage() {
     setSortConfig({ key, direction });
 
     const sortedSpecialties = [...specialties].sort((a, b) => {
-      if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
-      if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
+      const aVal = a[key];
+      const bVal = b[key];
+      if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return direction === 'asc' ? 1 : -1;
       return 0;
     });
     setSpecialties(sortedSpecialties);
@@ -246,6 +287,7 @@ export default function SpecialtiesPage() {
         isOpen={isModalOpen}
         onClose={closeModal}
         specialty={specialtyToEdit}
+        onConfirm={handleFormConfirm}
       />
        <DeleteSpecialtyDialog 
         isOpen={!!specialtyToDelete}

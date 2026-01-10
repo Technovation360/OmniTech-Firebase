@@ -57,13 +57,15 @@ type User = {
     email: string;
     role: UserRole;
     affiliation: string;
+    phone?: string;
+    specialty?: string;
 };
 
 const mockUsers: User[] = [
     { id: 'user_1', name: 'Admin', email: 'admin@omni.com', role: 'central-admin', affiliation: 'Omni Platform'},
     { id: 'user_2', name: 'Clinic Admin', email: 'clinic-admin@omni.com', role: 'clinic-admin', affiliation: 'Omni Platform'},
-    { id: 'user_3', name: 'Dr. Ashish', email: 'doc_ashish@omni.com', role: 'doctor', affiliation: 'Cardiology Dept.'},
-    { id: 'user_4', name: 'Dr. Vijay', email: 'doc_vijay@omni.com', role: 'doctor', affiliation: 'Orthopedics Dept.' },
+    { id: 'user_3', name: 'Dr. Ashish', email: 'doc_ashish@omni.com', role: 'doctor', affiliation: 'Cardiology Dept.', specialty: 'Cardiology' },
+    { id: 'user_4', name: 'Dr. Vijay', email: 'doc_vijay@omni.com', role: 'doctor', affiliation: 'Orthopedics Dept.', specialty: 'Orthopedics' },
     { id: 'user_5', name: 'Sunita', email: 'asst_sunita@omni.com', role: 'assistant', affiliation: 'Cardiology Dept.' },
     { id: 'user_6', name: 'Rajesh', email: 'asst_rajesh@omni.com', role: 'assistant', affiliation: 'Orthopedics Dept.' },
     { id: 'user_7', name: 'Display User', email: 'display@omni.com', role: 'display', affiliation: 'Main Hall Display' },
@@ -102,21 +104,52 @@ function UserForm({
   isOpen,
   onClose,
   user,
+  onConfirm,
 }: {
   isOpen: boolean;
   onClose: () => void;
   user: User | null;
+  onConfirm: (formData: Omit<User, 'id'>) => void;
 }) {
   const isEditMode = !!user;
   const [clinics, setClinics] = useState<ClinicGroup[]>([]);
-  const [selectedRole, setSelectedRole] = useState<UserRole | string | undefined>(user?.role);
+  const [formData, setFormData] = useState<Omit<User, 'id'>>({
+      name: '',
+      email: '',
+      role: 'assistant',
+      affiliation: '',
+      phone: '',
+      specialty: '',
+  });
 
   useEffect(() => {
     if (isOpen) {
       getClinicGroups().then(setClinics);
-      setSelectedRole(user?.role);
+      if(user) {
+        setFormData({
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            affiliation: user.affiliation,
+            phone: user.phone || '',
+            specialty: user.specialty || '',
+        });
+      } else {
+        setFormData({
+            name: '', email: '', role: 'assistant', affiliation: '', phone: '', specialty: ''
+        })
+      }
     }
   }, [isOpen, user]);
+
+  const handleInputChange = (field: keyof typeof formData, value: string) => {
+      setFormData(prev => ({...prev, [field]: value}));
+  }
+
+  const handleConfirm = () => {
+      onConfirm(formData);
+      onClose();
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -130,7 +163,7 @@ function UserForm({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
             <div className="space-y-1">
               <Label htmlFor="role" className="text-[10px] font-semibold text-gray-600">ROLE</Label>
-               <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as UserRole)}>
+               <Select value={formData.role} onValueChange={(value) => handleInputChange('role', value as UserRole)}>
                 <SelectTrigger className="h-7 text-[11px]">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
@@ -143,48 +176,50 @@ function UserForm({
             </div>
              <div className="space-y-1">
               <Label htmlFor="affiliation" className="text-[10px] font-semibold text-gray-600">AFFILIATED CLINIC</Label>
-              <Select>
+              <Select value={formData.affiliation} onValueChange={(value) => handleInputChange('affiliation', value)}>
                 <SelectTrigger className="h-7 text-[11px]">
                     <SelectValue placeholder="Select Clinic..."/>
                 </SelectTrigger>
                 <SelectContent>
                     {clinics.map(clinic => (
-                         <SelectItem key={clinic.id} value={clinic.id} className="text-[11px]">{clinic.name}</SelectItem>
+                         <SelectItem key={clinic.id} value={clinic.name} className="text-[11px]">{clinic.name}</SelectItem>
                     ))}
+                     <SelectItem value="Omni Platform" className="text-[11px]">Omni Platform</SelectItem>
+                     <SelectItem value="HealthPlus Insurance" className="text-[11px]">HealthPlus Insurance</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            {selectedRole === 'doctor' && (
+            <div className="space-y-1">
+              <Label htmlFor="userName" className="text-[10px] font-semibold text-gray-600">FULL NAME</Label>
+              <Input id="userName" className="h-7 text-[11px]" value={formData.name} onChange={e => handleInputChange('name', e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="email" className="text-[10px] font-semibold text-gray-600">EMAIL</Label>
+              <Input id="email" type="email" className="h-7 text-[11px]" value={formData.email} onChange={e => handleInputChange('email', e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="phone" className="text-[10px] font-semibold text-gray-600">PHONE</Label>
+              <Input id="phone" type="tel" className="h-7 text-[11px]" value={formData.phone} onChange={e => handleInputChange('phone', e.target.value)} />
+            </div>
+            {formData.role === 'doctor' && (
                <div className="space-y-1">
                 <Label htmlFor="specialties" className="text-[10px] font-semibold text-gray-600">SPECIALTY</Label>
-                <Select>
+                <Select value={formData.specialty} onValueChange={(value) => handleInputChange('specialty', value)}>
                     <SelectTrigger className="h-7 text-[11px]">
                         <SelectValue placeholder="Select..."/>
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="cardiology" className="text-[11px]">Cardiology</SelectItem>
-                        <SelectItem value="orthopedics" className="text-[11px]">Orthopedics</SelectItem>
-                        <SelectItem value="pediatrics" className="text-[11px]">Pediatrics</SelectItem>
-                        <SelectItem value="general-medicine" className="text-[11px]">General Medicine</SelectItem>
+                        <SelectItem value="Cardiology" className="text-[11px]">Cardiology</SelectItem>
+                        <SelectItem value="Orthopedics" className="text-[11px]">Orthopedics</SelectItem>
+                        <SelectItem value="Pediatrics" className="text-[11px]">Pediatrics</SelectItem>
+                        <SelectItem value="General Medicine" className="text-[11px]">General Medicine</SelectItem>
                     </SelectContent>
                 </Select>
               </div>
             )}
             <div className="space-y-1">
-              <Label htmlFor="userName" className="text-[10px] font-semibold text-gray-600">FULL NAME</Label>
-              <Input id="userName" className="h-7 text-[11px]" defaultValue={user?.name || ''} />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="email" className="text-[10px] font-semibold text-gray-600">EMAIL</Label>
-              <Input id="email" type="email" className="h-7 text-[11px]" defaultValue={user?.email || ''} />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="phone" className="text-[10px] font-semibold text-gray-600">PHONE</Label>
-              <Input id="phone" type="tel" className="h-7 text-[11px]" defaultValue={''} />
-            </div>
-            <div className="space-y-1">
               <Label htmlFor="password" className="text-[10px] font-semibold text-gray-600">PASSWORD</Label>
-              <Input id="password" type="password" className="h-7 text-[11px]" defaultValue={''}/>
+              <Input id="password" type="password" className="h-7 text-[11px]" placeholder="Set new password"/>
             </div>
           </div>
         </div>
@@ -192,7 +227,7 @@ function UserForm({
           <Button variant="destructive" onClick={onClose} size="xs">
             CANCEL
           </Button>
-          <Button onClick={onClose} size="xs">CONFIRM</Button>
+          <Button onClick={handleConfirm} size="xs">CONFIRM</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -270,6 +305,19 @@ export default function UsersPage() {
       closeDeleteDialog();
     }
   }
+
+  const handleFormConfirm = (formData: Omit<User, 'id'>) => {
+    if (userToEdit) {
+      setUsers(users.map(u => u.id === userToEdit.id ? { ...userToEdit, ...formData } : u));
+    } else {
+      const newUser: User = {
+        ...formData,
+        id: `user_${Date.now()}`
+      };
+      setUsers([newUser, ...users]);
+    }
+    closeModal();
+  };
   
   const handleSort = (key: keyof User) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -279,8 +327,10 @@ export default function UsersPage() {
     setSortConfig({ key, direction });
 
     const sortedUsers = [...users].sort((a, b) => {
-      if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
-      if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
+      const aVal = a[key] || '';
+      const bVal = b[key] || '';
+      if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return direction === 'asc' ? 1 : -1;
       return 0;
     });
     setUsers(sortedUsers);
@@ -363,6 +413,7 @@ export default function UsersPage() {
         isOpen={isModalOpen}
         onClose={closeModal}
         user={userToEdit}
+        onConfirm={handleFormConfirm}
     />
     <DeleteUserDialog 
         isOpen={!!userToDelete}
