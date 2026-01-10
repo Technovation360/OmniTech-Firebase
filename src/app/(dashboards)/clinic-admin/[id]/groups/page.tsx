@@ -109,8 +109,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
             <TableBody>
               {groups.map((group) => (
                 <Collapsible key={group.id} asChild open={openGroupId === group.id} onOpenChange={() => toggleGroup(group.id)}>
-                  <>
-                    <TableRow className="hover:bg-transparent">
+                    <TableRow className="hover:bg-transparent [&[data-state=open]]:bg-muted/50">
                       <TableCell className="font-medium py-3">
                          <CollapsibleTrigger asChild>
                             <div className="flex items-center gap-3 cursor-pointer">
@@ -145,31 +144,6 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                         </div>
                       </TableCell>
                     </TableRow>
-                    <CollapsibleContent asChild>
-                       <tr className="bg-muted/50">
-                        <TableCell colSpan={4} className="p-0">
-                           <div className="grid grid-cols-4 gap-4 p-4 text-xs">
-                                <div>
-                                    <h4 className="font-semibold uppercase text-muted-foreground mb-2">Doctors</h4>
-                                    {group.resources.doctors.map((d: string) => <p key={d}>{d}</p>)}
-                                </div>
-                                <div>
-                                    <h4 className="font-semibold uppercase text-muted-foreground mb-2">Assistants</h4>
-                                    {group.resources.assistants.map((a: string) => <p key={a}>{a}</p>)}
-                                </div>
-                                 <div>
-                                    <h4 className="font-semibold uppercase text-muted-foreground mb-2">Screens</h4>
-                                     {group.resources.screensList.map((s: string) => <p key={s}>{s}</p>)}
-                                </div>
-                                 <div>
-                                    <h4 className="font-semibold uppercase text-muted-foreground mb-2">Cabins</h4>
-                                    {group.resources.cabinsList.map((c: string) => <p key={c}>{c}</p>)}
-                                </div>
-                           </div>
-                        </TableCell>
-                       </tr>
-                    </CollapsibleContent>
-                  </>
                 </Collapsible>
               ))}
             </TableBody>
