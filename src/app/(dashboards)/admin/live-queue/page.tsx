@@ -172,6 +172,12 @@ export default function LiveQueuePage() {
                 </Button>
               </TableHead>
               <TableHead>
+                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('group')}>
+                    Group
+                    {getSortIcon('group')}
+                </Button>
+              </TableHead>
+              <TableHead>
                 <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('doctor')}>
                     Doctor
                     {getSortIcon('doctor')}
@@ -196,6 +202,7 @@ export default function LiveQueuePage() {
               <TableRow key={patient.id}>
                 <TableCell className="font-bold py-2 text-xs">{patient.tokenNumber}</TableCell>
                 <TableCell className="py-2 text-xs">{patient.name}</TableCell>
+                <TableCell className="py-2 text-xs">{clinics.find(c => c.id === patient.clinicId)?.location || 'Unknown'}</TableCell>
                 <TableCell className="py-2 text-xs">{getClinicName(patient.clinicId)}</TableCell>
                 <TableCell className="py-2 text-xs">{getDoctorName(patient.clinicId)}</TableCell>
                 <TableCell className="py-2 text-xs">{format(new Date(patient.registeredAt), 'hh:mm a')}</TableCell>
@@ -208,7 +215,7 @@ export default function LiveQueuePage() {
             ))}
              {filteredPatients.length === 0 && (
                 <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-2 text-xs">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-2 text-xs">
                         No active patients in any queue.
                     </TableCell>
                 </TableRow>
