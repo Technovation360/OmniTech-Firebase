@@ -80,7 +80,7 @@ function SpecialtyForm({
                 <Label htmlFor="specialtyName" className="text-[10px] font-semibold text-gray-600">SPECIALTY NAME</Label>
                 <Input id="specialtyName" className="h-7 text-[11px]" defaultValue={specialty?.name || ''} />
             </div>
-            <div className="mt-4 space-y-3">
+            <div className="mt-4 flex gap-4">
                 <div className="flex items-center gap-2">
                     <Checkbox id="forClinic" defaultChecked={specialty?.forClinic ?? true} />
                     <Label htmlFor="forClinic" className="text-xs font-normal">For Clinic</Label>
