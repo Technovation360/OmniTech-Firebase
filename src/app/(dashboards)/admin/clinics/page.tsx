@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState, useEffect } from 'react';
 import {
@@ -45,7 +46,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Edit, Trash2, ArrowUpDown } from 'lucide-react';
+import { Edit, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import { getClinicGroups } from '@/lib/data';
 import type { ClinicGroup } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -217,7 +218,7 @@ export default function ClinicsPage() {
                 <TableHead>
                    <Button variant="ghost" className="text-xs text-foreground p-0 hover:bg-transparent" onClick={handleSort}>
                         Clinic Name
-                        <ArrowUpDown className="ml-2 h-3 w-3" />
+                        {sortOrder === 'asc' ? <ArrowUp className="ml-2 h-3 w-3" /> : <ArrowDown className="ml-2 h-3 w-3" />}
                     </Button>
                 </TableHead>
                 <TableHead>Location</TableHead>
