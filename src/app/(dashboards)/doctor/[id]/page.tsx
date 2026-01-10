@@ -1,57 +1,28 @@
-
 'use client';
 
-import { useState, useTransition, useActionState, useEffect, use } from 'react';
+import { use, useState, useEffect } from 'react';
 import {
   getPatientsByClinicId,
   getClinicGroupById,
-  getConsultationsByPatientId,
 } from '@/lib/data';
-import type { Patient, ClinicGroup, Consultation, Doctor } from '@/lib/types';
+import type { Patient, ClinicGroup, Doctor } from '@/lib/types';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
-  PhoneCall,
-  Play,
-  Square,
-  UserX,
-  History,
-  FileText,
+  Users,
+  Clock,
+  CheckSquare,
+  XCircle,
   Loader,
-  Sparkles,
-  Save,
-  ArrowUp, 
-  ArrowDown
+  Stethoscope,
 } from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { format } from 'date-fns';
-import { handlePatientAction, createConsultationSummary } from '@/lib/actions';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
-
-
-const badgeColors: Record<'waiting' | 'called', string> = {
-    'waiting': "bg-blue-100 text-blue-800",
-    'called': "bg-orange-100 text-orange-800",
-};
+import Link from 'next/link';
 
 type DoctorPageProps = {
   params: { id: string };
@@ -62,15 +33,15 @@ type FetchedData = {
   patients: Patient[];
 };
 
-// A simple client component to fetch initial data on the client side
-export default function DoctorPageLoader({ params }: { params: Promise<{ id: string }> }) {
+export default function DoctorPageLoader({ params }: DoctorPageProps) {
   const { id } = use(params);
   const [data, setData] = useState<FetchedData | null>(null);
 
   useEffect(() => {
+    const clinicId = id === 'doc_ashish' ? 'grp_cardiology_01' : 'grp_ortho_01';
     Promise.all([
-      getClinicGroupById(id === 'doc_ashish' ? 'grp_cardiology_01' : 'grp_ortho_01'),
-      getPatientsByClinicId(id === 'doc_ashish' ? 'grp_cardiology_01' : 'grp_ortho_01'),
+      getClinicGroupById(clinicId),
+      getPatientsByClinicId(clinicId),
     ]).then(([clinicGroup, patients]) => {
       setData({ clinicGroup, patients });
     });
@@ -84,158 +55,11 @@ export default function DoctorPageLoader({ params }: { params: Promise<{ id: str
     );
   }
 
-  return <DoctorDashboard clinicGroup={data.clinicGroup} initialPatients={data.patients} />;
-}
-
-function PatientActions({ patient }: { patient: Patient }) {
-  const [isPending, startTransition] = useTransition();
-
-  const callPatient = () => startTransition(() => handlePatientAction(patient.id, 'call'));
-  const startConsultation = () => startTransition(() => handlePatientAction(patient.id, 'start'));
-
-  if (patient.status === 'waiting') {
-    return (
-      <Button size="sm" onClick={callPatient} disabled={isPending}>
-        <PhoneCall className="mr-2 h-4 w-4" /> Call
-      </Button>
-    );
-  }
-  if (patient.status === 'called') {
-    return (
-      <Button size="sm" onClick={startConsultation} disabled={isPending}>
-        <Play className="mr-2 h-4 w-4" /> Start
-      </Button>
-    );
-  }
-  return null;
-}
-
-function ConsultationPad({
-  patient,
-  doctor,
-  onConsultationEnd,
-}: {
-  patient: Patient;
-  doctor: Doctor;
-  onConsultationEnd: () => void;
-}) {
-  const { toast } = useToast();
-  const [isHistoryVisible, setHistoryVisible] = useState(false);
-  const [pastConsultations, setPastConsultations] = useState<Consultation[]>([]);
-  const [notes, setNotes] = useState('');
-  const [summary, setSummary] = useState('');
-
-  const [formState, formAction, isSummarizing] = useActionState(createConsultationSummary, { message: "" });
-  
-  const handleShowHistory = async () => {
-    setHistoryVisible(!isHistoryVisible);
-    if (!isHistoryVisible && pastConsultations.length === 0) {
-      const history = await getConsultationsByPatientId(patient.id);
-      setPastConsultations(history);
-    }
-  };
-
-  const endConsultationAction = async () => {
-    await handlePatientAction(patient.id, 'end');
-    onConsultationEnd();
-  }
-
-  const noShowAction = async () => {
-    await handlePatientAction(patient.id, 'no-show');
-    onConsultationEnd();
-  }
-  
-  useEffect(() => {
-    if (formState.success) {
-      toast({ title: "Success", description: "Consultation saved successfully." });
-      onConsultationEnd();
-    }
-  }, [formState, onConsultationEnd, toast]);
-
   return (
-    <Card className="col-span-1 lg:col-span-2">
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle>Consultation: {patient.name} ({patient.tokenNumber})</CardTitle>
-            <CardDescription>
-              {patient.age} years old, {patient.gender}
-            </CardDescription>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleShowHistory}>
-              <History className="mr-2 h-4 w-4" /> {isHistoryVisible ? 'Hide' : 'Show'} History
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {isHistoryVisible && (
-          <Card className="bg-muted/50">
-            <CardHeader>
-              <CardTitle className="text-lg">Past Consultations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-48">
-                {pastConsultations.length > 0 ? (
-                  pastConsultations.map((c, index) => (
-                    <div key={c.id}>
-                      <p className="font-semibold text-sm">
-                        {format(new Date(c.date), 'PPP')}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Notes: {c.notes}</p>
-                      <p className="text-xs text-accent-foreground font-medium mt-1">Summary: {c.summary}</p>
-                      {index < pastConsultations.length - 1 && <Separator className="my-2" />}
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">No past consultations found.</p>
-                )}
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        )}
-        <form action={formAction} className="space-y-4">
-          <input type="hidden" name="patientId" value={patient.id} />
-          <input type="hidden" name="doctorId" value={doctor.id} />
-          <div>
-            <label htmlFor="notes" className="block text-sm font-medium mb-1">
-              Consultation Notes
-            </label>
-            <Textarea
-              id="notes"
-              name="notes"
-              rows={6}
-              placeholder="Start typing patient notes here..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              required
-            />
-          </div>
-          
-          <div className="flex gap-2">
-            <Button type="submit" disabled={isSummarizing || notes.length < 10}>
-              {isSummarizing ? (
-                <Loader className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="mr-2 h-4 w-4" />
-              )}
-              Summarize & Save
-            </Button>
-          </div>
-          
-          {formState?.message && !formState.success && <p className="text-sm text-destructive">{formState.message}</p>}
-        </form>
-      </CardContent>
-      <CardFooter className="flex justify-end gap-2">
-         <Button variant="destructive" size="sm" onClick={noShowAction}>
-              <UserX className="mr-2 h-4 w-4" /> Mark as No-Show
-            </Button>
-            <Button variant="secondary" size="sm" onClick={endConsultationAction}>
-              <Square className="mr-2 h-4 w-4" /> End Without Saving
-            </Button>
-      </CardFooter>
-    </Card>
+    <DoctorDashboard
+      clinicGroup={data.clinicGroup}
+      initialPatients={data.patients}
+    />
   );
 }
 
@@ -246,124 +70,102 @@ function DoctorDashboard({
   clinicGroup: ClinicGroup;
   initialPatients: Patient[];
 }) {
-  const [patients, setPatients] = useState(initialPatients.filter((p) => ['waiting', 'called'].includes(p.status)));
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(
-    initialPatients.find(p => p.status === 'in-consultation') || null
-  );
-  const [sortConfig, setSortConfig] = useState<{ key: keyof Patient; direction: 'asc' | 'desc' } | null>({ key: 'tokenNumber', direction: 'asc' });
 
+  const totalPatients = initialPatients.length;
+  const inQueue = initialPatients.filter(p => p.status === 'waiting' || p.status === 'called').length;
+  const attended = initialPatients.filter(p => p.status === 'consultation-done').length;
+  const noShows = initialPatients.filter(p => p.status === 'no-show').length;
 
-  const handleConsultationEnd = () => {
-    setSelectedPatient(null);
-    // This would typically re-fetch, but here we just clear the selection
-  }
-  
-  const handleAction = (patient: Patient) => {
-    if (patient.status === 'called') {
-        setSelectedPatient(patient);
-    }
-  }
+  const stats = [
+    { title: 'TOTAL PATIENTS', value: totalPatients, icon: Users, color: 'bg-indigo-100 text-indigo-600' },
+    { title: 'IN QUEUE', value: inQueue, icon: Clock, color: 'bg-yellow-100 text-yellow-600' },
+    { title: 'ATTENDED', value: attended, icon: CheckSquare, color: 'bg-green-100 text-green-600' },
+    { title: 'NO SHOWS', value: noShows, icon: XCircle, color: 'bg-red-100 text-red-600' },
+  ];
 
-  const handleSort = (key: keyof Patient) => {
-    let direction: 'asc' | 'desc' = 'asc';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
-
-    const sortedPatients = [...patients].sort((a, b) => {
-      if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
-      if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-    setPatients(sortedPatients);
-  };
-  
-  const getSortIcon = (key: keyof Patient) => {
-    if (!sortConfig || sortConfig.key !== key) return null;
-    if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3" />;
-    return <ArrowDown className="ml-2 h-3 w-3" />;
-  };
+  const nextToken = initialPatients.find(p => p.status === 'waiting');
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold font-headline">Dr. {clinicGroup.doctor.name}'s Dashboard</h1>
-        <p className="text-muted-foreground">Managing patients for {clinicGroup.name}.</p>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {stats.map((stat) => (
+          <Card key={stat.title}>
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className={`p-3 rounded-lg ${stat.color}`}>
+                <stat.icon className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground font-semibold">{stat.title}</p>
+                <p className="text-2xl font-bold">{stat.value}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle>Patient Queue</CardTitle>
-            <CardDescription>Patients waiting for consultation.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('tokenNumber')}>
-                        Token
-                        {getSortIcon('tokenNumber')}
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('name')}>
-                        Name
-                        {getSortIcon('name')}
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('status')}>
-                        Status
-                        {getSortIcon('status')}
-                    </Button>
-                  </TableHead>
-                  <TableHead>Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {patients.length > 0 ? (
-                  patients.map((patient) => (
-                    <TableRow key={patient.id} onClick={() => handleAction(patient)} className={patient.status === 'called' ? 'bg-accent/50 cursor-pointer' : ''}>
-                      <TableCell className="font-bold py-2 text-xs">{patient.tokenNumber}</TableCell>
-                      <TableCell className="py-2 text-xs">{patient.name}</TableCell>
-                      <TableCell className="py-2 text-xs">
-                        <Badge variant={'secondary'} className={cn("text-[10px] border-transparent capitalize", badgeColors[patient.status as 'waiting' | 'called'])}>
-                          {patient.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="py-2 text-xs">
-                        <PatientActions patient={patient} />
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-2 text-xs">
-                      No patients in the queue.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        {selectedPatient ? (
-          <ConsultationPad patient={selectedPatient} doctor={clinicGroup.doctor} onConsultationEnd={handleConsultationEnd} />
-        ) : (
-          <Card className="col-span-1 lg:col-span-2 flex items-center justify-center border-dashed">
-            <div className="text-center p-8">
-              <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-medium">No Active Consultation</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Call a patient from the queue to start a consultation.
-              </p>
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+             <CardHeader>
+                <div className="flex items-center gap-4">
+                    <Button>ALL GROUPS</Button>
+                    <Button variant="ghost">GENERAL MEDICINE</Button>
+                    <Button variant="ghost">PEDIATRICS</Button>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <h3 className="text-lg font-bold">Performance Details</h3>
+                <p className="text-sm text-muted-foreground mb-4">GROUP CONTEXT: ALL ASSIGNED WINGS</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="bg-muted/50">
+                        <CardHeader>
+                            <CardTitle className="text-sm text-muted-foreground">CURRENTLY ACTIVE AT</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="font-semibold">Not logged into any rooms</p>
+                        </CardContent>
+                    </Card>
+                     <Card className="bg-muted/50">
+                        <CardHeader>
+                            <CardTitle className="text-sm text-muted-foreground">QUEUE SUMMARY</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex justify-between items-center">
+                            <div>
+                                <p>Next Token:</p>
+                                <p>Avg Wait Time:</p>
+                            </div>
+                             <div className="text-right">
+                                <p className="font-bold text-primary">{nextToken?.tokenNumber || 'N/A'}</p>
+                                <p className="font-bold text-primary">~15m</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-muted/50 flex flex-col items-center justify-center">
+                        <p className="text-3xl font-bold text-primary">0%</p>
+                        <p className="text-xs text-muted-foreground">EFFICIENCY</p>
+                    </Card>
+                </div>
+            </CardContent>
           </Card>
-        )}
+        </div>
+
+        <div className="lg:col-span-1">
+          <Card className="bg-primary text-primary-foreground relative overflow-hidden h-full">
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button variant="secondary" className="w-full bg-white text-primary hover:bg-white/90" asChild>
+                <Link href={`/doctor/${clinicGroup.doctor.id}/consultation`}>START CONSULTATIONS</Link>
+              </Button>
+              <div className="bg-primary-foreground/20 p-3 rounded-lg">
+                <p className="font-bold text-white">Dr. {clinicGroup.doctor.name}</p>
+                <p className="text-xs text-primary-foreground/80">SPECIALTY: {clinicGroup.specialties.join(', ')}</p>
+              </div>
+            </CardContent>
+            <Stethoscope className="absolute -right-8 -bottom-8 h-40 w-40 text-primary-foreground/10" />
+          </Card>
+        </div>
       </div>
     </div>
   );
