@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import {
   Card,
   CardContent,
@@ -34,8 +34,8 @@ const badgeColors: Record<Patient['status'], string> = {
 };
 
 
-export default function ClinicLiveQueuePage({ params }: { params: { id: string }}) {
-  const { id } = params;
+export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: string }>}) {
+  const { id } = use(params);
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [clinic, setClinic] = useState<ClinicGroup | null>(null);
