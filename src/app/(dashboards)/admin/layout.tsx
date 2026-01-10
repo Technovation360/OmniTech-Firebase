@@ -39,9 +39,10 @@ function AdminSidebar() {
   const pathname = usePathname();
   const basePath = '/admin';
 
-  const platformMenuItems = [
+  const adminMenuItems = [
     { href: `${basePath}`, icon: LayoutDashboard, label: 'Dashboard', active: pathname === `${basePath}` },
-  ];
+    { href: `${basePath}/users`, icon: Users, label: 'Users', active: pathname === `${basePath}/users` },
+  ]
 
   const clinicalMenuItems = [
     { href: `${basePath}/live-queue`, icon: Monitor, label: 'Live Queue', active: pathname === `${basePath}/live-queue` },
@@ -55,10 +56,6 @@ function AdminSidebar() {
       { href: `${basePath}/campaigns`, icon: Film, label: 'Campaigns', active: pathname === `${basePath}/campaigns` },
   ]
 
-  const adminMenuItems = [
-    { href: `${basePath}/users`, icon: Users, label: 'Users', active: pathname === `${basePath}/users` },
-  ]
-
   return (
     <Sidebar>
       <SidebarHeader>
@@ -67,11 +64,11 @@ function AdminSidebar() {
       <SidebarContent>
         <div className="flex flex-col gap-2 px-4 pt-4">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Platform Management
+            Administration
           </span>
         </div>
         <SidebarMenu>
-          {platformMenuItems.map((item) => (
+          {adminMenuItems.map((item) => (
             <SidebarMenuItem key={item.label}>
               <SidebarMenuButton asChild isActive={item.active}>
                 <Link href={item.href}>
@@ -108,24 +105,6 @@ function AdminSidebar() {
         </div>
         <SidebarMenu>
           {advertisersMenuItems.map((item) => (
-            <SidebarMenuItem key={item.label}>
-              <SidebarMenuButton asChild isActive={item.active}>
-                <Link href={item.href}>
-                  <item.icon />
-                  {item.label}
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-
-        <div className="flex flex-col gap-2 px-4 pt-2">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Administration
-          </span>
-        </div>
-        <SidebarMenu>
-          {adminMenuItems.map((item) => (
             <SidebarMenuItem key={item.label}>
               <SidebarMenuButton asChild isActive={item.active}>
                 <Link href={item.href}>
