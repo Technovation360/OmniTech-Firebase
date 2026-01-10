@@ -64,65 +64,65 @@ function OnboardClinicForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader className="p-6 pb-2">
-          <DialogTitle className="text-lg font-bold tracking-normal">
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader className="p-4 pb-2">
+          <DialogTitle className="text-base font-bold tracking-normal">
             {isEditMode ? 'EDIT CLINIC' : 'REGISTER CLINIC'}
           </DialogTitle>
         </DialogHeader>
-        <div className="px-6 pb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
+        <div className="px-4 pb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
             <div className="space-y-1">
-              <Label htmlFor="clinicName" className="text-xs font-semibold text-gray-600">CLINIC NAME</Label>
-              <Input id="clinicName" className="h-9 text-sm" defaultValue={clinic?.name} />
+              <Label htmlFor="clinicName" className="text-[10px] font-semibold text-gray-600">CLINIC NAME</Label>
+              <Input id="clinicName" className="h-7 text-xs" defaultValue={clinic?.name} />
             </div>
              <div className="space-y-1">
-                <Label htmlFor="specialties" className="text-xs font-semibold text-gray-600">SPECIALTIES</Label>
+                <Label htmlFor="specialties" className="text-[10px] font-semibold text-gray-600">SPECIALTIES</Label>
                 <Select>
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger className="h-7 text-xs">
                         <SelectValue placeholder="Select..." />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="cardiology">Cardiology</SelectItem>
-                        <SelectItem value="orthopedics">Orthopedics</SelectItem>
-                        <SelectItem value="pediatrics">Pediatrics</SelectItem>
-                        <SelectItem value="general-medicine">General Medicine</SelectItem>
+                        <SelectItem value="cardiology" className="text-xs">Cardiology</SelectItem>
+                        <SelectItem value="orthopedics" className="text-xs">Orthopedics</SelectItem>
+                        <SelectItem value="pediatrics" className="text-xs">Pediatrics</SelectItem>
+                        <SelectItem value="general-medicine" className="text-xs">General Medicine</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
             <div className="space-y-1">
-              <Label htmlFor="email" className="text-xs font-semibold text-gray-600">EMAIL</Label>
-              <Input id="email" type="email" className="h-9 text-sm" defaultValue={clinic?.contact} />
+              <Label htmlFor="email" className="text-[10px] font-semibold text-gray-600">EMAIL</Label>
+              <Input id="email" type="email" className="h-7 text-xs" defaultValue={clinic?.contact} />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="phone" className="text-xs font-semibold text-gray-600">PHONE</Label>
-              <Input id="phone" type="tel" className="h-9 text-sm" />
+              <Label htmlFor="phone" className="text-[10px] font-semibold text-gray-600">PHONE</Label>
+              <Input id="phone" type="tel" className="h-7 text-xs" />
             </div>
             <div className="space-y-1 col-span-1 md:col-span-2">
-              <Label htmlFor="address" className="text-xs font-semibold text-gray-600">ADDRESS</Label>
-              <Textarea id="address" rows={2} className="text-sm" defaultValue={clinic?.location} />
+              <Label htmlFor="address" className="text-[10px] font-semibold text-gray-600">ADDRESS</Label>
+              <Textarea id="address" rows={2} className="text-xs" defaultValue={clinic?.location} />
             </div>
             <div className="grid grid-cols-3 gap-x-4 col-span-1 md:col-span-2">
                 <div className="space-y-1">
-                    <Label htmlFor="city" className="text-xs font-semibold text-gray-600">CITY</Label>
-                    <Input id="city" className="h-9 text-sm" />
+                    <Label htmlFor="city" className="text-[10px] font-semibold text-gray-600">CITY</Label>
+                    <Input id="city" className="h-7 text-xs" />
                 </div>
                 <div className="space-y-1">
-                    <Label htmlFor="state" className="text-xs font-semibold text-gray-600">STATE</Label>
-                    <Input id="state" className="h-9 text-sm" />
+                    <Label htmlFor="state" className="text-[10px] font-semibold text-gray-600">STATE</Label>
+                    <Input id="state" className="h-7 text-xs" />
                 </div>
                 <div className="space-y-1">
-                    <Label htmlFor="pin" className="text-xs font-semibold text-gray-600">PIN</Label>
-                    <Input id="pin" className="h-9 text-sm" />
+                    <Label htmlFor="pin" className="text-[10px] font-semibold text-gray-600">PIN</Label>
+                    <Input id="pin" className="h-7 text-xs" />
                 </div>
             </div>
           </div>
         </div>
-        <DialogFooter className="bg-gray-50 px-6 py-4 flex justify-end gap-2 rounded-b-lg">
-          <Button variant="outline" onClick={onClose}>
+        <DialogFooter className="bg-gray-50 px-4 py-2 flex justify-end gap-2 rounded-b-lg">
+          <Button variant="destructive" onClick={onClose} size="xs">
             CANCEL
           </Button>
-          <Button>CONFIRM</Button>
+          <Button size="xs">CONFIRM</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
