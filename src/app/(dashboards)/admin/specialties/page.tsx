@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import {
@@ -17,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import { Edit, Trash2, ArrowUp, ArrowDown, Search } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -155,17 +156,43 @@ function DeleteSpecialtyDialog({
   }
 
 export default function SpecialtiesPage() {
-  const [specialties, setSpecialties] = useState<Specialty[]>(initialSpecialties);
+  const [allSpecialties, setAllSpecialties] = useState<Specialty[]>(initialSpecialties);
+  const [filteredSpecialties, setFilteredSpecialties] = useState<Specialty[]>(initialSpecialties);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [specialtyToEdit, setSpecialtyToEdit] = useState<Specialty | null>(null);
   const [specialtyToDelete, setSpecialtyToDelete] = useState<Specialty | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: keyof Specialty; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc' });
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     // Initial sort
     handleSort('name');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    let filteredData = allSpecialties;
+    if (searchQuery) {
+        const lowercasedQuery = searchQuery.toLowerCase();
+        filteredData = allSpecialties.filter(specialty =>
+            specialty.name.toLowerCase().includes(lowercasedQuery)
+        );
+    }
+    
+    if (sortConfig) {
+      const sorted = [...filteredData].sort((a, b) => {
+        const aVal = a[sortConfig.key];
+        const bVal = b[sortConfig.key];
+        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+      setFilteredSpecialties(sorted);
+    } else {
+        setFilteredSpecialties(filteredData);
+    }
+
+  }, [searchQuery, allSpecialties, sortConfig]);
 
   const openEditModal = (specialty: Specialty) => {
     setSpecialtyToEdit(specialty);
@@ -192,20 +219,20 @@ export default function SpecialtiesPage() {
 
   const handleDeleteConfirm = () => {
     if (specialtyToDelete) {
-      setSpecialties(specialties.filter(s => s.id !== specialtyToDelete.id));
+      setAllSpecialties(allSpecialties.filter(s => s.id !== specialtyToDelete.id));
       closeDeleteDialog();
     }
   }
 
   const handleFormConfirm = (formData: Omit<Specialty, 'id'>) => {
     if (specialtyToEdit) {
-        setSpecialties(specialties.map(s => s.id === specialtyToEdit.id ? { ...specialtyToEdit, ...formData } : s));
+        setAllSpecialties(allSpecialties.map(s => s.id === specialtyToEdit.id ? { ...specialtyToEdit, ...formData } : s));
     } else {
         const newSpecialty: Specialty = {
             ...formData,
             id: `spec_${Date.now()}`
         };
-        setSpecialties([newSpecialty, ...specialties]);
+        setAllSpecialties([newSpecialty, ...allSpecialties]);
     }
     closeModal();
   };
@@ -217,14 +244,7 @@ export default function SpecialtiesPage() {
     }
     setSortConfig({ key, direction });
 
-    const sortedSpecialties = [...specialties].sort((a, b) => {
-      const aVal = a[key];
-      const bVal = b[key];
-      if (aVal < bVal) return direction === 'asc' ? -1 : 1;
-      if (aVal > bVal) return direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-    setSpecialties(sortedSpecialties);
+    // The sorting logic is now inside useEffect
   };
 
   const getSortIcon = (key: keyof Specialty) => {
@@ -237,12 +257,25 @@ export default function SpecialtiesPage() {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-lg">Medical Specialties</CardTitle>
-            <CardDescription className="text-xs">Manage medical specialties for clinics and doctors.</CardDescription>
-          </div>
-          <Button onClick={openCreateModal} size="sm">ADD SPECIALTY</Button>
+        <CardHeader>
+             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <CardTitle className="text-lg">Medical Specialties</CardTitle>
+                    <CardDescription className="text-xs mt-1">Manage medical specialties for clinics and doctors.</CardDescription>
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="relative w-full sm:w-64">
+                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                       <Input 
+                            placeholder="Search by name..." 
+                            className="pl-9 h-9" 
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    <Button onClick={openCreateModal} size="sm" className="w-auto sm:w-auto flex-shrink-0">ADD SPECIALTY</Button>
+                </div>
+            </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -260,7 +293,7 @@ export default function SpecialtiesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {specialties.map((specialty) => (
+              {filteredSpecialties.map((specialty) => (
                 <TableRow key={specialty.id}>
                   <TableCell className="font-medium py-2 text-xs">{specialty.name}</TableCell>
                   <TableCell className="py-2 text-xs">
@@ -298,3 +331,5 @@ export default function SpecialtiesPage() {
     </>
   );
 }
+
+    

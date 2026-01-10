@@ -44,7 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Edit, Trash2, KeyRound, ArrowUp, ArrowDown } from 'lucide-react';
+import { Edit, Trash2, KeyRound, ArrowUp, ArrowDown, Search } from 'lucide-react';
 import type { UserRole } from '@/lib/roles';
 import { cn } from '@/lib/utils';
 import { getClinicGroups } from '@/lib/data';
@@ -265,17 +265,46 @@ function DeleteUserDialog({
 
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: keyof User; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc' });
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     // In a real app, this would fetch user data from an API
-    setUsers(mockUsers);
+    setAllUsers(mockUsers);
+    setFilteredUsers(mockUsers);
   }, []);
   
+  useEffect(() => {
+    let filteredData = allUsers;
+    if (searchQuery) {
+        const lowercasedQuery = searchQuery.toLowerCase();
+        filteredData = allUsers.filter(user => 
+            user.name.toLowerCase().includes(lowercasedQuery) ||
+            user.email.toLowerCase().includes(lowercasedQuery) ||
+            user.affiliation.toLowerCase().includes(lowercasedQuery)
+        );
+    }
+    
+    if (sortConfig) {
+      const sorted = [...filteredData].sort((a, b) => {
+        const aVal = a[sortConfig.key] || '';
+        const bVal = b[sortConfig.key] || '';
+        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+      setFilteredUsers(sorted);
+    } else {
+        setFilteredUsers(filteredData);
+    }
+
+  }, [searchQuery, allUsers, sortConfig]);
+
   const openEditModal = (user: User) => {
     setUserToEdit(user);
     setIsModalOpen(true);
@@ -301,20 +330,20 @@ export default function UsersPage() {
 
   const handleDeleteConfirm = () => {
     if (userToDelete) {
-      setUsers(users.filter(u => u.id !== userToDelete.id));
+      setAllUsers(allUsers.filter(u => u.id !== userToDelete.id));
       closeDeleteDialog();
     }
   }
 
   const handleFormConfirm = (formData: Omit<User, 'id'>) => {
     if (userToEdit) {
-      setUsers(users.map(u => u.id === userToEdit.id ? { ...userToEdit, ...formData } : u));
+      setAllUsers(allUsers.map(u => u.id === userToEdit.id ? { ...userToEdit, ...formData } : u));
     } else {
       const newUser: User = {
         ...formData,
         id: `user_${Date.now()}`
       };
-      setUsers([newUser, ...users]);
+      setAllUsers([newUser, ...allUsers]);
     }
     closeModal();
   };
@@ -325,15 +354,6 @@ export default function UsersPage() {
       direction = 'desc';
     }
     setSortConfig({ key, direction });
-
-    const sortedUsers = [...users].sort((a, b) => {
-      const aVal = a[key] || '';
-      const bVal = b[key] || '';
-      if (aVal < bVal) return direction === 'asc' ? -1 : 1;
-      if (aVal > bVal) return direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-    setUsers(sortedUsers);
   };
   
   const getSortIcon = (key: keyof User) => {
@@ -345,12 +365,25 @@ export default function UsersPage() {
   return (
     <>
      <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle className="text-lg">Platform Users</CardTitle>
-          <CardDescription className="text-xs">Manage user accounts and roles.</CardDescription>
+      <CardHeader>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+                <CardTitle className="text-lg">Platform Users</CardTitle>
+                <CardDescription className="text-xs mt-1">Manage user accounts and roles.</CardDescription>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="relative w-full sm:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Search users..." 
+                        className="pl-9 h-9" 
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                    />
+                </div>
+                <Button onClick={openCreateModal} size="sm" className="w-auto sm:w-auto flex-shrink-0">Register User</Button>
+            </div>
         </div>
-        <Button onClick={openCreateModal} size="sm">Register User</Button>
       </CardHeader>
       <CardContent>
         <Table>
@@ -384,7 +417,7 @@ export default function UsersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
+            {filteredUsers.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="py-2 text-xs font-medium">{user.name}</TableCell>
                 <TableCell className="py-2 text-xs text-muted-foreground">{user.email}</TableCell>

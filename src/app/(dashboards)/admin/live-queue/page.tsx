@@ -22,8 +22,8 @@ import { getPatientsByClinicId, getClinicGroups } from '@/lib/data';
 import type { Patient, ClinicGroup } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { ArrowUp, ArrowDown } from 'lucide-react';
-
+import { ArrowUp, ArrowDown, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
 const badgeColors: Record<Patient['status'], string> = {
     'waiting': "bg-blue-100 text-blue-800",
@@ -35,24 +35,25 @@ const badgeColors: Record<Patient['status'], string> = {
 
 
 export default function LiveQueuePage() {
-  const [patients, setPatients] = useState<Patient[]>([]);
+  const [allPatients, setAllPatients] = useState<Patient[]>([]);
+  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [clinics, setClinics] = useState<ClinicGroup[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'tokenNumber', direction: 'asc' });
-
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     getClinicGroups().then(allClinics => {
         setClinics(allClinics);
         // Fetch patients from all clinics
         Promise.all(allClinics.map(c => getPatientsByClinicId(c.id))).then(patientArrays => {
-            const allPatients = patientArrays.flat()
+            const allPatientsData = patientArrays.flat()
                 .filter(p => p.status === 'waiting' || p.status === 'called' || p.status === 'in-consultation')
                 .sort((a,b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime());
-            setPatients(allPatients);
+            setAllPatients(allPatientsData);
         })
     });
   }, []);
-
+  
   const getClinicName = (clinicId: string) => {
     return clinics.find(c => c.id === clinicId)?.name || 'Unknown';
   }
@@ -61,22 +62,40 @@ export default function LiveQueuePage() {
       return clinics.find(c => c.id === clinicId)?.doctor.name || 'Unknown';
   }
 
+  useEffect(() => {
+    let filteredData = allPatients;
+    if (searchQuery) {
+        const lowercasedQuery = searchQuery.toLowerCase();
+        filteredData = allPatients.filter(patient => 
+            patient.name.toLowerCase().includes(lowercasedQuery) ||
+            patient.tokenNumber.toLowerCase().includes(lowercasedQuery) ||
+            getClinicName(patient.clinicId).toLowerCase().includes(lowercasedQuery) ||
+            getDoctorName(patient.clinicId).toLowerCase().includes(lowercasedQuery)
+        );
+    }
+    
+    if (sortConfig) {
+      const sorted = [...filteredData].sort((a, b) => {
+        const aVal = sortConfig.key === 'clinic' ? getClinicName(a.clinicId) : sortConfig.key === 'doctor' ? getDoctorName(a.clinicId) : a[sortConfig.key as keyof Patient];
+        const bVal = sortConfig.key === 'clinic' ? getClinicName(b.clinicId) : sortConfig.key === 'doctor' ? getDoctorName(b.clinicId) : b[sortConfig.key as keyof Patient];
+
+        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+      setFilteredPatients(sorted);
+    } else {
+        setFilteredPatients(filteredData);
+    }
+
+  }, [searchQuery, allPatients, sortConfig, clinics]);
+
   const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
       direction = 'desc';
     }
     setSortConfig({ key, direction });
-
-    const sortedPatients = [...patients].sort((a, b) => {
-      const aVal = key === 'clinic' ? getClinicName(a.clinicId) : key === 'doctor' ? getDoctorName(a.clinicId) : a[key as keyof Patient];
-      const bVal = key === 'clinic' ? getClinicName(b.clinicId) : key === 'doctor' ? getDoctorName(b.clinicId) : b[key as keyof Patient];
-
-      if (aVal < bVal) return direction === 'asc' ? -1 : 1;
-      if (aVal > bVal) return direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-    setPatients(sortedPatients);
   };
   
   const getSortIcon = (key: string) => {
@@ -88,8 +107,21 @@ export default function LiveQueuePage() {
   return (
      <Card>
       <CardHeader>
-        <CardTitle>Live Queue</CardTitle>
-        <CardDescription>A real-time overview of all patient queues across all clinics.</CardDescription>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+                <CardTitle>Live Queue</CardTitle>
+                <CardDescription>A real-time overview of all patient queues across all clinics.</CardDescription>
+            </div>
+            <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    placeholder="Search patients..." 
+                    className="pl-9 h-9" 
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                />
+            </div>
+        </div>
       </CardHeader>
       <CardContent>
         <Table>
@@ -134,7 +166,7 @@ export default function LiveQueuePage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {patients.map((patient) => (
+            {filteredPatients.map((patient) => (
               <TableRow key={patient.id}>
                 <TableCell className="font-bold py-2 text-xs">{patient.tokenNumber}</TableCell>
                 <TableCell className="py-2 text-xs">{patient.name}</TableCell>
@@ -148,7 +180,7 @@ export default function LiveQueuePage() {
                 </TableCell>
               </TableRow>
             ))}
-             {patients.length === 0 && (
+             {filteredPatients.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={6} className="text-center text-muted-foreground py-2 text-xs">
                         No active patients in any queue.
@@ -161,3 +193,5 @@ export default function LiveQueuePage() {
     </Card>
   )
 }
+
+    
