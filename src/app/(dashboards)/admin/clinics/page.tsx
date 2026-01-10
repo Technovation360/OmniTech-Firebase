@@ -47,6 +47,7 @@ import {
 import { Edit, Trash2 } from 'lucide-react';
 import { getClinicGroups } from '@/lib/data';
 import type { ClinicGroup } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 function OnboardClinicForm({
   isOpen,
@@ -132,6 +133,15 @@ function DeleteClinicDialog({
   );
 }
 
+const badgeColors = [
+  "bg-blue-100 text-blue-800",
+  "bg-green-100 text-green-800",
+  "bg-purple-100 text-purple-800",
+  "bg-orange-100 text-orange-800",
+  "bg-pink-100 text-pink-800",
+  "bg-indigo-100 text-indigo-800",
+];
+
 
 export default function ClinicsPage() {
   const [clinics, setClinics] = useState<ClinicGroup[]>([]);
@@ -202,8 +212,8 @@ export default function ClinicsPage() {
                   <TableCell className="py-2 text-xs">{clinic.location}</TableCell>
                    <TableCell className="py-2 text-xs">
                     <div className="flex gap-1">
-                      {clinic.specialties.map(specialty => (
-                        <Badge key={specialty} variant="secondary" className="text-[10px]">{specialty}</Badge>
+                      {clinic.specialties.map((specialty, index) => (
+                        <Badge key={specialty} variant="secondary" className={cn("text-[10px] border-transparent", badgeColors[index % badgeColors.length])}>{specialty}</Badge>
                       ))}
                     </div>
                   </TableCell>
