@@ -19,6 +19,16 @@ import { Badge } from '@/components/ui/badge';
 import { getPatientsByClinicId, getClinicGroups } from '@/lib/data';
 import type { Patient, ClinicGroup } from '@/lib/types';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+
+
+const badgeColors: Record<Patient['status'], string> = {
+    'waiting': "bg-blue-100 text-blue-800",
+    'called': "bg-orange-100 text-orange-800",
+    'in-consultation': "bg-green-100 text-green-800",
+    'consultation-done': "bg-gray-100 text-gray-800",
+    'no-show': "bg-red-100 text-red-800",
+};
 
 
 export default function LiveQueuePage() {
@@ -73,12 +83,8 @@ export default function LiveQueuePage() {
                 <TableCell className="py-2 text-xs">{getDoctorName(patient.clinicId)}</TableCell>
                 <TableCell className="py-2 text-xs">{format(new Date(patient.registeredAt), 'hh:mm a')}</TableCell>
                 <TableCell className="py-2 text-xs">
-                   <Badge variant={
-                       patient.status === 'in-consultation' ? 'default' 
-                       : patient.status === 'called' ? 'destructive' 
-                       : 'secondary'
-                    }>
-                        {patient.status}
+                   <Badge variant={'secondary'} className={cn("text-[10px] border-transparent capitalize", badgeColors[patient.status])}>
+                        {patient.status.replace('-', ' ')}
                     </Badge>
                 </TableCell>
               </TableRow>

@@ -45,6 +45,7 @@ import {
 } from '@/components/ui/select';
 import { Edit, Trash2, KeyRound } from 'lucide-react';
 import type { UserRole } from '@/lib/roles';
+import { cn } from '@/lib/utils';
 
 type User = {
     id: string;
@@ -73,6 +74,25 @@ const roleLabels: Record<UserRole, string> = {
   'display': 'Display',
   'advertiser': 'Advertiser',
 }
+
+const badgeColors = [
+  "bg-blue-100 text-blue-800",
+  "bg-green-100 text-green-800",
+  "bg-purple-100 text-purple-800",
+  "bg-orange-100 text-orange-800",
+  "bg-pink-100 text-pink-800",
+  "bg-indigo-100 text-indigo-800",
+];
+
+const roleColorMap: Record<UserRole, string> = {
+  'central-admin': badgeColors[0],
+  'clinic-admin': badgeColors[1],
+  'doctor': badgeColors[2],
+  'assistant': badgeColors[3],
+  'display': badgeColors[4],
+  'advertiser': badgeColors[5],
+};
+
 
 function UserForm({
   isOpen,
@@ -233,7 +253,7 @@ export default function UsersPage() {
                 </TableCell>
                 <TableCell className="py-2 text-xs">{user.affiliation}</TableCell>
                 <TableCell className="py-2 text-xs">
-                  <Badge variant="secondary">{roleLabels[user.role as UserRole] || 'Unknown'}</Badge>
+                  <Badge variant="secondary" className={cn("text-[10px] border-transparent", roleColorMap[user.role as UserRole])}>{roleLabels[user.role as UserRole] || 'Unknown'}</Badge>
                 </TableCell>
                 <TableCell className="flex gap-2 py-2">
                    <Button variant="ghost" size="icon-xs">

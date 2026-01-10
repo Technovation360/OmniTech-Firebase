@@ -42,6 +42,13 @@ import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { handlePatientAction, createConsultationSummary } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
+
+
+const badgeColors: Record<'waiting' | 'called', string> = {
+    'waiting': "bg-blue-100 text-blue-800",
+    'called': "bg-orange-100 text-orange-800",
+};
 
 type DoctorPageProps = {
   params: { id: string };
@@ -281,7 +288,7 @@ function DoctorDashboard({
                       <TableCell className="font-bold py-2 text-xs">{patient.tokenNumber}</TableCell>
                       <TableCell className="py-2 text-xs">{patient.name}</TableCell>
                       <TableCell className="py-2 text-xs">
-                        <Badge variant={patient.status === 'called' ? 'default' : 'secondary'}>
+                        <Badge variant={'secondary'} className={cn("text-[10px] border-transparent capitalize", badgeColors[patient.status as 'waiting' | 'called'])}>
                           {patient.status}
                         </Badge>
                       </TableCell>
