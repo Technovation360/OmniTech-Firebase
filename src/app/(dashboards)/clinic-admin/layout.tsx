@@ -10,7 +10,6 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarInset,
-  SidebarFooter,
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/logo';
@@ -18,9 +17,12 @@ import {
   LayoutDashboard,
   Users,
   Monitor,
-  LogOut,
-  PanelLeft,
   List,
+  ChevronLeft,
+  Settings,
+  Ticket,
+  Building,
+  Folder,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
@@ -29,23 +31,25 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import React from 'react';
 
 function DashboardHeader() {
-  const { toggleSidebar } = useSidebar();
+  const { isMobile } = useSidebar();
   
   return (
-    <header className="p-2 bg-primary text-primary-foreground flex items-center justify-between border-b border-primary-foreground/20">
-      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/20 hover:text-white" onClick={toggleSidebar}>
-          <PanelLeft />
-      </Button>
+    <header className="p-4 bg-primary text-primary-foreground flex items-center justify-between ">
+      <div className="flex items-center gap-4">
+        {!isMobile && <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/20 hover:text-white">
+          <ChevronLeft />
+        </Button>}
+        <div className="flex items-center gap-2">
+            <span className="text-sm">Home</span>
+            <span className="text-sm">/</span>
+            <span className="text-sm font-semibold">Analytics</span>
+        </div>
+      </div>
       
       <div className="flex items-center gap-3">
         <Avatar className="h-8 w-8">
-          <AvatarFallback className="bg-background text-foreground">CA</AvatarFallback>
+          <AvatarFallback className="bg-background text-foreground">A</AvatarFallback>
         </Avatar>
-        <Button variant="destructive" size="icon" className="h-8 w-8 hover:bg-destructive/80" asChild>
-          <Link href="/">
-            <LogOut className="w-4 h-4" />
-          </Link>
-        </Button>
       </div>
     </header>
   );
@@ -57,62 +61,38 @@ function DashboardSidebar() {
   const params = useParams();
   const clinicId = params.id as string;
 
+  const menuItems = [
+      { href: `/clinic-admin/${clinicId}`, icon: LayoutDashboard, label: 'Dashboard', active: pathname === `/clinic-admin/${clinicId}` },
+      { href: '#', icon: Monitor, label: 'Live Queue' },
+      { href: '#', icon: Ticket, label: 'Patients Register' },
+      { href: '#', icon: Building, label: 'Stations' },
+      { href: '#', icon: Folder, label: 'Groups' },
+      { href: '#', icon: Users, label: 'Users' },
+      { href: '#', icon: Settings, label: 'Settings' },
+  ]
+
   return (
     <Sidebar>
       <SidebarHeader>
         <Logo variant="enterprise" />
       </SidebarHeader>
       <SidebarContent>
+        <div className="flex flex-col gap-2 p-4">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Navigation</span>
+        </div>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname === `/clinic-admin/${clinicId}`}>
-              <Link href={`/clinic-admin/${clinicId}`}>
-                <LayoutDashboard />
-                Dashboard
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname.startsWith(`/clinic-admin/${clinicId}/users`)}>
-              <Link href="#">
-                <Users />
-                Users
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname.startsWith(`/clinic-admin/${clinicId}/live-queue`)}>
-              <Link href="#">
-                <Monitor/>
-                Live Queue
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-
-           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname.startsWith(`/clinic-admin/${clinicId}/patient-registry`)}>
-              <Link href="#">
-                <List/>
-                Patient Registry
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-
+            {menuItems.map(item => (
+                <SidebarMenuItem key={item.label}>
+                    <SidebarMenuButton asChild isActive={item.active}>
+                    <Link href={item.href}>
+                        <item.icon />
+                        {item.label}
+                    </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            ))}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter>
-          <div className="flex items-center gap-3 p-4 border-t border-sidebar-border">
-            <Avatar className="h-10 w-10">
-                <AvatarFallback>CA</AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col">
-                <span className="font-semibold text-sm">Clinic Admin</span>
-                <span className="text-xs text-muted-foreground">admin@clinic.com</span>
-            </div>
-          </div>
-      </SidebarFooter>
     </Sidebar>
   );
 }
@@ -125,7 +105,7 @@ function DashboardLayoutContent({
   return (
     <>
       <DashboardSidebar />
-      <SidebarInset className="flex flex-col bg-muted/30">
+      <SidebarInset className="flex flex-col bg-muted/40">
         <DashboardHeader />
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
           {children}

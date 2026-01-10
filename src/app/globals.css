@@ -8,9 +8,9 @@ body {
 
 @layer base {
   :root {
-    --background: 240 10% 99%;
+    --background: 220 20% 96%;
     --foreground: 222.2 84% 4.9%;
-    --card: 255 100% 100%;
+    --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 210 17% 98%;
     --popover-foreground: 222.2 84% 4.9%;
@@ -20,8 +20,8 @@ body {
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 220 80% 96%;
-    --accent-foreground: 220 80% 40%;
+    --accent: 220 80% 94%;
+    --accent-foreground: 250 80% 60%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
@@ -33,7 +33,7 @@ body {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
 
-    --sidebar-background: 255 100% 100%;
+    --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 224 71% 4%;
     --sidebar-border: 214.3 31.8% 91.4%;
     --sidebar-accent: hsl(var(--accent));
