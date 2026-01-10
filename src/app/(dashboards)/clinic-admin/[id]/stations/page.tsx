@@ -53,12 +53,14 @@ function CabinForm({
   const [name, setName] = useState('');
 
   useEffect(() => {
-    if (cabin) {
-      setName(cabin.name);
-    } else {
-      setName('');
+    if (isOpen) {
+      if (cabin) {
+        setName(cabin.name);
+      } else {
+        setName('');
+      }
     }
-  }, [cabin]);
+  }, [cabin, isOpen]);
 
   const handleConfirm = () => {
     if (name) {
@@ -70,25 +72,35 @@ function CabinForm({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{isEditMode ? 'Edit Cabin' : 'Add Cabin'}</DialogTitle>
+        <DialogHeader className="p-4 pb-2">
+          <DialogTitle className="text-base font-bold tracking-normal">
+            {isEditMode ? 'EDIT CABIN' : 'ADD CABIN'}
+          </DialogTitle>
         </DialogHeader>
-        <div>
-          <div className="p-4">
-            <Label htmlFor="cabinName">Cabin Name</Label>
+        <div className="p-4 pb-4">
+          <div className="space-y-1">
+            <Label
+              htmlFor="cabinName"
+              className="text-[10px] font-semibold text-gray-600"
+            >
+              CABIN NAME
+            </Label>
             <Input
               id="cabinName"
+              className="h-7 text-[11px]"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Consultation Room 1"
             />
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
+        <DialogFooter className="bg-gray-50 px-4 py-2 flex justify-end gap-2 rounded-b-lg">
+          <Button variant="destructive" onClick={onClose} size="xs">
+            CANCEL
           </Button>
-          <Button onClick={handleConfirm}>Confirm</Button>
+          <Button onClick={handleConfirm} size="xs">
+            CONFIRM
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
