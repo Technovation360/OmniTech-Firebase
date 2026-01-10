@@ -24,6 +24,13 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ArrowUp, ArrowDown, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const badgeColors: Record<Patient['status'], string> = {
     'waiting': "bg-blue-100 text-blue-800",
@@ -40,6 +47,7 @@ export default function LiveQueuePage() {
   const [clinics, setClinics] = useState<ClinicGroup[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'tokenNumber', direction: 'asc' });
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedClinic, setSelectedClinic] = useState<string>('all');
 
   useEffect(() => {
     getClinicGroups().then(allClinics => {
@@ -64,9 +72,14 @@ export default function LiveQueuePage() {
 
   useEffect(() => {
     let filteredData = allPatients;
+
+    if (selectedClinic !== 'all') {
+      filteredData = filteredData.filter(patient => patient.clinicId === selectedClinic);
+    }
+
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
-        filteredData = allPatients.filter(patient => 
+        filteredData = filteredData.filter(patient => 
             patient.name.toLowerCase().includes(lowercasedQuery) ||
             patient.tokenNumber.toLowerCase().includes(lowercasedQuery) ||
             getClinicName(patient.clinicId).toLowerCase().includes(lowercasedQuery) ||
@@ -88,7 +101,7 @@ export default function LiveQueuePage() {
         setFilteredPatients(filteredData);
     }
 
-  }, [searchQuery, allPatients, sortConfig, clinics]);
+  }, [searchQuery, allPatients, sortConfig, clinics, selectedClinic]);
 
   const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -112,14 +125,27 @@ export default function LiveQueuePage() {
                 <CardTitle>Live Queue</CardTitle>
                 <CardDescription>A real-time overview of all patient queues across all clinics.</CardDescription>
             </div>
-            <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                    placeholder="Search patients..." 
-                    className="pl-9 h-9" 
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                />
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Select value={selectedClinic} onValueChange={setSelectedClinic}>
+                  <SelectTrigger className="h-9 w-full sm:w-48 text-xs">
+                      <SelectValue placeholder="Filter by Clinic" />
+                  </SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="all" className="text-xs">All Clinics</SelectItem>
+                      {clinics.map(clinic => (
+                          <SelectItem key={clinic.id} value={clinic.id} className="text-xs">{clinic.name}</SelectItem>
+                      ))}
+                  </SelectContent>
+              </Select>
+              <div className="relative w-full sm:w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                      placeholder="Search patients..." 
+                      className="pl-9 h-9" 
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                  />
+              </div>
             </div>
         </div>
       </CardHeader>
@@ -193,5 +219,3 @@ export default function LiveQueuePage() {
     </Card>
   )
 }
-
-    
