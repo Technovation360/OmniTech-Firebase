@@ -115,8 +115,8 @@ export default function LoginPage() {
                     <TableBody>
                         {sampleCredentials.map((cred) => (
                             <TableRow key={cred.email}>
-                                <TableCell className="font-medium">{cred.role}</TableCell>
-                                <TableCell>{cred.email}</TableCell>
+                                <TableCell className="font-medium py-2 text-xs">{cred.role}</TableCell>
+                                <TableCell className="py-2 text-xs">{cred.email}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

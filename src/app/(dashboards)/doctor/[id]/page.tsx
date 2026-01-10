@@ -278,21 +278,21 @@ function DoctorDashboard({
                 {waitingPatients.length > 0 ? (
                   waitingPatients.map((patient) => (
                     <TableRow key={patient.id} onClick={() => handleAction(patient)} className={patient.status === 'called' ? 'bg-accent/50 cursor-pointer' : ''}>
-                      <TableCell className="font-bold">{patient.tokenNumber}</TableCell>
-                      <TableCell>{patient.name}</TableCell>
-                      <TableCell>
+                      <TableCell className="font-bold py-2 text-xs">{patient.tokenNumber}</TableCell>
+                      <TableCell className="py-2 text-xs">{patient.name}</TableCell>
+                      <TableCell className="py-2 text-xs">
                         <Badge variant={patient.status === 'called' ? 'default' : 'secondary'}>
                           {patient.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-2 text-xs">
                         <PatientActions patient={patient} />
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center">
+                    <TableCell colSpan={4} className="text-center py-2 text-xs">
                       No patients in the queue.
                     </TableCell>
                   </TableRow>

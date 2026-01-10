@@ -71,10 +71,10 @@ export default async function AdvertisingPage() {
             <TableBody>
               {ads.map((ad) => (
                 <TableRow key={ad.id}>
-                  <TableCell className="font-medium">{ad.campaign}</TableCell>
-                  <TableCell>{ad.advertiser}</TableCell>
-                  <TableCell>{ad.impressions.toLocaleString()}</TableCell>
-                  <TableCell>
+                  <TableCell className="font-medium py-2 text-xs">{ad.campaign}</TableCell>
+                  <TableCell className="py-2 text-xs">{ad.advertiser}</TableCell>
+                  <TableCell className="py-2 text-xs">{ad.impressions.toLocaleString()}</TableCell>
+                  <TableCell className="py-2 text-xs">
                     <a href={ad.videoUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                       Watch Video
                     </a>

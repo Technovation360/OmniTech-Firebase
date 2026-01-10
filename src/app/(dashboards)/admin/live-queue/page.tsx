@@ -67,12 +67,12 @@ export default function LiveQueuePage() {
           <TableBody>
             {patients.map((patient) => (
               <TableRow key={patient.id}>
-                <TableCell className="font-bold">{patient.tokenNumber}</TableCell>
-                <TableCell>{patient.name}</TableCell>
-                <TableCell>{getClinicName(patient.clinicId)}</TableCell>
-                <TableCell>{getDoctorName(patient.clinicId)}</TableCell>
-                <TableCell>{format(new Date(patient.registeredAt), 'hh:mm a')}</TableCell>
-                <TableCell>
+                <TableCell className="font-bold py-2 text-xs">{patient.tokenNumber}</TableCell>
+                <TableCell className="py-2 text-xs">{patient.name}</TableCell>
+                <TableCell className="py-2 text-xs">{getClinicName(patient.clinicId)}</TableCell>
+                <TableCell className="py-2 text-xs">{getDoctorName(patient.clinicId)}</TableCell>
+                <TableCell className="py-2 text-xs">{format(new Date(patient.registeredAt), 'hh:mm a')}</TableCell>
+                <TableCell className="py-2 text-xs">
                    <Badge variant={
                        patient.status === 'in-consultation' ? 'default' 
                        : patient.status === 'called' ? 'destructive' 
@@ -85,7 +85,7 @@ export default function LiveQueuePage() {
             ))}
              {patients.length === 0 && (
                 <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-2 text-xs">
                         No active patients in any queue.
                     </TableCell>
                 </TableRow>
