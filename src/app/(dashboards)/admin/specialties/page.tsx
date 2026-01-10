@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -134,7 +134,12 @@ export default function SpecialtiesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [specialtyToEdit, setSpecialtyToEdit] = useState<Specialty | null>(null);
   const [specialtyToDelete, setSpecialtyToDelete] = useState<Specialty | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Specialty; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc' });
 
+  useEffect(() => {
+    // Initial sort
+    handleSort('name');
+  }, []);
 
   const openEditModal = (specialty: Specialty) => {
     setSpecialtyToEdit(specialty);
@@ -166,6 +171,27 @@ export default function SpecialtiesPage() {
     }
   }
 
+  const handleSort = (key: keyof Specialty) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+
+    const sortedSpecialties = [...specialties].sort((a, b) => {
+      if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
+      if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    setSpecialties(sortedSpecialties);
+  };
+
+  const getSortIcon = (key: keyof Specialty) => {
+    if (!sortConfig || sortConfig.key !== key) return null;
+    if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3" />;
+    return <ArrowDown className="ml-2 h-3 w-3" />;
+  };
+
 
   return (
     <>
@@ -181,7 +207,12 @@ export default function SpecialtiesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Specialty Name</TableHead>
+                <TableHead>
+                  <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('name')}>
+                    Specialty Name
+                    {getSortIcon('name')}
+                  </Button>
+                </TableHead>
                 <TableHead>For Clinic</TableHead>
                 <TableHead>For Doctors</TableHead>
                 <TableHead>Actions</TableHead>
