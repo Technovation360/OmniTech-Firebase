@@ -39,12 +39,12 @@ function InsightsTab() {
   )
 }
 
-export default function ClinicAdminPage({ params }: { params: { id: string } }) {
+export default function ClinicAdminPage({ params: { id } }: { params: { id: string } }) {
   const [clinic, setClinic] = useState<ClinicGroup | null>(null);
 
   useEffect(() => {
-    getClinicGroupById(params.id).then(setClinic);
-  }, [params.id]);
+    getClinicGroupById(id).then(setClinic);
+  }, [id]);
 
   if (!clinic) {
     return <div className="flex items-center justify-center h-full"><Loader className="animate-spin" /></div>
