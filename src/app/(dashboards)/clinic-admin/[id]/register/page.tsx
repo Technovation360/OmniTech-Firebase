@@ -243,8 +243,7 @@ function ManualCheckInModal({
 }
 
 
-export default function PatientRegistryPage({ params }: { params: { id: string } }) {
-  const { id: clinicId } = params;
+export default function PatientRegistryPage({ params: { id: clinicId } }: { params: { id: string } }) {
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [clinic, setClinic] = useState<ClinicGroup | null>(null);
