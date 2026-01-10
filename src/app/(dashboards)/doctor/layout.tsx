@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -26,7 +27,7 @@ import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import React from 'react';
+import React, { use } from 'react';
 
 function DoctorSidebar() {
   const pathname = usePathname();
@@ -107,6 +108,7 @@ function DoctorSidebar() {
 
 function DoctorLayoutContent({ children }: { children: React.ReactNode }) {
   const { toggleSidebar } = useSidebar();
+  const { id } = use(useParams());
   return (
     <>
       <DoctorSidebar />
@@ -124,7 +126,9 @@ function DoctorLayoutContent({ children }: { children: React.ReactNode }) {
           
           <div className="flex items-center gap-3">
             <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-background text-foreground">D</AvatarFallback>
+              <AvatarFallback className="bg-background text-foreground">
+                {id.toString().charAt(0).toUpperCase()}
+              </AvatarFallback>
             </Avatar>
             <Link href="/">
               <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/20 hover:text-white">
