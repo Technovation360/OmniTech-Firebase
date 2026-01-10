@@ -44,7 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Edit, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import { Edit, Trash2, ArrowUp, ArrowDown, Search } from 'lucide-react';
 import { getClinicGroups } from '@/lib/data';
 import type { ClinicGroup } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -201,16 +201,37 @@ const badgeColors = [
 
 
 export default function ClinicsPage() {
-  const [clinics, setClinics] = useState<ClinicGroup[]>([]);
+  const [allClinics, setAllClinics] = useState<ClinicGroup[]>([]);
+  const [filteredClinics, setFilteredClinics] = useState<ClinicGroup[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [clinicToEdit, setClinicToEdit] = useState<ClinicGroup | null>(null);
   const [clinicToDelete, setClinicToDelete] = useState<ClinicGroup | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: keyof ClinicGroup; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc'});
+  const [searchQuery, setSearchQuery] = useState('');
 
 
   useEffect(() => {
-    getClinicGroups().then(setClinics);
+    getClinicGroups().then(data => {
+        setAllClinics(data);
+        setFilteredClinics(data);
+    });
   }, []);
+
+  useEffect(() => {
+    const lowercasedQuery = searchQuery.toLowerCase();
+    const filteredData = allClinics.filter(clinic => 
+        clinic.name.toLowerCase().includes(lowercasedQuery) ||
+        clinic.contact.toLowerCase().includes(lowercasedQuery)
+    );
+    setFilteredClinics(filteredData);
+    // Reset sort when searching
+    if (searchQuery) {
+        setSortConfig(null);
+    } else {
+        handleSort('name'); // Or your default sort
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, allClinics]);
   
   const openEditModal = (clinic: ClinicGroup) => {
     setClinicToEdit(clinic);
@@ -237,7 +258,7 @@ export default function ClinicsPage() {
 
   const handleDeleteConfirm = () => {
     if (clinicToDelete) {
-      setClinics(clinics.filter(c => c.id !== clinicToDelete.id));
+      setAllClinics(allClinics.filter(c => c.id !== clinicToDelete.id));
       closeDeleteDialog();
     }
   }
@@ -245,7 +266,7 @@ export default function ClinicsPage() {
   const handleFormConfirm = (formData: Omit<ClinicGroup, 'id' | 'doctor' | 'assistants' | 'cabin' | 'screen'>) => {
     if (clinicToEdit) {
       // Update existing clinic
-      setClinics(clinics.map(c => c.id === clinicToEdit.id ? { ...clinicToEdit, ...formData } : c));
+      setAllClinics(allClinics.map(c => c.id === clinicToEdit.id ? { ...clinicToEdit, ...formData } : c));
     } else {
       // Add new clinic
       const newClinic: ClinicGroup = {
@@ -256,7 +277,7 @@ export default function ClinicsPage() {
         cabin: { id: 'cab_new', name: 'New Cabin'},
         screen: { id: 'scr_main_hall', name: 'Main Hall Display'},
       };
-      setClinics([newClinic, ...clinics]);
+      setAllClinics([newClinic, ...allClinics]);
     }
     closeModal();
   };
@@ -268,7 +289,7 @@ export default function ClinicsPage() {
     }
     setSortConfig({ key, direction });
 
-    const sortedClinics = [...clinics].sort((a, b) => {
+    const sortedClinics = [...filteredClinics].sort((a, b) => {
       const aVal = a[key];
       const bVal = b[key];
 
@@ -288,7 +309,7 @@ export default function ClinicsPage() {
       if (valA > valB) return direction === 'asc' ? 1 : -1;
       return 0;
     });
-    setClinics(sortedClinics);
+    setFilteredClinics(sortedClinics);
   };
   
   const getSortIcon = (key: keyof ClinicGroup) => {
@@ -300,12 +321,25 @@ export default function ClinicsPage() {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-lg">Clinics Management</CardTitle>
-            <CardDescription className="text-xs">Onboard, edit, and manage clinic groups.</CardDescription>
-          </div>
-          <Button onClick={openCreateModal} size="sm">Onboard Clinic</Button>
+        <CardHeader>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <CardTitle className="text-lg">Clinics Management</CardTitle>
+                    <CardDescription className="text-xs mt-1">Onboard, edit, and manage clinic groups.</CardDescription>
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="relative w-full sm:w-64">
+                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                       <Input 
+                            placeholder="Search by name or email..." 
+                            className="pl-9 h-9" 
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    <Button onClick={openCreateModal} size="sm" className="w-auto sm:w-auto flex-shrink-0">Onboard Clinic</Button>
+                </div>
+            </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -339,7 +373,7 @@ export default function ClinicsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {clinics.map((clinic) => (
+              {filteredClinics.map((clinic) => (
                 <TableRow key={clinic.id}>
                   <TableCell className="font-medium py-2 text-xs">{clinic.name}</TableCell>
                   <TableCell className="py-2 text-xs">{clinic.location}</TableCell>
