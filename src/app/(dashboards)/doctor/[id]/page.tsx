@@ -63,17 +63,17 @@ type FetchedData = {
 };
 
 // A simple client component to fetch initial data on the client side
-export default function DoctorPageLoader({ params }: DoctorPageProps) {
+export default function DoctorPageLoader({ params: { id } }: DoctorPageProps) {
   const [data, setData] = useState<FetchedData | null>(null);
 
   useEffect(() => {
     Promise.all([
-      getClinicGroupById(params.id === 'doc_ashish' ? 'grp_cardiology_01' : 'grp_ortho_01'),
-      getPatientsByClinicId(params.id === 'doc_ashish' ? 'grp_cardiology_01' : 'grp_ortho_01'),
+      getClinicGroupById(id === 'doc_ashish' ? 'grp_cardiology_01' : 'grp_ortho_01'),
+      getPatientsByClinicId(id === 'doc_ashish' ? 'grp_cardiology_01' : 'grp_ortho_01'),
     ]).then(([clinicGroup, patients]) => {
       setData({ clinicGroup, patients });
     });
-  }, [params.id]);
+  }, [id]);
 
   if (!data || !data.clinicGroup) {
     return (
