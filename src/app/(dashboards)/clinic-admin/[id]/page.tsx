@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -157,10 +156,11 @@ function StationActivityTable() {
 
 
 export default function ClinicAdminPage({
-  params: { id },
+  params,
 }: {
   params: { id: string };
 }) {
+  const { id } = params;
   const [clinic, setClinic] = useState<ClinicGroup | null>(null);
 
   useEffect(() => {
