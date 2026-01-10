@@ -1,5 +1,3 @@
-
-
 'use client';
 import { useState, useEffect } from 'react';
 import {
@@ -122,7 +120,7 @@ function OnboardClinicForm({
           <Button variant="destructive" onClick={onClose} size="xs">
             CANCEL
           </Button>
-          <Button size="xs">CONFIRM</Button>
+          <Button size="xs" onClick={onClose}>CONFIRM</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
