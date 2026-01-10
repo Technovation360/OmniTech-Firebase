@@ -25,7 +25,9 @@ import {
   Megaphone,
   Film,
   Sparkles,
-  ChevronLeft
+  ChevronLeft,
+  Stethoscope,
+  Briefcase
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -39,16 +41,22 @@ function AdminSidebar() {
 
   const platformMenuItems = [
     { href: `${basePath}`, icon: LayoutDashboard, label: 'Dashboard', active: pathname === `${basePath}` },
-    { href: `${basePath}/live-queue`, icon: Monitor, label: 'Live Queue', active: pathname === `${basePath}/live-queue` },
-    { href: `${basePath}/patient-registry`, icon: ClipboardList, label: 'Patient Registry', active: pathname === `${basePath}/patient-registry` },
   ];
 
-  const adminMenuItems = [
+  const clinicalMenuItems = [
+    { href: `${basePath}/live-queue`, icon: Monitor, label: 'Live Queue', active: pathname === `${basePath}/live-queue` },
+    { href: `${basePath}/patient-registry`, icon: ClipboardList, label: 'Patient Registry', active: pathname === `${basePath}/patient-registry` },
     { href: `${basePath}/clinics`, icon: Building, label: 'Clinics', active: pathname === `${basePath}/clinics` },
-    { href: `${basePath}/users`, icon: Users, label: 'Users', active: pathname === `${basePath}/users` },
     { href: `${basePath}/specialties`, icon: Sparkles, label: 'Specialties', active: pathname === `${basePath}/specialties` },
-    { href: `${basePath}/advertisers`, icon: Megaphone, label: 'Advertisers', active: pathname === `${basePath}/advertisers` },
-    { href: `${basePath}/campaigns`, icon: Film, label: 'Campaigns', active: pathname === `${basePath}/campaigns` },
+  ];
+
+  const advertisersMenuItems = [
+      { href: `${basePath}/advertisers`, icon: Megaphone, label: 'Advertisers', active: pathname === `${basePath}/advertisers` },
+      { href: `${basePath}/campaigns`, icon: Film, label: 'Campaigns', active: pathname === `${basePath}/campaigns` },
+  ]
+
+  const adminMenuItems = [
+    { href: `${basePath}/users`, icon: Users, label: 'Users', active: pathname === `${basePath}/users` },
   ]
 
   return (
@@ -75,6 +83,42 @@ function AdminSidebar() {
           ))}
         </SidebarMenu>
         
+        <div className="flex flex-col gap-2 px-4 pt-4">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Clinical
+          </span>
+        </div>
+        <SidebarMenu>
+          {clinicalMenuItems.map((item) => (
+            <SidebarMenuItem key={item.label}>
+              <SidebarMenuButton asChild isActive={item.active}>
+                <Link href={item.href}>
+                  <item.icon />
+                  {item.label}
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+
+        <div className="flex flex-col gap-2 px-4 pt-4">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Advertisers
+          </span>
+        </div>
+        <SidebarMenu>
+          {advertisersMenuItems.map((item) => (
+            <SidebarMenuItem key={item.label}>
+              <SidebarMenuButton asChild isActive={item.active}>
+                <Link href={item.href}>
+                  <item.icon />
+                  {item.label}
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+
         <div className="flex flex-col gap-2 px-4 pt-4">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Administration
