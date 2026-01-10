@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -14,11 +15,11 @@ import {
   XCircle,
   Building,
   Stethoscope,
+  Loader,
 } from 'lucide-react';
 import { getClinicGroupById, getPatientsByClinicId } from '@/lib/data';
 import { useState, useEffect } from 'react';
 import { ClinicGroup, Patient } from '@/lib/types';
-import { Loader } from 'lucide-react';
 import {
   Table,
   TableBody,
