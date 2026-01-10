@@ -118,14 +118,14 @@ function UserForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader className="p-4 pb-2">
           <DialogTitle className="text-base font-bold tracking-normal">
             {isEditMode ? 'EDIT USER' : 'REGISTER USER'}
           </DialogTitle>
         </DialogHeader>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+        <div className="p-4 pb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
             <div className="space-y-1">
               <Label htmlFor="role" className="text-[10px] font-semibold text-gray-600">ROLE</Label>
                <Select defaultValue={user?.role}>
@@ -139,23 +139,7 @@ function UserForm({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="userName" className="text-[10px] font-semibold text-gray-600">FULL NAME</Label>
-              <Input id="userName" className="h-7 text-[11px]" defaultValue={user?.name} />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="email" className="text-[10px] font-semibold text-gray-600">EMAIL</Label>
-              <Input id="email" type="email" className="h-7 text-[11px]" defaultValue={user?.email} />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="phone" className="text-[10px] font-semibold text-gray-600">PHONE</Label>
-              <Input id="phone" type="tel" className="h-7 text-[11px]" />
-            </div>
-            <div className="space-y-1 md:col-span-2">
-              <Label htmlFor="password" className="text-[10px] font-semibold text-gray-600">PASSWORD</Label>
-              <Input id="password" type="password" className="h-7 text-[11px]" />
-            </div>
-            <div className="space-y-1 md:col-span-2">
+             <div className="space-y-1">
               <Label htmlFor="affiliation" className="text-[10px] font-semibold text-gray-600">AFFILIATED CLINIC</Label>
               <Select>
                 <SelectTrigger className="h-7 text-[11px]">
@@ -167,6 +151,22 @@ function UserForm({
                     ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="userName" className="text-[10px] font-semibold text-gray-600">FULL NAME</Label>
+              <Input id="userName" className="h-7 text-[11px]" defaultValue={user?.name || ''} />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="email" className="text-[10px] font-semibold text-gray-600">EMAIL</Label>
+              <Input id="email" type="email" className="h-7 text-[11px]" defaultValue={user?.email || ''} />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="phone" className="text-[10px] font-semibold text-gray-600">PHONE</Label>
+              <Input id="phone" type="tel" className="h-7 text-[11px]" defaultValue={''} />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="password" className="text-[10px] font-semibold text-gray-600">PASSWORD</Label>
+              <Input id="password" type="password" className="h-7 text-[11px]" defaultValue={''}/>
             </div>
           </div>
         </div>
@@ -355,7 +355,3 @@ export default function UsersPage() {
     </>
   )
 }
-
-    
-
-    
