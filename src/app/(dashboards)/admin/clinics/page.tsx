@@ -337,6 +337,15 @@ export default function ClinicsPage() {
     return <ArrowDown className="ml-2 h-3 w-3" />;
   };
 
+  const formatLocation = (location: string) => {
+    const parts = location.split(',').map(part => part.trim());
+    if (parts.length === 2) {
+      // parts[0] is city, parts[1] is state
+      return `${parts[1]}, ${parts[0]}`; // "State, City"
+    }
+    return location;
+  }
+
   return (
     <>
       <Card>
@@ -395,7 +404,7 @@ export default function ClinicsPage() {
               {filteredClinics.map((clinic) => (
                 <TableRow key={clinic.id}>
                   <TableCell className="font-medium py-2 text-xs">{clinic.name}</TableCell>
-                  <TableCell className="py-2 text-xs">{clinic.location}</TableCell>
+                  <TableCell className="py-2 text-xs">{formatLocation(clinic.location)}</TableCell>
                    <TableCell className="py-2 text-xs">
                     <div className="flex gap-1">
                       {clinic.specialties.map((specialty, index) => (
