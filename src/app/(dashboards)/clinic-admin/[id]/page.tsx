@@ -30,10 +30,10 @@ import {
 } from '@/components/ui/table';
 
 const stats = [
-  { title: 'TOTAL PATIENTS', value: '30', icon: Users, color: 'bg-purple-100 text-purple-700' },
-  { title: 'IN WAITING', value: '30', icon: Clock, color: 'bg-yellow-100 text-yellow-700' },
-  { title: 'ATTENDED', value: '0', icon: CheckCircle, color: 'bg-green-100 text-green-700' },
-  { title: 'SKIPPED', value: '0', icon: XCircle, color: 'bg-red-100 text-red-700' },
+  { title: 'TOTAL PATIENTS', value: '30', icon: Users },
+  { title: 'IN WAITING', value: '30', icon: Clock },
+  { title: 'ATTENDED', value: '0', icon: CheckCircle },
+  { title: 'SKIPPED', value: '0', icon: XCircle },
 ];
 
 const nextInLineData = [
@@ -52,15 +52,13 @@ function InsightsTab() {
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
       {stats.map((stat) => (
-        <Card key={stat.title} className="shadow-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium uppercase text-muted-foreground tracking-wider">
-              {stat.title}
-            </CardTitle>
+        <Card key={stat.title} className="shadow-sm">
+          <CardHeader className="pb-2 text-center">
+             <CardTitle className="text-sm font-medium uppercase text-muted-foreground tracking-wider">{stat.title}</CardTitle>
           </CardHeader>
-          <CardContent className="flex items-center gap-4">
-            <div className={`p-3 rounded-lg ${stat.color}`}>
-              <stat.icon className="h-6 w-6" />
+          <CardContent className="flex items-center justify-center gap-4">
+            <div className="p-3 bg-accent rounded-full">
+               <stat.icon className="h-6 w-6 text-accent-foreground" />
             </div>
             <div className="text-4xl font-bold">{stat.value}</div>
           </CardContent>
