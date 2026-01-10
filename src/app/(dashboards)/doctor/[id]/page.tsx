@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useTransition, useActionState } from 'react';
+import { useState, useTransition, useActionState, useEffect } from 'react';
 import {
   getPatientsByClinicId,
   getClinicGroupById,
@@ -35,6 +36,8 @@ import {
   Loader,
   Sparkles,
   Save,
+  ArrowUp, 
+  ArrowDown
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -63,14 +66,14 @@ type FetchedData = {
 export default function DoctorPageLoader({ params }: DoctorPageProps) {
   const [data, setData] = useState<FetchedData | null>(null);
 
-  useState(() => {
+  useEffect(() => {
     Promise.all([
       getClinicGroupById(params.id === 'doc_ashish' ? 'grp_cardiology_01' : 'grp_ortho_01'),
       getPatientsByClinicId(params.id === 'doc_ashish' ? 'grp_cardiology_01' : 'grp_ortho_01'),
     ]).then(([clinicGroup, patients]) => {
       setData({ clinicGroup, patients });
     });
-  });
+  }, [params.id]);
 
   if (!data || !data.clinicGroup) {
     return (
@@ -141,10 +144,12 @@ function ConsultationPad({
     onConsultationEnd();
   }
   
-  if (formState.success) {
-    toast({ title: "Success", description: "Consultation saved successfully." });
-    onConsultationEnd();
-  }
+  useEffect(() => {
+    if (formState.success) {
+      toast({ title: "Success", description: "Consultation saved successfully." });
+      onConsultationEnd();
+    }
+  }, [formState, onConsultationEnd, toast]);
 
   return (
     <Card className="col-span-1 lg:col-span-2">
@@ -240,23 +245,44 @@ function DoctorDashboard({
   clinicGroup: ClinicGroup;
   initialPatients: Patient[];
 }) {
-  const [patients, setPatients] = useState(initialPatients);
+  const [patients, setPatients] = useState(initialPatients.filter((p) => ['waiting', 'called'].includes(p.status)));
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(
     initialPatients.find(p => p.status === 'in-consultation') || null
   );
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Patient; direction: 'asc' | 'desc' } | null>({ key: 'tokenNumber', direction: 'asc' });
+
 
   const handleConsultationEnd = () => {
     setSelectedPatient(null);
     // This would typically re-fetch, but here we just clear the selection
   }
-
-  const waitingPatients = patients.filter((p) => p.status === 'waiting' || p.status === 'called');
   
   const handleAction = (patient: Patient) => {
     if (patient.status === 'called') {
         setSelectedPatient(patient);
     }
   }
+
+  const handleSort = (key: keyof Patient) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+
+    const sortedPatients = [...patients].sort((a, b) => {
+      if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
+      if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    setPatients(sortedPatients);
+  };
+  
+  const getSortIcon = (key: keyof Patient) => {
+    if (!sortConfig || sortConfig.key !== key) return null;
+    if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3" />;
+    return <ArrowDown className="ml-2 h-3 w-3" />;
+  };
 
   return (
     <div className="space-y-8">
@@ -275,15 +301,30 @@ function DoctorDashboard({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Token</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>
+                    <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('tokenNumber')}>
+                        Token
+                        {getSortIcon('tokenNumber')}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('name')}>
+                        Name
+                        {getSortIcon('name')}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('status')}>
+                        Status
+                        {getSortIcon('status')}
+                    </Button>
+                  </TableHead>
                   <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {waitingPatients.length > 0 ? (
-                  waitingPatients.map((patient) => (
+                {patients.length > 0 ? (
+                  patients.map((patient) => (
                     <TableRow key={patient.id} onClick={() => handleAction(patient)} className={patient.status === 'called' ? 'bg-accent/50 cursor-pointer' : ''}>
                       <TableCell className="font-bold py-2 text-xs">{patient.tokenNumber}</TableCell>
                       <TableCell className="py-2 text-xs">{patient.name}</TableCell>

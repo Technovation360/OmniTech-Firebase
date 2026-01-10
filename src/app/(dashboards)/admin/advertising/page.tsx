@@ -1,4 +1,9 @@
+
+'use client';
+
 import { getAdvertisements } from '@/lib/data';
+import { useState, useEffect } from 'react';
+import type { Advertisement } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -15,7 +20,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Eye, Film, Users, Monitor } from 'lucide-react';
+import { Eye, Film, Users, Monitor, ArrowUp, ArrowDown } from 'lucide-react';
 
 const stats = [
     { title: "Total Impressions", value: "20,879", icon: Eye },
@@ -24,8 +29,34 @@ const stats = [
     { title: "Screen Count", value: "1", icon: Monitor },
 ]
 
-export default async function AdvertisingPage() {
-  const ads = await getAdvertisements();
+export default function AdvertisingPage() {
+  const [ads, setAds] = useState<Advertisement[]>([]);
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Advertisement; direction: 'asc' | 'desc' } | null>({ key: 'campaign', direction: 'asc'});
+
+  useEffect(() => {
+    getAdvertisements().then(setAds);
+  }, []);
+
+  const handleSort = (key: keyof Advertisement) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+
+    const sortedAds = [...ads].sort((a, b) => {
+      if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
+      if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    setAds(sortedAds);
+  };
+
+  const getSortIcon = (key: keyof Advertisement) => {
+    if (!sortConfig || sortConfig.key !== key) return null;
+    if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3" />;
+    return <ArrowDown className="ml-2 h-3 w-3" />;
+  };
 
   return (
     <div className="space-y-8">
@@ -62,9 +93,24 @@ export default async function AdvertisingPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Campaign</TableHead>
-                <TableHead>Advertiser</TableHead>
-                <TableHead>Impressions</TableHead>
+                <TableHead>
+                    <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('campaign')}>
+                        Campaign
+                        {getSortIcon('campaign')}
+                    </Button>
+                </TableHead>
+                <TableHead>
+                    <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('advertiser')}>
+                        Advertiser
+                        {getSortIcon('advertiser')}
+                    </Button>
+                </TableHead>
+                <TableHead>
+                    <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('impressions')}>
+                        Impressions
+                        {getSortIcon('impressions')}
+                    </Button>
+                </TableHead>
                 <TableHead>Video</TableHead>
               </TableRow>
             </TableHeader>

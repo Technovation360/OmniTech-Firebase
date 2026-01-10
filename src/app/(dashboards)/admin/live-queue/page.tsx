@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import {
@@ -16,10 +17,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { getPatientsByClinicId, getClinicGroups } from '@/lib/data';
 import type { Patient, ClinicGroup } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { ArrowUp, ArrowDown } from 'lucide-react';
 
 
 const badgeColors: Record<Patient['status'], string> = {
@@ -34,6 +37,8 @@ const badgeColors: Record<Patient['status'], string> = {
 export default function LiveQueuePage() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [clinics, setClinics] = useState<ClinicGroup[]>([]);
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'tokenNumber', direction: 'asc' });
+
 
   useEffect(() => {
     getClinicGroups().then(allClinics => {
@@ -56,6 +61,30 @@ export default function LiveQueuePage() {
       return clinics.find(c => c.id === clinicId)?.doctor.name || 'Unknown';
   }
 
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+
+    const sortedPatients = [...patients].sort((a, b) => {
+      const aVal = key === 'clinic' ? getClinicName(a.clinicId) : key === 'doctor' ? getDoctorName(a.clinicId) : a[key as keyof Patient];
+      const bVal = key === 'clinic' ? getClinicName(b.clinicId) : key === 'doctor' ? getDoctorName(b.clinicId) : b[key as keyof Patient];
+
+      if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    setPatients(sortedPatients);
+  };
+  
+  const getSortIcon = (key: string) => {
+    if (!sortConfig || sortConfig.key !== key) return null;
+    if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3" />;
+    return <ArrowDown className="ml-2 h-3 w-3" />;
+  };
+
   return (
      <Card>
       <CardHeader>
@@ -66,12 +95,42 @@ export default function LiveQueuePage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Token</TableHead>
-              <TableHead>Patient</TableHead>
-              <TableHead>Clinic</TableHead>
-              <TableHead>Doctor</TableHead>
-              <TableHead>Issued At</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>
+                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('tokenNumber')}>
+                    Token
+                    {getSortIcon('tokenNumber')}
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('name')}>
+                    Patient
+                    {getSortIcon('name')}
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('clinic')}>
+                    Clinic
+                    {getSortIcon('clinic')}
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('doctor')}>
+                    Doctor
+                    {getSortIcon('doctor')}
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('registeredAt')}>
+                    Issued At
+                    {getSortIcon('registeredAt')}
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('status')}>
+                    Status
+                    {getSortIcon('status')}
+                </Button>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
