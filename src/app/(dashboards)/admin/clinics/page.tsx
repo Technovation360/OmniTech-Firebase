@@ -44,7 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, ArrowUpDown } from 'lucide-react';
 import { getClinicGroups } from '@/lib/data';
 import type { ClinicGroup } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -198,7 +198,12 @@ export default function ClinicsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Clinic Name</TableHead>
+                <TableHead>
+                   <Button variant="ghost" className="text-xs text-foreground p-0 hover:bg-transparent">
+                        Clinic Name
+                        <ArrowUpDown className="ml-2 h-3 w-3" />
+                    </Button>
+                </TableHead>
                 <TableHead>Location</TableHead>
                 <TableHead>Specialties</TableHead>
                 <TableHead>Contact</TableHead>
