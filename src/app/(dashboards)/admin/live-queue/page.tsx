@@ -202,7 +202,7 @@ export default function LiveQueuePage() {
               <TableRow key={patient.id}>
                 <TableCell className="font-bold py-2 text-xs">{patient.tokenNumber}</TableCell>
                 <TableCell className="py-2 text-xs">{patient.name}</TableCell>
-                <TableCell className="py-2 text-xs">{clinics.find(c => c.id === patient.clinicId)?.location || 'Unknown'}</TableCell>
+                <TableCell className="py-2 text-xs">{getClinicName(patient.clinicId)}</TableCell>
                 <TableCell className="py-2 text-xs">{getClinicName(patient.clinicId)}</TableCell>
                 <TableCell className="py-2 text-xs">{getDoctorName(patient.clinicId)}</TableCell>
                 <TableCell className="py-2 text-xs">{format(new Date(patient.registeredAt), 'hh:mm a')}</TableCell>
