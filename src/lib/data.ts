@@ -4,7 +4,7 @@ let clinicGroups: ClinicGroup[] = [
   {
     id: 'grp_cardiology_01',
     name: 'Cardiology Dept.',
-    location: 'Metro City, California',
+    location: 'California, Metro City',
     specialties: ['Cardiology', 'General Medicine'],
     contact: 'contact@citygeneral.com',
     doctor: { id: 'doc_ashish', name: 'Dr. Ashish' },
@@ -15,7 +15,7 @@ let clinicGroups: ClinicGroup[] = [
   {
     id: 'grp_ortho_01',
     name: 'Orthopedics Dept.',
-    location: 'Metro City, California',
+    location: 'California, Metro City',
     specialties: ['Orthopedics', 'Pediatrics'],
     contact: 'ortho@citygeneral.com',
     doctor: { id: 'doc_vijay', name: 'Dr. Vijay' },
@@ -109,7 +109,7 @@ export const getPatientHistory = async (patientId: string): Promise<PatientHisto
         const endTime = consultation ? consultation.date : undefined;
         return {
             tokenNumber: visit.tokenNumber,
-            clinicName: clinic?.location || 'Unknown Clinic',
+            clinicName: clinic?.name || 'Unknown Clinic',
             groupName: clinic?.name || 'Unknown Group',
             doctorName: clinic?.doctor.name || 'Unknown Doctor',
             issuedAt: visit.registeredAt,

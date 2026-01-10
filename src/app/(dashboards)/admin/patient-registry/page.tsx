@@ -75,6 +75,7 @@ function VisitHistoryModal({
   patient: Patient | null;
 }) {
   const [history, setHistory] = useState<PatientHistoryEntry[]>([]);
+  const [clinics, setClinics] = useState<ClinicGroup[]>([]);
 
   useEffect(() => {
     if (patient) {
@@ -82,9 +83,18 @@ function VisitHistoryModal({
     } else {
       setHistory([]);
     }
-  }, [patient]);
+
+    if (isOpen) {
+        getClinicGroups().then(setClinics);
+    }
+
+  }, [patient, isOpen]);
 
   if (!patient) return null;
+  
+  const getClinicName = (clinicId: string) => {
+    return clinics.find(c => c.id === clinicId)?.name || 'Unknown Clinic';
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -112,6 +122,9 @@ function VisitHistoryModal({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All</SelectItem>
+                         {clinics.map(clinic => (
+                          <SelectItem key={clinic.id} value={clinic.id} className="text-xs">{clinic.name}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
