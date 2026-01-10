@@ -1,3 +1,4 @@
+
 export type UserRole = 'central-admin' | 'clinic-admin' | 'doctor' | 'assistant' | 'display' | 'advertiser';
 
 const userRoles: Record<string, UserRole> = {
@@ -11,6 +12,16 @@ const userRoles: Record<string, UserRole> = {
     'display@omni.com': 'display',
     'advertiser@omni.com': 'advertiser',
 };
+
+const affiliationMap: Record<string, string> = {
+    'clinic-admin-city@omni.com': 'grp_cardiology_01',
+    'clinic-admin-health@omni.com': 'grp_ortho_01',
+    'doc_ashish@omni.com': 'grp_cardiology_01', // Also used for redirect
+    'doc_vijay@omni.com': 'grp_ortho_01',
+    'asst_sunita@omni.com': 'asst_sunita', // This seems to be assistant ID not clinic ID
+    'asst_rajesh@omni.com': 'asst_rajesh',
+};
+
 
 const doctorIdMap: Record<string, string> = {
     'doc_ashish@omni.com': 'doc_ashish',
@@ -29,8 +40,10 @@ export function getUserRole(email: string): UserRole | null {
 export function getRedirectUrlForRole(role: UserRole, email: string): string | null {
     switch (role) {
         case 'central-admin':
-        case 'clinic-admin': // For now, clinic admin goes to same dashboard
             return '/admin';
+        case 'clinic-admin':
+            const clinicId = affiliationMap[email];
+            return clinicId ? `/clinic-admin/${clinicId}` : null;
         case 'doctor':
             const doctorId = doctorIdMap[email];
             return doctorId ? `/doctor/${doctorId}` : null;
@@ -45,5 +58,3 @@ export function getRedirectUrlForRole(role: UserRole, email: string): string | n
             return null;
     }
 }
-
-    
