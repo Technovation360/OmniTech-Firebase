@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import {
   Card,
   CardContent,
@@ -243,7 +243,8 @@ function ManualCheckInModal({
 }
 
 
-export default function PatientRegistryPage({ params: { id: clinicId } }: { params: { id: string } }) {
+export default function PatientRegistryPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: clinicId } = use(params);
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [clinic, setClinic] = useState<ClinicGroup | null>(null);

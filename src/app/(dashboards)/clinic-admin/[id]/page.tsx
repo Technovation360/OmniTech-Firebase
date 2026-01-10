@@ -15,7 +15,7 @@ import {
   Loader,
 } from 'lucide-react';
 import { getClinicGroupById } from '@/lib/data';
-import { useState, useEffect } from 'react';
+import { use, useState, useEffect } from 'react';
 import { ClinicGroup } from '@/lib/types';
 
 const stats = [
@@ -48,13 +48,16 @@ function InsightsTab() {
 export default function ClinicAdminPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const { id } = params;
+  const { id } = use(params);
   const [clinic, setClinic] = useState<ClinicGroup | null>(null);
 
   useEffect(() => {
-    getClinicGroupById(id).then(setClinic);
+    getClinicGroupById(id).then((data) => {
+      // If data is undefined, we default to null to match the state type
+      setClinic(data ?? null);
+    });
   }, [id]);
 
   if (!clinic) {
