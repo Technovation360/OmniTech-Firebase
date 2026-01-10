@@ -68,7 +68,7 @@ function DashboardHeader() {
 
 function DashboardSidebar() {
   const pathname = usePathname();
-  const isClinicalActive = pathname.startsWith('/admin/clinics') || pathname.startsWith('/admin/live-queue') || pathname.startsWith('/admin/patient-registry');
+  const isClinicalActive = pathname.startsWith('/admin/clinics') || pathname.startsWith('/admin/specialties') || pathname.startsWith('/admin/live-queue') || pathname.startsWith('/admin/patient-registry');
 
   const [isClinicalOpen, setIsClinicalOpen] = useState(false);
 
@@ -124,8 +124,8 @@ function DashboardSidebar() {
                             </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>
-                            <SidebarMenuSubButton asChild>
-                                <Link href="#">
+                            <SidebarMenuSubButton asChild isActive={pathname.startsWith('/admin/specialties')}>
+                                <Link href="/admin/specialties">
                                     <Stethoscope/>
                                     Specialties
                                 </Link>
