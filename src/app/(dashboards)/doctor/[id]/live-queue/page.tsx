@@ -1,8 +1,8 @@
 'use client';
 
 import { use, useState, useEffect } from 'react';
-import { getPatientsByClinicId } from '@/lib/data';
-import type { Patient } from '@/lib/types';
+import { getPatientsByClinicId, getClinicGroupById } from '@/lib/data';
+import type { Patient, ClinicGroup } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -24,17 +24,25 @@ export default function DoctorLiveQueuePage({ params }: { params: { id: string }
   const { id: doctorId } = use(params);
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
+  const [clinic, setClinic] = useState<ClinicGroup | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortConfig, setSortConfig] = useState<{ key: keyof Patient; direction: 'asc' | 'desc' } | null>({ key: 'tokenNumber', direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'tokenNumber', direction: 'asc' });
 
   useEffect(() => {
     const clinicId = doctorId === 'doc_ashish' ? 'grp_cardiology_01' : 'grp_ortho_01';
-    getPatientsByClinicId(clinicId).then(data => {
-      setAllPatients(data.filter(p => ['waiting', 'called', 'in-consultation'].includes(p.status)));
+    Promise.all([
+        getClinicGroupById(clinicId),
+        getPatientsByClinicId(clinicId)
+    ]).then(([clinicData, patientData]) => {
+      setClinic(clinicData || null);
+      setAllPatients(patientData.filter(p => ['waiting', 'called', 'in-consultation'].includes(p.status)));
       setLoading(false);
     });
   }, [doctorId]);
+
+  const getGroupName = () => clinic?.name || 'Unknown';
+  const getDoctorName = () => clinic?.doctor.name || 'Unknown';
 
   useEffect(() => {
     let filteredData = allPatients;
@@ -48,8 +56,22 @@ export default function DoctorLiveQueuePage({ params }: { params: { id: string }
 
     if (sortConfig) {
       const sorted = [...filteredData].sort((a, b) => {
-        const aVal = a[sortConfig.key];
-        const bVal = b[sortConfig.key];
+        let aVal, bVal;
+        
+        switch (sortConfig.key) {
+            case 'group':
+                aVal = getGroupName();
+                bVal = getGroupName();
+                break;
+            case 'doctor':
+                aVal = getDoctorName();
+                bVal = getDoctorName();
+                break;
+            default:
+                aVal = a[sortConfig.key as keyof Patient];
+                bVal = b[sortConfig.key as keyof Patient];
+        }
+
         if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
         if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
         return 0;
@@ -58,9 +80,9 @@ export default function DoctorLiveQueuePage({ params }: { params: { id: string }
     } else {
         setFilteredPatients(filteredData);
     }
-  }, [searchQuery, allPatients, sortConfig]);
+  }, [searchQuery, allPatients, sortConfig, clinic]);
 
-  const handleSort = (key: keyof Patient) => {
+  const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
       direction = 'desc';
@@ -68,7 +90,7 @@ export default function DoctorLiveQueuePage({ params }: { params: { id: string }
     setSortConfig({ key, direction });
   };
 
-  const getSortIcon = (key: keyof Patient) => {
+  const getSortIcon = (key: string) => {
     if (!sortConfig || sortConfig.key !== key) return null;
     if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3" />;
     return <ArrowDown className="ml-2 h-3 w-3" />;
@@ -109,8 +131,20 @@ export default function DoctorLiveQueuePage({ params }: { params: { id: string }
               </TableHead>
               <TableHead>
                  <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('name')}>
-                    Name
+                    Patient
                     {getSortIcon('name')}
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('group')}>
+                    Group
+                    {getSortIcon('group')}
+                </Button>
+              </TableHead>
+               <TableHead>
+                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('doctor')}>
+                    Doctor
+                    {getSortIcon('doctor')}
                 </Button>
               </TableHead>
               <TableHead>
@@ -132,6 +166,8 @@ export default function DoctorLiveQueuePage({ params }: { params: { id: string }
               <TableRow key={patient.id}>
                 <TableCell className="font-bold py-2 text-xs">{patient.tokenNumber}</TableCell>
                 <TableCell className="py-2 text-xs">{patient.name}</TableCell>
+                <TableCell className="py-2 text-xs">{getGroupName()}</TableCell>
+                <TableCell className="py-2 text-xs">{getDoctorName()}</TableCell>
                 <TableCell className="py-2 text-xs">{format(new Date(patient.registeredAt), 'hh:mm a')}</TableCell>
                 <TableCell className="py-2 text-xs">
                   <Badge variant="secondary" className={cn("capitalize", badgeColors[patient.status])}>
@@ -141,7 +177,7 @@ export default function DoctorLiveQueuePage({ params }: { params: { id: string }
               </TableRow>
             )) : (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-4">No patients in the queue.</TableCell>
+                <TableCell colSpan={6} className="text-center py-4">No patients in the queue.</TableCell>
               </TableRow>
             )}
           </TableBody>
