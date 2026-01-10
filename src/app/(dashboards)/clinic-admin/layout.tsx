@@ -40,7 +40,7 @@ function DashboardSidebar() {
       { href: `/clinic-admin/${clinicId}/live-queue`, icon: Monitor, label: 'Live Queue', active: pathname === `/clinic-admin/${clinicId}/live-queue` },
       { href: `/clinic-admin/${clinicId}/register`, icon: Ticket, label: 'Patients Register', active: pathname === `/clinic-admin/${clinicId}/register` },
       { href: `/clinic-admin/${clinicId}/stations`, icon: Building, label: 'Stations', active: pathname === `/clinic-admin/${clinicId}/stations` },
-      { href: '#', icon: Folder, label: 'Groups' },
+      { href: `/clinic-admin/${clinicId}/groups`, icon: Folder, label: 'Groups', active: pathname === `/clinic-admin/${clinicId}/groups` },
       { href: '#', icon: Users, label: 'Users' },
       { href: '#', icon: Settings, label: 'Settings' },
   ]
