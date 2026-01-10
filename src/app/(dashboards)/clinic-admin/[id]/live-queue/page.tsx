@@ -34,7 +34,8 @@ const badgeColors: Record<Patient['status'], string> = {
 };
 
 
-export default function ClinicLiveQueuePage({ params: { id } }: { params: { id: string }}) {
+export default function ClinicLiveQueuePage({ params }: { params: { id: string }}) {
+  const { id } = params;
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [clinic, setClinic] = useState<ClinicGroup | null>(null);
