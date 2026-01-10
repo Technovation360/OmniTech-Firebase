@@ -9,7 +9,6 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarInset,
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/logo';
@@ -80,11 +79,9 @@ function DashboardLayoutContent({
   return (
     <>
       <DashboardSidebar />
-      <SidebarInset className="flex flex-col bg-muted/40">
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-muted/40">
           {children}
-        </main>
-      </SidebarInset>
+      </main>
     </>
   );
 }
