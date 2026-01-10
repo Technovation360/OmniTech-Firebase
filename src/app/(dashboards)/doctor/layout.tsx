@@ -94,6 +94,11 @@ function DoctorSidebar() {
                 <span className="font-semibold text-sm">Dr. Ashish</span>
                 <span className="text-xs text-muted-foreground">doc_ashish@omni.com</span>
             </div>
+            <Link href="/" className="ml-auto">
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                    <LogOut className="h-4 w-4" />
+                </Button>
+            </Link>
           </div>
       </SidebarFooter>
     </Sidebar>
@@ -121,6 +126,11 @@ function DoctorLayoutContent({ children }: { children: React.ReactNode }) {
             <Avatar className="h-8 w-8">
               <AvatarFallback className="bg-background text-foreground">D</AvatarFallback>
             </Avatar>
+            <Link href="/">
+              <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/20 hover:text-white">
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-muted/40">
