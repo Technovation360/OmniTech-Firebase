@@ -172,7 +172,7 @@ export default function ClinicsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [clinicToEdit, setClinicToEdit] = useState<ClinicGroup | null>(null);
   const [clinicToDelete, setClinicToDelete] = useState<ClinicGroup | null>(null);
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [sortConfig, setSortConfig] = useState<{ key: keyof ClinicGroup; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc'});
 
 
   useEffect(() => {
@@ -210,18 +210,38 @@ export default function ClinicsPage() {
     }
   }
 
-  const handleSort = () => {
-    const newSortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
-    setSortOrder(newSortOrder);
-    
+  const handleSort = (key: keyof ClinicGroup) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+
     const sortedClinics = [...clinics].sort((a, b) => {
-      if (a.name < b.name) return newSortOrder === 'asc' ? -1 : 1;
-      if (a.name > b.name) return newSortOrder === 'asc' ? 1 : -1;
+      const aVal = a[key];
+      const bVal = b[key];
+
+      if (Array.isArray(aVal) && Array.isArray(bVal)) {
+        // Sort by the first specialty for simplicity
+         const aFirst = aVal[0] || '';
+         const bFirst = bVal[0] || '';
+         if (aFirst < bFirst) return direction === 'asc' ? -1 : 1;
+         if (aFirst > bFirst) return direction === 'asc' ? 1 : -1;
+         return 0;
+      }
+
+      if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return direction === 'asc' ? 1 : -1;
       return 0;
     });
-
     setClinics(sortedClinics);
-  }
+  };
+  
+  const getSortIcon = (key: keyof ClinicGroup) => {
+    if (!sortConfig || sortConfig.key !== key) return null;
+    if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3" />;
+    return <ArrowDown className="ml-2 h-3 w-3" />;
+  };
 
   return (
     <>
@@ -238,14 +258,29 @@ export default function ClinicsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>
-                   <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={handleSort}>
+                   <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('name')}>
                         Clinic Name
-                        {sortOrder === 'asc' ? <ArrowUp className="ml-2 h-3 w-3" /> : <ArrowDown className="ml-2 h-3 w-3" />}
+                        {getSortIcon('name')}
                     </Button>
                 </TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Specialties</TableHead>
-                <TableHead>Contact</TableHead>
+                <TableHead>
+                    <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('location')}>
+                        Location
+                        {getSortIcon('location')}
+                    </Button>
+                </TableHead>
+                <TableHead>
+                    <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('specialties')}>
+                        Specialties
+                        {getSortIcon('specialties')}
+                    </Button>
+                </TableHead>
+                <TableHead>
+                    <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('contact')}>
+                        Contact
+                        {getSortIcon('contact')}
+                    </Button>
+                </TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
