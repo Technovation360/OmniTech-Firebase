@@ -213,42 +213,43 @@ export default function ClinicsPage() {
   useEffect(() => {
     getClinicGroups().then(data => {
         setAllClinics(data);
-        setFilteredClinics(data);
     });
   }, []);
 
   useEffect(() => {
-    const lowercasedQuery = searchQuery.toLowerCase();
-    const filteredData = allClinics.filter(clinic => 
-        clinic.name.toLowerCase().includes(lowercasedQuery) ||
-        clinic.contact.toLowerCase().includes(lowercasedQuery)
-    );
-    setFilteredClinics(filteredData);
-    
+    let filteredData = allClinics;
     if (searchQuery) {
-        setSortConfig(null);
-    } else if (sortConfig) {
-        // Re-apply sorting when search is cleared
-        const sorted = [...filteredData].sort((a, b) => {
-            const aVal = a[sortConfig.key];
-            const bVal = b[sortConfig.key];
+        const lowercasedQuery = searchQuery.toLowerCase();
+        filteredData = allClinics.filter(clinic => 
+            clinic.name.toLowerCase().includes(lowercasedQuery) ||
+            clinic.contact.toLowerCase().includes(lowercasedQuery) ||
+            clinic.location.toLowerCase().includes(lowercasedQuery)
+        );
+    }
+    
+    if (sortConfig) {
+      const sorted = [...filteredData].sort((a, b) => {
+        const aVal = a[sortConfig.key];
+        const bVal = b[sortConfig.key];
 
-            if (Array.isArray(aVal) && Array.isArray(bVal)) {
-                const aFirst = aVal[0] || '';
-                const bFirst = bVal[0] || '';
-                if (aFirst < bFirst) return sortConfig.direction === 'asc' ? -1 : 1;
-                if (aFirst > bFirst) return sortConfig.direction === 'asc' ? 1 : -1;
-                return 0;
-            }
-
-            const valA = typeof aVal === 'string' ? aVal.toLowerCase() : aVal;
-            const valB = typeof bVal === 'string' ? bVal.toLowerCase() : bVal;
-
-            if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
-            if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+        if (Array.isArray(aVal) && Array.isArray(bVal)) {
+            const aFirst = aVal[0] || '';
+            const bFirst = bVal[0] || '';
+            if (aFirst < bFirst) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aFirst > bFirst) return sortConfig.direction === 'asc' ? 1 : -1;
             return 0;
-        });
-        setFilteredClinics(sorted);
+        }
+
+        const valA = typeof aVal === 'string' ? aVal.toLowerCase() : aVal;
+        const valB = typeof bVal === 'string' ? bVal.toLowerCase() : bVal;
+
+        if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+      setFilteredClinics(sorted);
+    } else {
+        setFilteredClinics(filteredData);
     }
   }, [searchQuery, allClinics, sortConfig]);
   
@@ -307,28 +308,6 @@ export default function ClinicsPage() {
       direction = 'desc';
     }
     setSortConfig({ key, direction });
-
-    const sortedClinics = [...filteredClinics].sort((a, b) => {
-      const aVal = a[key];
-      const bVal = b[key];
-
-      if (Array.isArray(aVal) && Array.isArray(bVal)) {
-         const aFirst = aVal[0] || '';
-         const bFirst = bVal[0] || '';
-         if (aFirst < bFirst) return direction === 'asc' ? -1 : 1;
-         if (aFirst > bFirst) return direction === 'asc' ? 1 : -1;
-         return 0;
-      }
-
-      // Handle string or number sorting
-      const valA = typeof aVal === 'string' ? aVal.toLowerCase() : aVal;
-      const valB = typeof bVal === 'string' ? bVal.toLowerCase() : bVal;
-
-      if (valA < valB) return direction === 'asc' ? -1 : 1;
-      if (valA > valB) return direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-    setFilteredClinics(sortedClinics);
   };
   
   const getSortIcon = (key: keyof ClinicGroup) => {

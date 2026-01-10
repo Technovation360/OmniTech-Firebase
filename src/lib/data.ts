@@ -3,10 +3,10 @@ import type { ClinicGroup, Patient, Advertisement, Consultation, PatientHistoryE
 let clinicGroups: ClinicGroup[] = [
   {
     id: 'grp_cardiology_01',
-    name: 'Cardiology Dept.',
-    location: 'California, Metro City',
+    name: 'City Care Clinic',
+    location: 'Maharashtra, Mumbai',
     specialties: ['Cardiology', 'General Medicine'],
-    contact: 'contact@citygeneral.com',
+    contact: 'contact@citycare.com',
     doctor: { id: 'doc_ashish', name: 'Dr. Ashish' },
     assistants: [{ id: 'asst_sunita', name: 'Sunita' }],
     cabin: { id: 'cab_101', name: 'Cabin 101' },
@@ -14,10 +14,10 @@ let clinicGroups: ClinicGroup[] = [
   },
   {
     id: 'grp_ortho_01',
-    name: 'Orthopedics Dept.',
-    location: 'California, Metro City',
+    name: 'Health Plus Clinic',
+    location: 'Delhi, Delhi',
     specialties: ['Orthopedics', 'Pediatrics'],
-    contact: 'ortho@citygeneral.com',
+    contact: 'contact@healthplus.com',
     doctor: { id: 'doc_vijay', name: 'Dr. Vijay' },
     assistants: [{ id: 'asst_rajesh', name: 'Rajesh' }],
     cabin: { id: 'cab_102', name: 'Cabin 102' },
