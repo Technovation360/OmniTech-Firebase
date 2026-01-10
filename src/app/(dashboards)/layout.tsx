@@ -44,29 +44,6 @@ import {
 } from "@/components/ui/collapsible"
 import { cn } from '@/lib/utils';
 
-function DashboardHeader() {
-  const { toggleSidebar } = useSidebar();
-  
-  return (
-    <header className="p-2 bg-primary text-primary-foreground flex items-center justify-between border-b border-primary-foreground/20">
-      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/20 hover:text-white" onClick={toggleSidebar}>
-          <PanelLeft />
-      </Button>
-      
-      <div className="flex items-center gap-3">
-        <Avatar className="h-8 w-8">
-          <AvatarFallback className="bg-background text-foreground">A</AvatarFallback>
-        </Avatar>
-        <Button variant="destructive" size="icon" className="h-8 w-8 hover:bg-destructive/80" asChild>
-          <Link href="/">
-            <LogOut className="w-4 h-4" />
-          </Link>
-        </Button>
-      </div>
-    </header>
-  );
-}
-
 
 function DashboardSidebar() {
   const pathname = usePathname();
@@ -217,11 +194,27 @@ function DashboardLayoutContent({
 }: {
   children: React.ReactNode;
 }) {
+  const { toggleSidebar } = useSidebar();
   return (
     <>
       <DashboardSidebar />
       <SidebarInset className="flex flex-col bg-muted/30">
-        <DashboardHeader />
+        <header className="p-2 bg-primary text-primary-foreground flex items-center justify-between border-b border-primary-foreground/20">
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/20 hover:text-white" onClick={toggleSidebar}>
+              <PanelLeft />
+          </Button>
+          
+          <div className="flex items-center gap-3">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="bg-background text-foreground">A</AvatarFallback>
+            </Avatar>
+            <Button variant="destructive" size="icon" className="h-8 w-8 hover:bg-destructive/80" asChild>
+              <Link href="/">
+                <LogOut className="w-4 h-4" />
+              </Link>
+            </Button>
+          </div>
+        </header>
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
           {children}
         </main>
