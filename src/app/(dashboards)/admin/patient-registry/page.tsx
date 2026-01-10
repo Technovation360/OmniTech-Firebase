@@ -382,9 +382,9 @@ export default function PatientRegistryPage() {
                       variant="default"
                       size="xs"
                       onClick={() => openHistoryModal(patient)}
-                      className="bg-green-600 hover:bg-green-700 text-white"
+                      className="bg-green-600 hover:bg-green-700 text-white text-[11px] h-7 gap-1"
                     >
-                      <History className="mr-2 h-3 w-3" />
+                      <History className="h-3 w-3" />
                       Visit History
                     </Button>
                   </TableCell>
