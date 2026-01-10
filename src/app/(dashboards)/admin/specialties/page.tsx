@@ -70,26 +70,30 @@ function SpecialtyForm({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{isEditMode ? 'Edit Specialty' : 'Add Specialty'}</DialogTitle>
+        <DialogHeader className="p-4 pb-2">
+          <DialogTitle className="text-base font-bold tracking-normal">
+            {isEditMode ? 'EDIT SPECIALTY' : 'ADD SPECIALTY'}
+          </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 p-4">
-          <div className="space-y-2">
-            <Label htmlFor="specialtyName">Specialty Name</Label>
-            <Input id="specialtyName" defaultValue={specialty?.name || ''} />
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox id="forClinic" defaultChecked={specialty?.forClinic ?? true} />
-            <Label htmlFor="forClinic">For Clinic</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox id="forDoctor" defaultChecked={specialty?.forDoctor ?? true} />
-            <Label htmlFor="forDoctor">For Doctors</Label>
-          </div>
+        <div className="p-4 pb-4">
+            <div className="space-y-1">
+                <Label htmlFor="specialtyName" className="text-[10px] font-semibold text-gray-600">SPECIALTY NAME</Label>
+                <Input id="specialtyName" className="h-7 text-[11px]" defaultValue={specialty?.name || ''} />
+            </div>
+            <div className="mt-4 space-y-3">
+                <div className="flex items-center gap-2">
+                    <Checkbox id="forClinic" defaultChecked={specialty?.forClinic ?? true} />
+                    <Label htmlFor="forClinic" className="text-xs font-normal">For Clinic</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Checkbox id="forDoctor" defaultChecked={specialty?.forDoctor ?? true} />
+                    <Label htmlFor="forDoctor" className="text-xs font-normal">For Doctors</Label>
+                </div>
+            </div>
         </div>
-        <DialogFooter>
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
-            <Button onClick={onClose}>Save</Button>
+        <DialogFooter className="bg-gray-50 px-4 py-2 flex justify-end gap-2 rounded-b-lg">
+            <Button variant="destructive" onClick={onClose} size="xs">CANCEL</Button>
+            <Button onClick={onClose} size="xs">CONFIRM</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
