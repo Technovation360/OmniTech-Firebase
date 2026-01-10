@@ -216,7 +216,7 @@ export default function ClinicsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>
-                   <Button variant="ghost" className="text-xs text-foreground p-0 hover:bg-transparent" onClick={handleSort}>
+                   <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={handleSort}>
                         Clinic Name
                         {sortOrder === 'asc' ? <ArrowUp className="ml-2 h-3 w-3" /> : <ArrowDown className="ml-2 h-3 w-3" />}
                     </Button>
