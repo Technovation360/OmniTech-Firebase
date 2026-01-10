@@ -34,7 +34,7 @@ const badgeColors: Record<Patient['status'], string> = {
 };
 
 
-export default function ClinicLiveQueuePage({ params }: { params: { id: string }}) {
+export default function ClinicLiveQueuePage({ params: { id } }: { params: { id: string }}) {
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [clinic, setClinic] = useState<ClinicGroup | null>(null);
@@ -42,14 +42,14 @@ export default function ClinicLiveQueuePage({ params }: { params: { id: string }
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    getClinicGroupById(params.id).then(setClinic);
-    getPatientsByClinicId(params.id).then(patientData => {
+    getClinicGroupById(id).then(setClinic);
+    getPatientsByClinicId(id).then(patientData => {
         const activePatients = patientData
             .filter(p => p.status === 'waiting' || p.status === 'called' || p.status === 'in-consultation')
             .sort((a,b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime());
         setAllPatients(activePatients);
     });
-  }, [params.id]);
+  }, [id]);
   
   const getDoctorName = (clinicId: string) => {
       return clinic?.doctor.name || 'Unknown';
