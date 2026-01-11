@@ -276,11 +276,11 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                 </AccordionTrigger>
                             </div>
                               <div className="col-span-4">
-                                  <div className="flex items-center gap-2 flex-nowrap">
-                                      <Badge variant="secondary" className="bg-blue-100 text-blue-800">{group.resources?.docs || 0} Docs</Badge>
-                                      <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">{group.resources?.asst || 0} Asst</Badge>
-                                      <Badge variant="secondary" className="bg-green-100 text-green-800">{group.resources?.displays || 0} Displays</Badge>
-                                      <Badge variant="secondary" className="bg-purple-100 text-purple-800">{group.resources?.cabins || 0} Cabins</Badge>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                      <Badge variant="secondary" className="px-2 py-1 text-[10px] leading-none bg-blue-100 text-blue-800">{group.resources?.docs || 0} Docs</Badge>
+                                      <Badge variant="secondary" className="px-2 py-1 text-[10px] leading-none bg-yellow-100 text-yellow-800">{group.resources?.asst || 0} Asst</Badge>
+                                      <Badge variant="secondary" className="px-2 py-1 text-[10px] leading-none bg-green-100 text-green-800">{group.resources?.displays || 0} Displays</Badge>
+                                      <Badge variant="secondary" className="px-2 py-1 text-[10px] leading-none bg-purple-100 text-purple-800">{group.resources?.cabins || 0} Cabins</Badge>
                                   </div>
                               </div>
                               <div className="col-span-3 flex items-center gap-2">
