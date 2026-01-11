@@ -105,7 +105,7 @@ export default function LiveQueuePage() {
         setFilteredPatients(filteredData);
     }
 
-  }, [searchQuery, allPatients, sortConfig, clinicGroups, clinics, selectedClinic]);
+  }, [searchQuery, allPatients, sortConfig, clinicGroups, clinics, selectedClinic, getClinicName, getGroupName, getDoctorName]);
 
   const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -128,7 +128,7 @@ export default function LiveQueuePage() {
             <div>
                 <CardTitle className="text-[22px]">Live Queue</CardTitle>
             </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-4 w-full sm:w-auto">
               <div className="space-y-1">
                 <Label htmlFor="clinicFilter" className="font-medium text-xs text-muted-foreground">Group</Label>
                 <Select value={selectedClinic} onValueChange={setSelectedClinic}>
