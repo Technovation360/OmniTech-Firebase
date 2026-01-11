@@ -156,43 +156,43 @@ export default function LiveQueuePage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>
+              <TableHead className="p-2">
                 <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('tokenNumber')}>
                     Token
                     {getSortIcon('tokenNumber')}
                 </Button>
               </TableHead>
-              <TableHead>
+              <TableHead className="p-2">
                 <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('name')}>
                     Patient
                     {getSortIcon('name')}
                 </Button>
               </TableHead>
-              <TableHead>
+              <TableHead className="p-2">
                 <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('clinic')}>
                     Clinic
                     {getSortIcon('clinic')}
                 </Button>
               </TableHead>
-              <TableHead>
+              <TableHead className="p-2">
                 <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('group')}>
                     Group
                     {getSortIcon('group')}
                 </Button>
               </TableHead>
-              <TableHead>
+              <TableHead className="p-2">
                 <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('doctor')}>
                     Doctor
                     {getSortIcon('doctor')}
                 </Button>
               </TableHead>
-              <TableHead>
+              <TableHead className="p-2">
                 <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('registeredAt')}>
                     Issued At
                     {getSortIcon('registeredAt')}
                 </Button>
               </TableHead>
-              <TableHead>
+              <TableHead className="p-2">
                 <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('status')}>
                     Status
                     {getSortIcon('status')}
@@ -203,13 +203,13 @@ export default function LiveQueuePage() {
           <TableBody>
             {filteredPatients.map((patient) => (
               <TableRow key={patient.id}>
-                <TableCell className="font-bold py-2 text-xs">{patient.tokenNumber}</TableCell>
-                <TableCell className="py-2 text-xs">{patient.name}</TableCell>
-                <TableCell className="py-2 text-xs">{getClinicName(patient.clinicId)}</TableCell>
-                <TableCell className="py-2 text-xs">{getGroupName(patient.groupId)}</TableCell>
-                <TableCell className="py-2 text-xs">{getDoctorName(patient.groupId)}</TableCell>
-                <TableCell className="py-2 text-xs">{format(new Date(patient.registeredAt), 'hh:mm a')}</TableCell>
-                <TableCell className="py-2 text-xs">
+                <TableCell className="font-bold p-2 text-xs">{patient.tokenNumber}</TableCell>
+                <TableCell className="p-2 text-xs">{patient.name}</TableCell>
+                <TableCell className="p-2 text-xs">{getClinicName(patient.clinicId)}</TableCell>
+                <TableCell className="p-2 text-xs">{getGroupName(patient.groupId)}</TableCell>
+                <TableCell className="p-2 text-xs">{getDoctorName(patient.groupId)}</TableCell>
+                <TableCell className="p-2 text-xs">{format(new Date(patient.registeredAt), 'hh:mm a')}</TableCell>
+                <TableCell className="p-2 text-xs">
                    <Badge variant={'secondary'} className={cn("text-[10px] border-transparent capitalize", badgeColors[patient.status])}>
                         {patient.status.replace('-', ' ')}
                     </Badge>
