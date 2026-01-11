@@ -62,7 +62,7 @@ function AdminSidebar() {
         <Logo variant="enterprise" />
       </SidebarHeader>
       <SidebarContent>
-        <div className="flex flex-col px-4">
+        <div className="flex flex-col px-4 pt-2">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Administration
           </span>
@@ -70,7 +70,7 @@ function AdminSidebar() {
         <SidebarMenu>
           {adminMenuItems.map((item) => (
             <SidebarMenuItem key={item.label}>
-              <SidebarMenuButton asChild isActive={item.active}>
+              <SidebarMenuButton asChild isActive={item.active} tooltip={item.label}>
                 <Link href={item.href}>
                   <item.icon />
                   {item.label}
@@ -88,7 +88,7 @@ function AdminSidebar() {
         <SidebarMenu>
           {clinicalMenuItems.map((item) => (
             <SidebarMenuItem key={item.label}>
-              <SidebarMenuButton asChild isActive={item.active}>
+              <SidebarMenuButton asChild isActive={item.active} tooltip={item.label}>
                 <Link href={item.href}>
                   <item.icon />
                   {item.label}
@@ -106,7 +106,7 @@ function AdminSidebar() {
         <SidebarMenu>
           {advertisersMenuItems.map((item) => (
             <SidebarMenuItem key={item.label}>
-              <SidebarMenuButton asChild isActive={item.active}>
+              <SidebarMenuButton asChild isActive={item.active} tooltip={item.label}>
                 <Link href={item.href}>
                   <item.icon />
                   {item.label}

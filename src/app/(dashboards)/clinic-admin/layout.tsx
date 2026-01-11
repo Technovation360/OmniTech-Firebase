@@ -65,30 +65,12 @@ function DashboardSidebar() {
         <SidebarMenu>
             {menuItems.map(item => (
                  <SidebarMenuItem key={item.label}>
-                    {!item.subItems ? (
-                        <SidebarMenuButton asChild isActive={item.active}>
-                            <Link href={item.href!}>
-                                <item.icon />
-                                {item.label}
-                            </Link>
-                        </SidebarMenuButton>
-                    ) : (
-                        <>
-                            <SidebarMenuButton>
-                                <item.icon />
-                                {item.label}
-                            </SidebarMenuButton>
-                            <SidebarMenuSub>
-                                {item.subItems.map(subItem => (
-                                    <SidebarMenuSubItem key={subItem.label}>
-                                        <SidebarMenuSubButton asChild isActive={subItem.active}>
-                                            <Link href={subItem.href}>{subItem.label}</Link>
-                                        </SidebarMenuSubButton>
-                                    </SidebarMenuSubItem>
-                                ))}
-                            </SidebarMenuSub>
-                        </>
-                    )}
+                    <SidebarMenuButton asChild isActive={item.active} tooltip={item.label}>
+                        <Link href={item.href!}>
+                            <item.icon />
+                            {item.label}
+                        </Link>
+                    </SidebarMenuButton>
                 </SidebarMenuItem>
             ))}
         </SidebarMenu>
