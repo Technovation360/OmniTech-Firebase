@@ -14,14 +14,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Camera, X, PlusCircle } from 'lucide-react';
-import { getClinicGroupById } from '@/lib/data';
-import type { ClinicGroup } from '@/lib/types';
+import { getClinicById } from '@/lib/data';
+import type { Clinic } from '@/lib/types';
 import Image from 'next/image';
 
-function ClinicDetails({ clinic }: { clinic: ClinicGroup }) {
+function ClinicDetails({ clinic }: { clinic: Clinic }) {
   const [formData, setFormData] = useState({
     name: '',
-    contact: '',
+    contact: 'contact@example.com',
     phone: '',
     location: '',
     city: '',
@@ -32,16 +32,16 @@ function ClinicDetails({ clinic }: { clinic: ClinicGroup }) {
 
   useEffect(() => {
     if (clinic) {
-      const [city, state] = clinic.location.split(', ');
+      const [state, city] = clinic.location.split(', ');
       setFormData({
           name: clinic.name,
-          contact: clinic.contact,
+          contact: `contact@${clinic.name.toLowerCase().replace(/\s/g, '')}.com`,
           phone: '555-0199', // mock
           location: '123 Health Blvd', // mock
           city: city || 'Metro City', // mock
           state: state || 'California', // mock
           zip: '90001', // mock
-          specialties: clinic.specialties,
+          specialties: ['General Medicine', 'Cardiology'], // mock
       });
     }
   }, [clinic]);
@@ -142,10 +142,10 @@ function ClinicDetails({ clinic }: { clinic: ClinicGroup }) {
 
 export default function SettingsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: clinicId } = use(params);
-  const [clinic, setClinic] = useState<ClinicGroup | null>(null);
+  const [clinic, setClinic] = useState<Clinic | null>(null);
 
   useEffect(() => {
-    getClinicGroupById(clinicId).then((data) => {
+    getClinicById(clinicId).then((data) => {
       if (data) {
         setClinic(data);
       }
