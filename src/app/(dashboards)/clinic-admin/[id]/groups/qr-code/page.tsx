@@ -10,7 +10,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Printer } from 'lucide-react';
 
-function QRCodePageContent() {
+function QRCodePageContent({ params }: { params: Promise<{ id: string }> }) {
   const { id: clinicId } = use(params);
   const searchParams = useSearchParams();
   const initialGroupId = searchParams.get('groupId');
