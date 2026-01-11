@@ -12,6 +12,7 @@ import { Loader, Search, ArrowUp, ArrowDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const badgeColors: Record<Patient['status'], string> = {
     'waiting': "bg-blue-100 text-blue-800",
@@ -109,15 +110,19 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
                 <CardTitle>Live Patient Queue</CardTitle>
                 <CardDescription>A real-time view of patients in your queue.</CardDescription>
             </div>
-             <div className="relative w-full sm:w-44">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by Name, Number, Email"
-                  className="pl-9 h-6 placeholder:text-xs"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
+             <div className="space-y-1">
+                <Label htmlFor="patientSearch" className="font-medium text-xs text-muted-foreground">Patient Search</Label>
+                <div className="relative w-full sm:w-44">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                    id="patientSearch"
+                    placeholder="Search by Name, Number, Email"
+                    className="pl-9 h-6 placeholder:text-xs"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
+            </div>
         </div>
       </CardHeader>
       <CardContent>

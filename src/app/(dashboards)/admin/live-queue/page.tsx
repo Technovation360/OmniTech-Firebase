@@ -143,14 +143,18 @@ export default function LiveQueuePage() {
                     </SelectContent>
                 </Select>
               </div>
-              <div className="relative w-full sm:w-44">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                      placeholder="Search by Name, Number, Email" 
-                      className="pl-9 h-6 placeholder:text-xs" 
-                      value={searchQuery}
-                      onChange={e => setSearchQuery(e.target.value)}
-                  />
+              <div className="space-y-1">
+                 <Label htmlFor="patientSearch" className="font-medium text-xs text-muted-foreground">Patient Search</Label>
+                <div className="relative w-full sm:w-44">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        id="patientSearch"
+                        placeholder="Search by Name, Number, Email" 
+                        className="pl-9 h-6 placeholder:text-xs" 
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                    />
+                </div>
               </div>
             </div>
         </div>
