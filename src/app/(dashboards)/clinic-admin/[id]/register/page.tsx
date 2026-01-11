@@ -25,12 +25,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -43,10 +37,9 @@ import {
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ArrowUp, ArrowDown, Search, History, PlusCircle } from 'lucide-react';
 import {
-  getAllPatients,
-  getClinicGroupById,
   getPatientHistory,
   getPatientsByClinicId,
+  getClinicGroups,
 } from '@/lib/data';
 import type { Patient, ClinicGroup, PatientHistoryEntry } from '@/lib/types';
 import { format } from 'date-fns';
@@ -81,15 +74,15 @@ function VisitHistoryModal({
   patient: Patient | null;
 }) {
   const [history, setHistory] = useState<PatientHistoryEntry[]>([]);
-  const [clinic, setClinic] = useState<ClinicGroup | null>(null);
+  const [clinicGroups, setClinicGroups] = useState<ClinicGroup[]>([]);
 
   useEffect(() => {
     if (patient) {
       getPatientHistory(patient.id).then(setHistory);
-      getClinicGroupById(patient.groupId).then(setClinic);
+      getClinicGroups(patient.clinicId).then(setClinicGroups);
     } else {
       setHistory([]);
-      setClinic(null);
+      setClinicGroups([]);
     }
 
   }, [patient]);
@@ -109,7 +102,7 @@ function VisitHistoryModal({
             <TableHeader>
               <TableRow>
                 <TableHead className="text-xs">Token #</TableHead>
-                <TableHead className="text-xs">Clinic</TableHead>
+                <TableHead className="text-xs">Group</TableHead>
                 <TableHead className="text-xs">Issued Date/Time</TableHead>
                 <TableHead className="text-xs">Start Time</TableHead>
                 <TableHead className="text-xs">Stop Time</TableHead>
@@ -122,7 +115,7 @@ function VisitHistoryModal({
                   <TableCell className="font-medium text-primary py-2 text-xs">
                     {item.tokenNumber}
                   </TableCell>
-                  <TableCell className="py-2 text-xs">{item.clinicName}</TableCell>
+                  <TableCell className="py-2 text-xs">{item.groupName}</TableCell>
                   <TableCell className="py-2 text-xs">
                     {format(new Date(item.issuedAt), 'P, pp')}
                   </TableCell>
@@ -161,12 +154,12 @@ function VisitHistoryModal({
 function ManualCheckInModal({ 
     isOpen, 
     onClose, 
-    groupId,
+    clinicGroups,
     onPatientRegistered,
 } : {
     isOpen: boolean;
     onClose: () => void;
-    groupId: string;
+    clinicGroups: ClinicGroup[];
     onPatientRegistered: () => void;
 }) {
   const [state, formAction] = useActionState(registerPatient, null);
@@ -197,7 +190,22 @@ function ManualCheckInModal({
             <CardDescription>Fill in the details to add a patient to the queue.</CardDescription>
           </DialogHeader>
           <form action={formAction} className="space-y-6 p-4">
-                <input type="hidden" name="groupId" value={groupId} />
+               <div className="space-y-2">
+                <Label htmlFor="groupId">Clinic Department</Label>
+                <Select name="groupId" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clinicGroups.map((group) => (
+                      <SelectItem key={group.id} value={group.id}>
+                        {group.name} (Dr. {group.doctors.map(d => d.name).join(', ')})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                 {state?.errors?.groupId && <p className="text-sm text-destructive">{state.errors.groupId[0]}</p>}
+              </div>
                 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -245,10 +253,10 @@ function ManualCheckInModal({
 
 
 export default function PatientRegistryPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id: clinicId } = use(params); // This is actually the clinic GROUP ID from the URL structure
+  const { id: clinicId } = use(params);
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
-  const [clinic, setClinic] = useState<ClinicGroup | null>(null);
+  const [clinicGroups, setClinicGroups] = useState<ClinicGroup[]>([]);
   const [sortConfig, setSortConfig] = useState<{
     key: keyof Patient;
     direction: 'asc' | 'desc';
@@ -259,20 +267,14 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
   const { toast } = useToast();
 
   const fetchPatients = () => {
-    getPatientsByClinicId(clinic!.clinicId).then((data) => {
+    getPatientsByClinicId(clinicId).then((data) => {
         setAllPatients(data);
     });
   }
 
   useEffect(() => {
-    getClinicGroupById(clinicId).then(group => {
-        setClinic(group);
-        if (group) {
-             getPatientsByClinicId(group.clinicId).then((data) => {
-                setAllPatients(data);
-             });
-        }
-    });
+    getClinicGroups(clinicId).then(setClinicGroups);
+    getPatientsByClinicId(clinicId).then(setAllPatients);
   }, [clinicId]);
   
   useEffect(() => {
@@ -282,7 +284,7 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
         const lowercasedQuery = searchQuery.toLowerCase();
         filteredData = filteredData.filter(patient => 
             patient.name.toLowerCase().includes(lowercasedQuery) ||
-            patient.tokenNumber.toLowerCase().includes(lowercasedQuery) ||
+            (patient.tokenNumber && patient.tokenNumber.toLowerCase().includes(lowercasedQuery)) ||
             patient.contactNumber.toLowerCase().includes(lowercasedQuery) ||
             patient.emailAddress.toLowerCase().includes(lowercasedQuery)
         );
@@ -325,14 +327,42 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
     setSelectedPatient(null);
   };
 
-  const handleGenerateToken = (patient: Patient) => {
-    toast({
-        title: "Token Generated",
-        description: `New token generated for ${patient.name}.`
-    });
+  const handleGenerateToken = async (patient: Patient) => {
+    // This function needs to be more robust. A patient can't just generate a token for any group.
+    // For now, let's assume they re-register for their last group.
+    
+    if (!patient.groupId) {
+         toast({
+            title: "Error",
+            description: `Could not determine the group for ${patient.name}. Please use manual check-in.`
+        });
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('name', patient.name);
+    formData.append('age', patient.age.toString());
+    formData.append('gender', patient.gender);
+    formData.append('groupId', patient.groupId);
+
+    const result = await registerPatient(null, formData);
+
+    if (result.success) {
+        toast({
+            title: "Token Generated",
+            description: `New token ${result.tokenNumber} generated for ${patient.name}.`
+        });
+        fetchPatients(); // Re-fetch patients to show the new token status
+    } else {
+         toast({
+            variant: "destructive",
+            title: "Failed to generate token",
+            description: result.message || "An unknown error occurred."
+        });
+    }
   }
 
-  if (!clinic) {
+  if (clinicGroups.length === 0) {
     return <div>Loading...</div>
   }
 
@@ -475,7 +505,7 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
       <ManualCheckInModal 
         isOpen={isCheckInModalOpen}
         onClose={() => setCheckInModalOpen(false)}
-        groupId={clinicId}
+        clinicGroups={clinicGroups}
         onPatientRegistered={fetchPatients}
       />
     </div>
