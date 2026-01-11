@@ -19,12 +19,19 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { getPatientsByClinicId, getClinicGroupById, getClinicGroups, getClinicById } from '@/lib/data';
+import { getPatientsByClinicId, getClinicGroups, getClinicById } from '@/lib/data';
 import type { Patient, ClinicGroup, Clinic } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ArrowUp, ArrowDown, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const badgeColors: Record<Patient['status'], string> = {
     'waiting': "bg-blue-100 text-blue-800",
@@ -43,6 +50,7 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
   const [clinicGroups, setClinicGroups] = useState<ClinicGroup[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'tokenNumber', direction: 'asc' });
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedGroup, setSelectedGroup] = useState<string>('all');
 
   useEffect(() => {
     getClinicById(clinicId).then(setClinic);
@@ -67,6 +75,10 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
 
   useEffect(() => {
     let filteredData = allPatients;
+
+    if (selectedGroup !== 'all') {
+      filteredData = filteredData.filter(patient => patient.groupId === selectedGroup);
+    }
 
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
@@ -106,7 +118,7 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
         setFilteredPatients(filteredData);
     }
 
-  }, [searchQuery, allPatients, sortConfig, clinicGroups]);
+  }, [searchQuery, allPatients, sortConfig, clinicGroups, selectedGroup]);
 
   const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -131,6 +143,17 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
                 <CardDescription>A real-time overview of the patient queue across all groups.</CardDescription>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
+               <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+                  <SelectTrigger className="h-9 w-full sm:w-48 text-xs">
+                      <SelectValue placeholder="Filter by Group" />
+                  </SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="all" className="text-xs">All Groups</SelectItem>
+                      {clinicGroups.map(group => (
+                          <SelectItem key={group.id} value={group.id} className="text-xs">{group.name}</SelectItem>
+                      ))}
+                  </SelectContent>
+              </Select>
               <div className="relative w-full sm:w-64">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input 
