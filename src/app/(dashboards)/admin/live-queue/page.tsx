@@ -31,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 const badgeColors: Record<Patient['status'], string> = {
     'waiting': "bg-blue-100 text-blue-800",
@@ -128,17 +129,20 @@ export default function LiveQueuePage() {
                 <CardTitle>Live Queue</CardTitle>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Select value={selectedClinic} onValueChange={setSelectedClinic}>
-                  <SelectTrigger className="h-6 w-full sm:w-40 text-xs">
-                      <SelectValue placeholder="Filter by Clinic" />
-                  </SelectTrigger>
-                  <SelectContent>
-                      <SelectItem value="all" className="text-xs">All Clinics</SelectItem>
-                      {clinics.map(clinic => (
-                          <SelectItem key={clinic.id} value={clinic.id} className="text-xs">{clinic.name}</SelectItem>
-                      ))}
-                  </SelectContent>
-              </Select>
+              <div className="space-y-1">
+                <Label htmlFor="clinicFilter" className="font-medium text-[10px]">Group</Label>
+                <Select value={selectedClinic} onValueChange={setSelectedClinic}>
+                    <SelectTrigger id="clinicFilter" className="h-6 w-full sm:w-40 text-xs">
+                        <SelectValue placeholder="Filter by Clinic" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all" className="text-xs">All Clinics</SelectItem>
+                        {clinics.map(clinic => (
+                            <SelectItem key={clinic.id} value={clinic.id} className="text-xs">{clinic.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+              </div>
               <div className="relative w-full sm:w-56">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input 
