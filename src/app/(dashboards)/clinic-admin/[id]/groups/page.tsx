@@ -184,7 +184,7 @@ function DeleteGroupDialog({
 }
 
 
-export default function GroupsPage({ params }: { params: { id: string } }) {
+export default function GroupsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: clinicId } = use(params);
   const [clinic, setClinic] = useState<Clinic | null>(null);
   const [allGroups, setAllGroups] = useState<ClinicGroup[]>([]);
@@ -401,10 +401,10 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
                                     </Button>
                                 </div>
                                 <div className="col-span-3 p-4 flex justify-start gap-1">
-                                  <Button variant="ghost" size="icon-sm" onClick={() => openEditModal(group)}>
+                                  <Button variant="ghost" size="icon-xs" onClick={() => openEditModal(group)}>
                                       <Edit className="h-4 w-4 text-muted-foreground"/>
                                   </Button>
-                                  <Button variant="ghost" size="icon-sm" onClick={() => openDeleteDialog(group)}>
+                                  <Button variant="ghost" size="icon-xs" onClick={() => openDeleteDialog(group)}>
                                       <Trash2 className="h-4 w-4 text-destructive"/>
                                   </Button>
                                 </div>
