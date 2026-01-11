@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState, useEffect, use } from 'react';
 import {
@@ -61,7 +62,7 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
   }
 
   const getDoctorName = (groupId: string) => {
-    return clinicGroups.find(g => g.id === groupId)?.doctor.name || 'Unknown';
+    return clinicGroups.find(g => g.id === groupId)?.doctors[0].name || 'Unknown';
   }
 
   useEffect(() => {
@@ -212,5 +213,3 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
     </Card>
   )
 }
-
-    

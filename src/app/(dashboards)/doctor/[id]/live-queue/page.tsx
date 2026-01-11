@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { use, useState, useEffect } from 'react';
@@ -43,7 +44,7 @@ export default function DoctorLiveQueuePage({ params }: { params: { id: string }
   }, [doctorId]);
 
   const getGroupName = () => clinic?.name || 'Unknown';
-  const getDoctorName = () => clinic?.doctor.name || 'Unknown';
+  const getDoctorName = () => clinic?.doctors[0]?.name || 'Unknown';
 
   useEffect(() => {
     let filteredData = allPatients;

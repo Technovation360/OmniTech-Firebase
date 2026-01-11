@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useActionState, useEffect, useState } from 'react';
@@ -58,7 +59,7 @@ export default function RegistrationPage({ params }: { params: { id: string } })
           <CardHeader>
             <CardTitle>Register for {clinicGroup.name}</CardTitle>
             <CardDescription>
-              Fill in your details to get a token for Dr. {clinicGroup.doctor.name}.
+              Fill in your details to get a token for {clinicGroup.doctors.map(d => d.name).join(', ')}.
             </CardDescription>
           </CardHeader>
           <CardContent>

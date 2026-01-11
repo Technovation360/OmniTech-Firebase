@@ -1,4 +1,5 @@
 
+
 import type { Clinic, ClinicGroup, Patient, Advertisement, Consultation, PatientHistoryEntry, Cabin } from './types';
 
 let clinics: Clinic[] = [
@@ -27,10 +28,10 @@ let clinicGroups: ClinicGroup[] = [
     location: 'Maharashtra, Mumbai',
     specialties: ['Cardiology', 'General Medicine'],
     contact: 'contact@citycare.com',
-    doctor: { id: 'user_3', name: 'Dr. Ashish' },
+    doctors: [{ id: 'user_3', name: 'Dr. Ashish' }],
     assistants: [{ id: 'user_5', name: 'Sunita' }],
-    cabin: { id: 'cab_101', name: 'Cabin 101', clinicId: 'clinic_01' },
-    screen: { id: 'user_7', name: 'Display User' },
+    cabins: [{ id: 'cab_101', name: 'Cabin 101', clinicId: 'clinic_01' }],
+    screens: [{ id: 'user_7', name: 'Display User' }],
   },
   {
     id: 'grp_gen_med_01',
@@ -40,10 +41,10 @@ let clinicGroups: ClinicGroup[] = [
     location: 'Maharashtra, Mumbai',
     specialties: ['General Medicine'],
     contact: 'contact@citycare.com',
-    doctor: { id: 'doc_mehta', name: 'Dr. Mehta' },
+    doctors: [{ id: 'doc_mehta', name: 'Dr. Mehta' }],
     assistants: [{ id: 'asst_ravi', name: 'Ravi' }],
-    cabin: { id: 'cab_103', name: 'Cabin 103', clinicId: 'clinic_01' },
-    screen: { id: 'scr_main_hall', name: 'Main Hall Display' },
+    cabins: [{ id: 'cab_103', name: 'Cabin 103', clinicId: 'clinic_01' }],
+    screens: [{ id: 'scr_main_hall', name: 'Main Hall Display' }],
   },
   {
     id: 'grp_derma_01',
@@ -53,10 +54,10 @@ let clinicGroups: ClinicGroup[] = [
     location: 'Maharashtra, Mumbai',
     specialties: ['Dermatology'],
     contact: 'contact@citycare.com',
-    doctor: { id: 'doc_gupta', name: 'Dr. Gupta' },
+    doctors: [{ id: 'doc_gupta', name: 'Dr. Gupta' }],
     assistants: [{ id: 'asst_leela', name: 'Leela' }],
-    cabin: { id: 'cab_105', name: 'Cabin 105', clinicId: 'clinic_01' },
-    screen: { id: 'scr_main_hall', name: 'Main Hall Display' },
+    cabins: [{ id: 'cab_105', name: 'Cabin 105', clinicId: 'clinic_01' }],
+    screens: [{ id: 'scr_main_hall', name: 'Main Hall Display' }],
   },
   {
     id: 'grp_ortho_01',
@@ -66,10 +67,10 @@ let clinicGroups: ClinicGroup[] = [
     location: 'Delhi, Delhi',
     specialties: ['Orthopedics'],
     contact: 'contact@healthplus.com',
-    doctor: { id: 'user_4', name: 'Dr. Vijay' },
+    doctors: [{ id: 'user_4', name: 'Dr. Vijay' }],
     assistants: [{ id: 'user_6', name: 'Rajesh' }],
-    cabin: { id: 'cab_201', name: 'Cabin 201', clinicId: 'clinic_02' },
-    screen: { id: 'scr_main_hall_hp', name: 'Main Hall Display HP' },
+    cabins: [{ id: 'cab_201', name: 'Cabin 201', clinicId: 'clinic_02' }],
+    screens: [{ id: 'scr_main_hall_hp', name: 'Main Hall Display HP' }],
   },
     {
     id: 'grp_pediatrics_01',
@@ -79,10 +80,10 @@ let clinicGroups: ClinicGroup[] = [
     location: 'Delhi, Delhi',
     specialties: ['Pediatrics'],
     contact: 'contact@healthplus.com',
-    doctor: { id: 'doc_singh', name: 'Dr. Singh' },
+    doctors: [{ id: 'doc_singh', name: 'Dr. Singh' }],
     assistants: [{ id: 'asst_kumar', name: 'Kumar' }],
-    cabin: { id: 'cab_202', name: 'Cabin 202', clinicId: 'clinic_02' },
-    screen: { id: 'scr_main_hall_hp', name: 'Main Hall Display HP' },
+    cabins: [{ id: 'cab_202', name: 'Cabin 202', clinicId: 'clinic_02' }],
+    screens: [{ id: 'scr_main_hall_hp', name: 'Main Hall Display HP' }],
   },
    {
     id: 'grp_neurology_01',
@@ -92,10 +93,10 @@ let clinicGroups: ClinicGroup[] = [
     location: 'Delhi, Delhi',
     specialties: ['Neurology'],
     contact: 'contact@healthplus.com',
-    doctor: { id: 'doc_joshi', name: 'Dr. Joshi' },
+    doctors: [{ id: 'doc_joshi', name: 'Dr. Joshi' }],
     assistants: [{ id: 'asst_priya', name: 'Priya' }],
-    cabin: { id: 'cab_203', name: 'Cabin 203', clinicId: 'clinic_02' },
-    screen: { id: 'scr_main_hall_hp', name: 'Main Hall Display HP' },
+    cabins: [{ id: 'cab_203', name: 'Cabin 203', clinicId: 'clinic_02' }],
+    screens: [{ id: 'scr_main_hall_hp', name: 'Main Hall Display HP' }],
   },
 ];
 
@@ -225,7 +226,7 @@ export const getPatientHistory = async (patientId: string): Promise<PatientHisto
             tokenNumber: visit.tokenNumber,
             clinicName: clinics.find(c => c.id === clinic?.clinicId)?.name || 'Unknown Clinic',
             groupName: clinic?.name || 'Unknown Group',
-            doctorName: clinic?.doctor.name || 'Unknown Doctor',
+            doctorName: clinic?.doctors[0].name || 'Unknown Doctor',
             issuedAt: visit.registeredAt,
             startTime,
             endTime,
@@ -238,7 +239,7 @@ export const getPatientHistory = async (patientId: string): Promise<PatientHisto
 
 // Queue Info (for display screen)
 export const getQueueInfoByScreenId = async (screenId: string) => {
-    const relevantClinics = clinicGroups.filter(cg => cg.screen.id === screenId);
+    const relevantClinics = clinicGroups.filter(cg => cg.screens.some(s => s.id === screenId));
     const groupIds = relevantClinics.map(rc => rc.id);
     const queuePatients = patients.filter(p => groupIds.includes(p.groupId) && (p.status === 'waiting' || p.status === 'called' || p.status === 'in-consultation'));
 
@@ -247,7 +248,7 @@ export const getQueueInfoByScreenId = async (screenId: string) => {
     // Find the clinic, cabin for the called patient
     const calledPatientInfo = calledPatient ? {
         ...calledPatient,
-        cabinName: clinicGroups.find(cg => cg.id === calledPatient.groupId)?.cabin.name || '',
+        cabinName: clinicGroups.find(cg => cg.id === calledPatient.groupId)?.cabins[0].name || '',
     } : null;
 
     // After "calling" a patient, we set them back to 'in-consultation' after a delay so the notification disappears

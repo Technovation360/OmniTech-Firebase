@@ -35,7 +35,7 @@ export default async function SelectGroupPage() {
                         <Stethoscope className="h-6 w-6 text-primary"/>
                         <div>
                             <p className="font-semibold">{group.name}</p>
-                            <p className="text-sm text-muted-foreground">{group.doctor.name}</p>
+                            <p className="text-sm text-muted-foreground">{group.doctors.map(d => d.name).join(', ')}</p>
                         </div>
                     </div>
                   <ChevronRight className="h-5 w-5" />

@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState, useEffect, use } from 'react';
 import {
@@ -18,7 +19,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { getClinicGroups, getClinicById, mockUsers, getCabinsByClinicId } from '@/lib/data';
-import type { ClinicGroup, User, Cabin } from '@/lib/types';
+import type { Clinic, ClinicGroup, User, Cabin } from '@/lib/types';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -52,10 +53,10 @@ function GroupForm({
   const [formData, setFormData] = useState({ 
     name: '', 
     tokenInitial: '',
-    doctorId: '',
+    doctorIds: [] as string[],
     assistantIds: [] as string[],
-    screenId: '',
-    cabinId: '',
+    screenIds: [] as string[],
+    cabinIds: [] as string[],
   });
 
   useEffect(() => {
@@ -63,18 +64,18 @@ function GroupForm({
       setFormData({ 
         name: group.name, 
         tokenInitial: group.tokenInitial,
-        doctorId: group.doctor.id,
+        doctorIds: group.doctors.map(d => d.id),
         assistantIds: group.assistants.map(a => a.id),
-        screenId: group.screen.id,
-        cabinId: group.cabin.id,
+        screenIds: group.screens.map(s => s.id),
+        cabinIds: group.cabins.map(c => c.id),
       });
     } else {
-      setFormData({ name: '', tokenInitial: '', doctorId: '', assistantIds: [], screenId: '', cabinId: '' });
+      setFormData({ name: '', tokenInitial: '', doctorIds: [], assistantIds: [], screenIds: [], cabinIds: [] });
     }
   }, [group]);
 
   const handleConfirm = () => {
-    if (formData.name && formData.tokenInitial && formData.doctorId && formData.assistantIds.length > 0 && formData.screenId && formData.cabinId) {
+    if (formData.name && formData.tokenInitial && formData.doctorIds.length > 0 && formData.assistantIds.length > 0 && formData.screenIds.length > 0 && formData.cabinIds.length > 0) {
       onConfirm(formData);
       onClose();
     }
@@ -98,17 +99,14 @@ function GroupForm({
                 <Input id="tokenInitial" maxLength={3} className="h-7 text-[11px]" value={formData.tokenInitial} onChange={(e) => setFormData({...formData, tokenInitial: e.target.value.toUpperCase()})} />
             </div>
             <div className="space-y-1">
-                <Label htmlFor="doctor" className="text-[10px] font-semibold text-gray-600">ASSIGN DOCTOR</Label>
-                <Select value={formData.doctorId} onValueChange={(value) => setFormData({...formData, doctorId: value})}>
-                  <SelectTrigger className="h-7 text-[11px]">
-                    <SelectValue placeholder="Select a doctor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {doctors.map(doc => (
-                      <SelectItem key={doc.id} value={doc.id} className="text-[11px]">{doc.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="doctor" className="text-[10px] font-semibold text-gray-600">ASSIGN DOCTORS</Label>
+                <MultiSelect
+                    options={doctors.map(d => ({ value: d.id, label: d.name }))}
+                    selected={formData.doctorIds}
+                    onChange={(selected) => setFormData({...formData, doctorIds: selected})}
+                    className="text-xs"
+                    placeholder="Select doctors..."
+                />
             </div>
             <div className="space-y-1">
                 <Label htmlFor="assistant" className="text-[10px] font-semibold text-gray-600">ASSIGN ASSISTANTS</Label>
@@ -121,30 +119,24 @@ function GroupForm({
                 />
             </div>
              <div className="space-y-1">
-                <Label htmlFor="screen" className="text-[10px] font-semibold text-gray-600">ASSIGN SCREEN</Label>
-                <Select value={formData.screenId} onValueChange={(value) => setFormData({...formData, screenId: value})}>
-                  <SelectTrigger className="h-7 text-[11px]">
-                    <SelectValue placeholder="Select a screen user" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {screens.map(scr => (
-                      <SelectItem key={scr.id} value={scr.id} className="text-[11px]">{scr.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="screen" className="text-[10px] font-semibold text-gray-600">ASSIGN SCREENS</Label>
+                 <MultiSelect
+                    options={screens.map(s => ({ value: s.id, label: s.name }))}
+                    selected={formData.screenIds}
+                    onChange={(selected) => setFormData({...formData, screenIds: selected})}
+                    className="text-xs"
+                    placeholder="Select screens..."
+                />
             </div>
             <div className="space-y-1">
-                <Label htmlFor="cabin" className="text-[10px] font-semibold text-gray-600">ASSIGN CABIN</Label>
-                <Select value={formData.cabinId} onValueChange={(value) => setFormData({...formData, cabinId: value})}>
-                  <SelectTrigger className="h-7 text-[11px]">
-                    <SelectValue placeholder="Select a cabin" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {cabins.map(cab => (
-                      <SelectItem key={cab.id} value={cab.id} className="text-[11px]">{cab.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="cabin" className="text-[10px] font-semibold text-gray-600">ASSIGN CABINS</Label>
+                 <MultiSelect
+                    options={cabins.map(c => ({ value: c.id, label: c.name }))}
+                    selected={formData.cabinIds}
+                    onChange={(selected) => setFormData({...formData, cabinIds: selected})}
+                    className="text-xs"
+                    placeholder="Select cabins..."
+                />
             </div>
         </div>
         <DialogFooter className="bg-gray-50 px-4 py-2 flex justify-end gap-2 rounded-b-lg">
@@ -188,8 +180,8 @@ function DeleteGroupDialog({
 
 export default function GroupsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: clinicId } = use(params);
-  const [clinic, setClinic] = useState<{name: string, location: string} | null>(null);
-  const [allGroups, setAllGroups] = useState<(ClinicGroup & { resources?: any; cabins?: any[] })[]>([]);
+  const [clinic, setClinic] = useState<Clinic | null>(null);
+  const [allGroups, setAllGroups] = useState<ClinicGroup[]>([]);
   const [activeAccordionItem, setActiveAccordionItem] = useState<string | null>(null);
   const { toast } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -207,21 +199,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
       }
     });
 
-    getClinicGroups(clinicId).then(allGroupsData => {
-        const groupsWithResources = allGroupsData.map((group) => ({
-            ...group,
-            resources: {
-                docs: [group.doctor].length, 
-                asst: group.assistants.length,
-                displays: 1, 
-                cabins: 1, 
-            },
-            cabins: [
-              group.cabin
-            ]
-        }));
-        setAllGroups(groupsWithResources);
-    })
+    getClinicGroups(clinicId).then(setAllGroups);
   }, [clinicId]);
 
   const doctors = users.filter(u => u.role === 'doctor');
@@ -277,13 +255,13 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
     }
   }
 
-  const handleFormConfirm = (formData: { name: string, tokenInitial: string, doctorId: string, assistantIds: string[], screenId: string, cabinId: string }) => {
-    const doctor = users.find(d => d.id === formData.doctorId);
+  const handleFormConfirm = (formData: { name: string, tokenInitial: string, doctorIds: string[], assistantIds: string[], screenIds: string[], cabinIds: string[] }) => {
+    const selectedDoctors = formData.doctorIds.map(id => doctors.find(d => d.id === id)).filter(Boolean) as User[];
     const selectedAssistants = formData.assistantIds.map(id => assistants.find(a => a.id === id)).filter(Boolean) as User[];
-    const screen = users.find(s => s.id === formData.screenId);
-    const cabin = cabins.find(c => c.id === formData.cabinId);
+    const selectedScreens = formData.screenIds.map(id => screens.find(s => s.id === id)).filter(Boolean) as User[];
+    const selectedCabins = formData.cabinIds.map(id => cabins.find(c => c.id === id)).filter(Boolean) as Cabin[];
     
-    if (!doctor || selectedAssistants.length === 0 || !screen || !cabin || !clinic) return;
+    if (selectedDoctors.length === 0 || selectedAssistants.length === 0 || selectedScreens.length === 0 || selectedCabins.length === 0 || !clinic) return;
 
     if (groupToEdit) {
       // Update existing group
@@ -291,10 +269,10 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
         ...groupToEdit, 
         name: formData.name,
         tokenInitial: formData.tokenInitial,
-        doctor: {id: doctor.id, name: doctor.name},
+        doctors: selectedDoctors.map(d => ({ id: d.id, name: d.name })),
         assistants: selectedAssistants.map(a => ({ id: a.id, name: a.name })),
-        screen: {id: screen.id, name: screen.name},
-        cabin: cabin,
+        screens: selectedScreens.map(s => ({ id: s.id, name: s.name })),
+        cabins: selectedCabins,
       } : g));
     } else {
       // Add new group
@@ -306,10 +284,10 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
           location: clinic.location,
           specialties: [],
           contact: `contact@${clinic.name.toLowerCase().replace(/\s/g, '')}.com`,
-          doctor: {id: doctor.id, name: doctor.name},
+          doctors: selectedDoctors.map(d => ({ id: d.id, name: d.name })),
           assistants: selectedAssistants.map(a => ({ id: a.id, name: a.name })),
-          cabin: cabin,
-          screen: { id: screen.id, name: screen.name},
+          cabins: selectedCabins,
+          screens: selectedScreens.map(s => ({ id: s.id, name: s.name })),
         };
         setAllGroups(prev => [newGroup, ...prev]);
     }
@@ -347,11 +325,11 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                     </AccordionTrigger>
                                 </div>
                                 <div className="col-span-4 p-4 pl-2">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                      <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] leading-none bg-blue-100 text-blue-800">{group.resources?.docs || 0} Docs</Badge>
-                                      <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] leading-none bg-yellow-100 text-yellow-800">{group.resources?.asst || 0} Asst</Badge>
-                                      <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] leading-none bg-green-100 text-green-800">{group.resources?.displays || 0} Displays</Badge>
-                                      <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] leading-none bg-purple-100 text-purple-800">{group.resources?.cabins || 0} Cabins</Badge>
+                                  <div className="flex items-center gap-1 flex-wrap">
+                                      <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] leading-none bg-blue-100 text-blue-800">{group.doctors.length} Docs</Badge>
+                                      <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] leading-none bg-yellow-100 text-yellow-800">{group.assistants.length} Asst</Badge>
+                                      <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] leading-none bg-green-100 text-green-800">{group.screens.length} Displays</Badge>
+                                      <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] leading-none bg-purple-100 text-purple-800">{group.cabins.length} Cabins</Badge>
                                   </div>
                                 </div>
                                 <div className="col-span-3 p-4 flex items-center gap-2 pl-6">
@@ -383,7 +361,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                   <div>
                                       <h4 className="font-semibold text-muted-foreground mb-2">DOCTORS</h4>
                                       <ul className="space-y-1">
-                                          <li>{group.doctor.name}</li>
+                                          {group.doctors.map(d => <li key={d.id}>{d.name}</li>)}
                                       </ul>
                                   </div>
                                   <div>
@@ -396,7 +374,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                   <div>
                                       <h4 className="font-semibold text-muted-foreground mb-2">DISPLAYS</h4>
                                       <ul className="space-y-1">
-                                        <li>{group.screen.name}</li>
+                                        {group.screens.map(s => <li key={s.id}>{s.name}</li>)}
                                       </ul>
                                   </div>
                                   <div>
@@ -431,5 +409,3 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
     </>
   );
 }
-
-    

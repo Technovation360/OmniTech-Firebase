@@ -1,4 +1,5 @@
 
+
 export type Patient = {
   id: string;
   name: string;
@@ -48,10 +49,10 @@ export type ClinicGroup = {
   location: string;
   specialties: string[];
   contact: string;
-  doctor: Doctor;
+  doctors: Doctor[];
   assistants: Assistant[];
-  cabin: Cabin;
-  screen: Screen;
+  cabins: Cabin[];
+  screens: Screen[];
 };
 
 export type Advertisement = {

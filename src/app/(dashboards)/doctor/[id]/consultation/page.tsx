@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, use } from 'react';
@@ -83,12 +84,9 @@ function DoctorConsultationDashboard({
   initialPatients: Patient[];
 }) {
     const [patients, setPatients] = useState(initialPatients);
-    const [rooms, setRooms] = useState<RoomStatus[]>([
-        { name: 'Consultation Room 1', patient: null },
-        { name: 'Consultation Room 2', patient: null },
-        { name: 'Consultation Room 3', patient: null },
-        { name: 'Consultation Room 4', patient: null },
-    ]);
+    const [rooms, setRooms] = useState<RoomStatus[]>(
+        clinicGroup.cabins.map(cabin => ({ name: cabin.name, patient: null }))
+    );
     const { toast } = useToast();
 
     useEffect(() => {

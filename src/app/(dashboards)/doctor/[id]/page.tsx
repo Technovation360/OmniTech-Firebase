@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { use, useState, useEffect } from 'react';
@@ -85,6 +86,7 @@ function DoctorDashboard({
   ];
 
   const nextToken = initialPatients.find(p => p.status === 'waiting');
+  const doctor = clinicGroup.doctors[0];
 
   return (
     <div className="space-y-6">
@@ -157,10 +159,10 @@ function DoctorDashboard({
             </CardHeader>
             <CardContent className="space-y-4">
               <Button variant="secondary" className="w-full bg-white text-primary hover:bg-white/90" asChild>
-                <Link href={`/doctor/${clinicGroup.doctor.id}/consultation`}>START CONSULTATIONS</Link>
+                <Link href={`/doctor/${doctor.id}/consultation`}>START CONSULTATIONS</Link>
               </Button>
               <div className="bg-primary-foreground/20 p-3 rounded-lg">
-                <p className="font-bold text-white">Dr. {clinicGroup.doctor.name}</p>
+                <p className="font-bold text-white">Dr. {doctor.name}</p>
                 <p className="text-xs text-primary-foreground/80">SPECIALTY: {clinicGroup.specialties.join(', ')}</p>
               </div>
             </CardContent>
