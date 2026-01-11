@@ -22,6 +22,7 @@ export type Doctor = {
 export type Cabin = {
   id: string;
   name: string;
+  clinicId: string;
 };
 
 export type Assistant = {
@@ -81,4 +82,13 @@ export type PatientHistoryEntry = {
     status: Patient['status'];
 }
 
+export type User = {
+    id: string;
+    name: string;
+    email: string;
+    role: 'central-admin' | 'clinic-admin' | 'doctor' | 'assistant' | 'display' | 'advertiser';
+    affiliation: string;
+    phone?: string;
+    specialty?: string;
+};
     

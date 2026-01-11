@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, use } from 'react';
 import {
@@ -36,7 +37,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Edit, Trash2, Search, ArrowUp, ArrowDown } from 'lucide-react';
-import { getClinicGroupById } from '@/lib/data';
+import { getCabinsByClinicId } from '@/lib/data';
 import type { Cabin } from '@/lib/types';
 
 function CabinForm({
@@ -150,16 +151,7 @@ export default function StationsPage({ params }: { params: Promise<{ id: string 
 
 
   useEffect(() => {
-    getClinicGroupById(clinicId).then((clinic) => {
-      if (clinic) {
-        setAllCabins([
-          clinic.cabin,
-          { id: 'cab_102', name: 'Consultation Room 2' },
-          { id: 'cab_103', name: 'Consultation Room 3' },
-          { id: 'cab_104', name: 'Consultation Room 4' },
-        ]);
-      }
-    });
+    getCabinsByClinicId(clinicId).then(setAllCabins);
   }, [clinicId]);
 
   useEffect(() => {
@@ -226,6 +218,7 @@ export default function StationsPage({ params }: { params: Promise<{ id: string 
       const newCabin: Cabin = {
         id: `cab_${Date.now()}`,
         name: formData.name,
+        clinicId: clinicId,
       };
       setAllCabins([...allCabins, newCabin]);
     }
@@ -325,3 +318,4 @@ export default function StationsPage({ params }: { params: Promise<{ id: string 
     </>
   );
 }
+

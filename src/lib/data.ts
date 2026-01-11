@@ -1,10 +1,22 @@
 
-import type { Clinic, ClinicGroup, Patient, Advertisement, Consultation, PatientHistoryEntry } from './types';
+import type { Clinic, ClinicGroup, Patient, Advertisement, Consultation, PatientHistoryEntry, Cabin } from './types';
 
 let clinics: Clinic[] = [
     { id: 'clinic_01', name: 'City Care Clinic', location: 'Maharashtra, Mumbai' },
     { id: 'clinic_02', name: 'Health Plus Clinic', location: 'Delhi, Delhi' },
 ];
+
+let cabins: Cabin[] = [
+    { id: 'cab_101', name: 'Cabin 101', clinicId: 'clinic_01' },
+    { id: 'cab_102', name: 'Cabin 102', clinicId: 'clinic_01' },
+    { id: 'cab_103', name: 'Cabin 103', clinicId: 'clinic_01' },
+    { id: 'cab_104', name: 'Cabin 104', clinicId: 'clinic_01' },
+    { id: 'cab_105', name: 'Cabin 105', clinicId: 'clinic_01' },
+    { id: 'cab_201', name: 'Cabin 201', clinicId: 'clinic_02' },
+    { id: 'cab_202', name: 'Cabin 202', clinicId: 'clinic_02' },
+    { id: 'cab_203', name: 'Cabin 203', clinicId: 'clinic_02' },
+];
+
 
 let clinicGroups: ClinicGroup[] = [
   {
@@ -16,7 +28,7 @@ let clinicGroups: ClinicGroup[] = [
     contact: 'contact@citycare.com',
     doctor: { id: 'user_3', name: 'Dr. Ashish' },
     assistants: [{ id: 'user_5', name: 'Sunita' }],
-    cabin: { id: 'cab_101', name: 'Cabin 101' },
+    cabin: { id: 'cab_101', name: 'Cabin 101', clinicId: 'clinic_01' },
     screen: { id: 'user_7', name: 'Display User' },
   },
   {
@@ -28,7 +40,7 @@ let clinicGroups: ClinicGroup[] = [
     contact: 'contact@citycare.com',
     doctor: { id: 'doc_mehta', name: 'Dr. Mehta' },
     assistants: [{ id: 'asst_ravi', name: 'Ravi' }],
-    cabin: { id: 'cab_103', name: 'Cabin 103' },
+    cabin: { id: 'cab_103', name: 'Cabin 103', clinicId: 'clinic_01' },
     screen: { id: 'scr_main_hall', name: 'Main Hall Display' },
   },
   {
@@ -40,7 +52,7 @@ let clinicGroups: ClinicGroup[] = [
     contact: 'contact@citycare.com',
     doctor: { id: 'doc_gupta', name: 'Dr. Gupta' },
     assistants: [{ id: 'asst_leela', name: 'Leela' }],
-    cabin: { id: 'cab_105', name: 'Cabin 105' },
+    cabin: { id: 'cab_105', name: 'Cabin 105', clinicId: 'clinic_01' },
     screen: { id: 'scr_main_hall', name: 'Main Hall Display' },
   },
   {
@@ -52,7 +64,7 @@ let clinicGroups: ClinicGroup[] = [
     contact: 'contact@healthplus.com',
     doctor: { id: 'user_4', name: 'Dr. Vijay' },
     assistants: [{ id: 'user_6', name: 'Rajesh' }],
-    cabin: { id: 'cab_201', name: 'Cabin 201' },
+    cabin: { id: 'cab_201', name: 'Cabin 201', clinicId: 'clinic_02' },
     screen: { id: 'scr_main_hall_hp', name: 'Main Hall Display HP' },
   },
     {
@@ -64,7 +76,7 @@ let clinicGroups: ClinicGroup[] = [
     contact: 'contact@healthplus.com',
     doctor: { id: 'doc_singh', name: 'Dr. Singh' },
     assistants: [{ id: 'asst_kumar', name: 'Kumar' }],
-    cabin: { id: 'cab_202', name: 'Cabin 202' },
+    cabin: { id: 'cab_202', name: 'Cabin 202', clinicId: 'clinic_02' },
     screen: { id: 'scr_main_hall_hp', name: 'Main Hall Display HP' },
   },
    {
@@ -76,7 +88,7 @@ let clinicGroups: ClinicGroup[] = [
     contact: 'contact@healthplus.com',
     doctor: { id: 'doc_joshi', name: 'Dr. Joshi' },
     assistants: [{ id: 'asst_priya', name: 'Priya' }],
-    cabin: { id: 'cab_203', name: 'Cabin 203' },
+    cabin: { id: 'cab_203', name: 'Cabin 203', clinicId: 'clinic_02' },
     screen: { id: 'scr_main_hall_hp', name: 'Main Hall Display HP' },
   },
 ];
@@ -126,6 +138,12 @@ export const getClinics = async (): Promise<Clinic[]> => {
 export const getClinicById = async (id: string): Promise<Clinic | undefined> => {
     return Promise.resolve(clinics.find(c => c.id === id));
 }
+
+// Cabins
+export const getCabinsByClinicId = async (clinicId: string): Promise<Cabin[]> => {
+    return Promise.resolve(cabins.filter(c => c.clinicId === clinicId));
+}
+
 
 // Clinic Groups
 export const getClinicGroups = async (clinicId?: string): Promise<ClinicGroup[]> => {

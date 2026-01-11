@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState, useEffect, use } from 'react';
 import {
@@ -17,8 +18,8 @@ import {
   Link as LinkIcon,
   ChevronDown
 } from 'lucide-react';
-import { getClinicGroups, getClinicById, mockUsers } from '@/lib/data';
-import type { ClinicGroup, Doctor, Assistant, Screen, User } from '@/lib/types';
+import { getClinicGroups, getClinicById, mockUsers, getCabinsByClinicId } from '@/lib/data';
+import type { ClinicGroup, Doctor, Assistant, Screen, User, Cabin } from '@/lib/types';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -35,7 +36,8 @@ function GroupForm({
   onConfirm,
   doctors,
   assistants,
-  screens
+  screens,
+  cabins,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -44,6 +46,7 @@ function GroupForm({
   doctors: User[];
   assistants: User[];
   screens: User[];
+  cabins: Cabin[];
 }) {
   const isEditMode = !!group;
   const [formData, setFormData] = useState({ 
@@ -51,6 +54,7 @@ function GroupForm({
     doctorId: '',
     assistantId: '',
     screenId: '',
+    cabinId: '',
   });
 
   useEffect(() => {
@@ -59,15 +63,16 @@ function GroupForm({
         name: group.name, 
         doctorId: group.doctor.id,
         assistantId: group.assistants[0]?.id || '',
-        screenId: group.screen.id
+        screenId: group.screen.id,
+        cabinId: group.cabin.id,
       });
     } else {
-      setFormData({ name: '', doctorId: '', assistantId: '', screenId: '' });
+      setFormData({ name: '', doctorId: '', assistantId: '', screenId: '', cabinId: '' });
     }
   }, [group]);
 
   const handleConfirm = () => {
-    if (formData.name && formData.doctorId && formData.assistantId && formData.screenId) {
+    if (formData.name && formData.doctorId && formData.assistantId && formData.screenId && formData.cabinId) {
       onConfirm(formData);
       onClose();
     }
@@ -125,6 +130,19 @@ function GroupForm({
                   </SelectContent>
                 </Select>
             </div>
+            <div className="space-y-1">
+                <Label htmlFor="cabin" className="text-[10px] font-semibold text-gray-600">ASSIGN CABIN</Label>
+                <Select value={formData.cabinId} onValueChange={(value) => setFormData({...formData, cabinId: value})}>
+                  <SelectTrigger className="h-7 text-[11px]">
+                    <SelectValue placeholder="Select a cabin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cabins.map(cab => (
+                      <SelectItem key={cab.id} value={cab.id} className="text-[11px]">{cab.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+            </div>
         </div>
         <DialogFooter className="bg-gray-50 px-4 py-2 flex justify-end gap-2 rounded-b-lg">
             <Button variant="destructive" onClick={onClose} size="xs">CANCEL</Button>
@@ -167,7 +185,7 @@ function DeleteGroupDialog({
 
 export default function GroupsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: clinicId } = use(params);
-  const [clinic, setClinic] = useState<{name: string} | null>(null);
+  const [clinic, setClinic] = useState<{name: string, location: string} | null>(null);
   const [allGroups, setAllGroups] = useState<(ClinicGroup & { resources?: any; cabins?: any[] })[]>([]);
   const [activeAccordionItem, setActiveAccordionItem] = useState<string | null>(null);
   const { toast } = useToast();
@@ -175,12 +193,14 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
   const [groupToEdit, setGroupToEdit] = useState<ClinicGroup | null>(null);
   const [groupToDelete, setGroupToDelete] = useState<ClinicGroup | null>(null);
   const [users, setUsers] = useState<User[]>([]);
+  const [cabins, setCabins] = useState<Cabin[]>([]);
 
   useEffect(() => {
     getClinicById(clinicId).then(clinicData => {
       setClinic(clinicData || null);
       if(clinicData) {
         setUsers(mockUsers.filter(u => u.affiliation === clinicData.name));
+        getCabinsByClinicId(clinicId).then(setCabins);
       }
     });
 
@@ -191,13 +211,10 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                 docs: [group.doctor].length, 
                 asst: group.assistants.length,
                 displays: 1, 
-                cabins: 4, 
+                cabins: 1, 
             },
             cabins: [
-              {id: 'cab_1', name: 'Consultation Room 1'},
-              {id: 'cab_2', name: 'Consultation Room 2'},
-              {id: 'cab_3', name: 'Consultation Room 3'},
-              {id: 'cab_4', name: 'Consultation Room 4'},
+              group.cabin
             ]
         }));
         setAllGroups(groupsWithResources);
@@ -257,12 +274,13 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
     }
   }
 
-  const handleFormConfirm = (formData: { name: string, doctorId: string, assistantId: string, screenId: string }) => {
+  const handleFormConfirm = (formData: { name: string, doctorId: string, assistantId: string, screenId: string, cabinId: string }) => {
     const doctor = users.find(d => d.id === formData.doctorId);
     const assistant = users.find(a => a.id === formData.assistantId);
     const screen = users.find(s => s.id === formData.screenId);
+    const cabin = cabins.find(c => c.id === formData.cabinId);
     
-    if (!doctor || !assistant || !screen || !clinic) return;
+    if (!doctor || !assistant || !screen || !cabin || !clinic) return;
 
     if (groupToEdit) {
       // Update existing group
@@ -271,7 +289,8 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
         name: formData.name, 
         doctor: {id: doctor.id, name: doctor.name},
         assistants: [{id: assistant.id, name: assistant.name}],
-        screen: {id: screen.id, name: screen.name}
+        screen: {id: screen.id, name: screen.name},
+        cabin: cabin,
       } : g));
     } else {
       // Add new group
@@ -284,7 +303,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
           contact: `contact@${clinic.name.toLowerCase().replace(/\s/g, '')}.com`,
           doctor: {id: doctor.id, name: doctor.name},
           assistants: [{id: assistant.id, name: assistant.name}],
-          cabin: { id: 'cab_new', name: 'New Cabin'},
+          cabin: cabin,
           screen: { id: screen.id, name: screen.name},
         };
         setAllGroups(prev => [newGroup, ...prev]);
@@ -303,8 +322,8 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
           <div className="bg-card rounded-2xl border">
               <div className="grid grid-cols-12 p-4 border-b font-semibold text-xs text-muted-foreground">
                   <div className="col-span-3">GROUP NAME</div>
-                  <div className="col-span-4 pl-2">RESOURCES</div>
-                  <div className="col-span-3 pl-2">REGISTRATION FORM</div>
+                  <div className="col-span-3 pl-2">RESOURCES</div>
+                  <div className="col-span-4 pl-2">REGISTRATION FORM</div>
                   <div className="col-span-2 text-center">ACTIONS</div>
               </div>
               <Accordion type="single" value={activeAccordionItem || ""} onValueChange={setActiveAccordionItem} collapsible>
@@ -322,7 +341,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                         </div>
                                     </AccordionTrigger>
                                 </div>
-                                <div className="col-span-4 p-4 pl-6">
+                                <div className="col-span-3 p-4 pl-6">
                                   <div className="flex items-center gap-2 flex-wrap">
                                       <Badge variant="secondary" className="px-2 py-1 text-[10px] leading-none bg-blue-100 text-blue-800">{group.resources?.docs || 0} Docs</Badge>
                                       <Badge variant="secondary" className="px-2 py-1 text-[10px] leading-none bg-yellow-100 text-yellow-800">{group.resources?.asst || 0} Asst</Badge>
@@ -330,7 +349,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                       <Badge variant="secondary" className="px-2 py-1 text-[10px] leading-none bg-purple-100 text-purple-800">{group.resources?.cabins || 0} Cabins</Badge>
                                   </div>
                                 </div>
-                                <div className="col-span-3 p-4 flex items-center gap-2 pl-6">
+                                <div className="col-span-4 p-4 flex items-center gap-2 pl-6">
                                     <Button variant="outline" size="icon-xs" asChild>
                                         <Link href={`/register/${group.id}`} target="_blank">
                                             <ExternalLink className="h-4 w-4"/>
@@ -396,6 +415,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
         doctors={doctors}
         assistants={assistants}
         screens={screens}
+        cabins={cabins}
       />
       <DeleteGroupDialog
         isOpen={!!groupToDelete}
