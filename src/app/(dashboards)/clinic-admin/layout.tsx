@@ -101,19 +101,13 @@ function DashboardSidebar() {
         </SidebarMenu>
       </SidebarContent>
        <SidebarFooter>
-          <div className="flex items-center gap-3 p-4 border-t border-sidebar-border">
-            <Avatar className="h-10 w-10">
-                <AvatarFallback>CA</AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col">
-                <span className="font-semibold text-sm">Clinic Admin</span>
-                <span className="text-xs text-muted-foreground">clinic-admin@omni.com</span>
-            </div>
-            <Link href="/" className="ml-auto">
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
-                    <LogOut className="h-4 w-4" />
-                </Button>
-            </Link>
+          <div className="flex items-center gap-3 p-2 border-t border-sidebar-border">
+             <Button variant="destructive" className="w-full justify-start text-red-500 bg-red-100 hover:bg-red-200" asChild>
+                <Link href="/">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                </Link>
+            </Button>
           </div>
       </SidebarFooter>
     </Sidebar>
