@@ -15,7 +15,9 @@ import {
   ExternalLink,
   QrCode,
   Link as LinkIcon,
-  ChevronDown
+  ChevronDown,
+  PlusCircle,
+  Search,
 } from 'lucide-react';
 import { getClinicGroups, getClinicById, mockUsers, getCabinsByClinicId } from '@/lib/data';
 import type { Clinic, ClinicGroup, User, Cabin } from '@/lib/types';
@@ -26,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { MultiSelect } from '@/components/ui/multi-select';
+import { Card, CardHeader, CardContent } from '@/components/ui/card';
 
 
 function GroupForm({
@@ -184,13 +187,14 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
   const { id: clinicId } = use(params);
   const [clinic, setClinic] = useState<Clinic | null>(null);
   const [allGroups, setAllGroups] = useState<ClinicGroup[]>([]);
-  const [activeAccordionItem, setActiveAccordionItem] = useState<string | null>(null);
+  const [filteredGroups, setFilteredGroups] = useState<ClinicGroup[]>([]);
   const { toast } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [groupToEdit, setGroupToEdit] = useState<ClinicGroup | null>(null);
   const [groupToDelete, setGroupToDelete] = useState<ClinicGroup | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [cabins, setCabins] = useState<Cabin[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     getClinicById(clinicId).then(clinicData => {
@@ -203,6 +207,18 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
 
     getClinicGroups(clinicId).then(setAllGroups);
   }, [clinicId]);
+
+  useEffect(() => {
+    let filteredData = allGroups;
+    if (searchQuery) {
+        const lowercasedQuery = searchQuery.toLowerCase();
+        filteredData = allGroups.filter(group => 
+            group.name.toLowerCase().includes(lowercasedQuery) ||
+            group.tokenInitial.toLowerCase().includes(lowercasedQuery)
+        );
+    }
+    setFilteredGroups(filteredData);
+  }, [searchQuery, allGroups]);
 
   const doctors = users.filter(u => u.role === 'doctor');
   const assistants = users.filter(u => u.role === 'assistant');
@@ -308,20 +324,45 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
   return (
     <>
       <div className="space-y-6">
-          <div className="flex justify-between items-center">
-              <h1 className="text-2xl font-bold">Clinic Groups</h1>
-              <Button onClick={openCreateModal}>CREATE GROUP</Button>
-          </div>
+        <Card>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                 <div className="space-y-1 w-full sm:w-auto">
+                  <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">SEARCH GROUP</Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="search"
+                      placeholder="Name, initials..."
+                      className="pl-9 h-10 w-full sm:w-64"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                  <p className="text-sm font-medium text-muted-foreground whitespace-nowrap">{filteredGroups.length} TOTAL GROUPS</p>
+                  <Button onClick={openCreateModal} className="h-10 w-full sm:w-auto">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    CREATE GROUP
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+        </Card>
 
-          <div className="bg-card rounded-2xl border">
-              <div className="grid grid-cols-12 p-4 border-b font-semibold text-xs text-muted-foreground">
+          <Card>
+            <CardHeader>
+              <div className="grid grid-cols-12 font-semibold text-xs text-muted-foreground">
                   <div className="col-span-3">GROUP NAME</div>
                   <div className="col-span-5 pl-2">RESOURCES</div>
                   <div className="col-span-2 pl-2">REGISTRATION FORM</div>
                   <div className="col-span-2 text-center">ACTIONS</div>
               </div>
+            </CardHeader>
+            <CardContent className="p-0">
               <Accordion type="single" collapsible>
-                  {allGroups.map((group) => (
+                  {filteredGroups.map((group) => (
                       <AccordionItem value={group.id} key={group.id} className="border-b last:border-b-0">
                            <div className="grid grid-cols-12 items-center group">
                                 <div className="col-span-3 p-4">
@@ -386,20 +427,28 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                       <h4 className="font-semibold text-muted-foreground mb-2">DISPLAYS</h4>
                                       <ul className="space-y-1">
                                         {group.screens.map(s => <li key={s.id}>{s.name}</li>)}
+                                        {group.screens.length === 0 && <li className="text-muted-foreground">No displays assigned</li>}
                                       </ul>
                                   </div>
                                   <div>
                                       <h4 className="font-semibold text-muted-foreground mb-2">CABINS</h4>
                                       <ul className="space-y-1">
                                           {group.cabins?.map(c => <li key={c.id}>{c.name}</li>)}
+                                          {group.cabins.length === 0 && <li className="text-muted-foreground">No cabins assigned</li>}
                                       </ul>
                                   </div>
                               </div>
                           </AccordionContent>
                       </AccordionItem>
                   ))}
+                   {filteredGroups.length === 0 && (
+                     <div className="text-center text-muted-foreground p-8">
+                        No groups found.
+                     </div>
+                   )}
               </Accordion>
-          </div>
+            </CardContent>
+          </Card>
       </div>
       <GroupForm 
         isOpen={isModalOpen}
