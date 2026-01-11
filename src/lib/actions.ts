@@ -1,3 +1,4 @@
+
 'use server';
 
 import { z } from 'zod';
@@ -10,7 +11,7 @@ const PatientSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters.'),
   age: z.coerce.number().min(0, 'Age must be a positive number.'),
   gender: z.enum(['male', 'female', 'other']),
-  clinicId: z.string(),
+  groupId: z.string(),
   // These are not on the form, but let's add them to the schema for future use, with defaults.
   contactNumber: z.string().optional().default(''),
   emailAddress: z.string().email().optional().default(''),
@@ -21,7 +22,7 @@ export async function registerPatient(prevState: any, formData: FormData) {
     name: formData.get('name'),
     age: formData.get('age'),
     gender: formData.get('gender'),
-    clinicId: formData.get('clinicId'),
+    groupId: formData.get('groupId'),
   });
 
   if (!validatedFields.success) {

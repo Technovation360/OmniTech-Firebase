@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useActionState, useEffect, useState } from 'react';
@@ -62,7 +63,7 @@ export default function RegistrationPage({ params }: { params: { id: string } })
           </CardHeader>
           <CardContent>
             <form action={formAction} className="space-y-6">
-              <input type="hidden" name="clinicId" value={clinicGroup.id} />
+              <input type="hidden" name="groupId" value={clinicGroup.id} />
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
                 <Input id="name" name="name" placeholder="e.g., Jane Smith" required />

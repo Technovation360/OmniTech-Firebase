@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useEffect, use } from 'react';
-import { getPatientsByClinicId, getClinicGroupById, updatePatientStatus } from '@/lib/data';
+import { getPatientsByGroupId, getClinicGroupById, updatePatientStatus } from '@/lib/data';
 import type { Patient, ClinicGroup, Doctor } from '@/lib/types';
 import {
   Card,
@@ -46,12 +47,12 @@ export default function DoctorConsultationPageLoader({ params }: DoctorPageProps
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const clinicId = id === 'doc_ashish' ? 'grp_cardiology_01' : 'grp_ortho_01';
+    const groupId = id === 'doc_ashish' ? 'grp_cardiology_01' : 'grp_ortho_01';
     const fetchData = () => {
         setLoading(true);
         Promise.all([
-        getClinicGroupById(clinicId),
-        getPatientsByClinicId(clinicId),
+        getClinicGroupById(groupId),
+        getPatientsByGroupId(groupId),
         ]).then(([clinicGroup, patients]) => {
         setData({ clinicGroup, patients });
         setLoading(false);

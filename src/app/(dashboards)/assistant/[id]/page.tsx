@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useActionState } from 'react';
@@ -75,8 +76,8 @@ export default function AssistantPage() {
           <CardContent>
             <form action={formAction} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="clinicId">Clinic Department</Label>
-                <Select name="clinicId" required>
+                <Label htmlFor="groupId">Clinic Department</Label>
+                <Select name="groupId" required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a department" />
                   </SelectTrigger>

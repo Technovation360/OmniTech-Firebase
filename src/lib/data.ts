@@ -82,9 +82,9 @@ let clinicGroups: ClinicGroup[] = [
 ];
 
 let patients: Patient[] = [
-  { id: 'pat_001', name: 'Rohan Sharma', age: 34, gender: 'male', contactNumber: '+91 9876543210', emailAddress: 'rohan.sharma@example.com', tokenNumber: 'A101', status: 'waiting', clinicId: 'grp_cardiology_01', registeredAt: new Date().toISOString() },
-  { id: 'pat_002', name: 'Priya Patel', age: 28, gender: 'female', contactNumber: '+91 9876543211', emailAddress: 'priya.patel@example.com', tokenNumber: 'B205', status: 'waiting', clinicId: 'grp_ortho_01', registeredAt: new Date().toISOString() },
-  { id: 'pat_003', name: 'Amit Singh', age: 45, gender: 'male', contactNumber: '+91 9876543212', emailAddress: 'amit.singh@example.com', tokenNumber: 'A102', status: 'waiting', clinicId: 'grp_cardiology_01', registeredAt: new Date().toISOString() },
+  { id: 'pat_001', name: 'Rohan Sharma', age: 34, gender: 'male', contactNumber: '+91 9876543210', emailAddress: 'rohan.sharma@example.com', tokenNumber: 'A101', status: 'waiting', groupId: 'grp_cardiology_01', clinicId: 'clinic_01', registeredAt: new Date().toISOString() },
+  { id: 'pat_002', name: 'Priya Patel', age: 28, gender: 'female', contactNumber: '+91 9876543211', emailAddress: 'priya.patel@example.com', tokenNumber: 'B205', status: 'waiting', groupId: 'grp_ortho_01', clinicId: 'clinic_02', registeredAt: new Date().toISOString() },
+  { id: 'pat_003', name: 'Amit Singh', age: 45, gender: 'male', contactNumber: '+91 9876543212', emailAddress: 'amit.singh@example.com', tokenNumber: 'A102', status: 'waiting', groupId: 'grp_cardiology_01', clinicId: 'clinic_01', registeredAt: new Date().toISOString() },
 ];
 
 let consultations: Consultation[] = [
@@ -101,6 +101,18 @@ let consultations: Consultation[] = [
 let advertisements: Advertisement[] = [
   { id: 'ad_01', advertiser: 'HealthCare Insurance', campaign: 'Winter Shield 2024', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', impressions: 12534 },
   { id: 'ad_02', advertiser: 'PharmaCure', campaign: 'New Pain Reliever Launch', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4', impressions: 8345 },
+];
+
+export const mockUsers = [
+    { id: 'user_1', name: 'Admin', email: 'admin@omni.com', role: 'central-admin', affiliation: 'Omni Platform'},
+    { id: 'user_2', name: 'Priya Sharma', email: 'clinic-admin-city@omni.com', role: 'clinic-admin', affiliation: 'City Care Clinic'},
+    { id: 'user_9', name: 'Rahul Verma', email: 'clinic-admin-health@omni.com', role: 'clinic-admin', affiliation: 'Health Plus Clinic'},
+    { id: 'user_3', name: 'Dr. Ashish', email: 'doc_ashish@omni.com', role: 'doctor', affiliation: 'City Care Clinic', specialty: 'Cardiology' },
+    { id: 'user_4', name: 'Dr. Vijay', email: 'doc_vijay@omni.com', role: 'doctor', affiliation: 'Health Plus Clinic', specialty: 'Orthopedics' },
+    { id: 'user_5', name: 'Sunita', email: 'asst_sunita@omni.com', role: 'assistant', affiliation: 'City Care Clinic' },
+    { id: 'user_6', name: 'Rajesh', email: 'asst_rajesh@omni.com', role: 'assistant', affiliation: 'Health Plus Clinic' },
+    { id: 'user_7', name: 'Display User', email: 'display@omni.com', role: 'display', affiliation: 'City Care Clinic' },
+    { id: 'user_8', name: 'Advertiser User', email: 'advertiser@omni.com', role: 'advertiser', affiliation: 'HealthCare Insurance' },
 ];
 
 
@@ -141,11 +153,20 @@ export const getPatientsByClinicId = async (clinicId: string): Promise<Patient[]
   return Promise.resolve(filtered);
 };
 
-export const addPatient = async (data: Omit<Patient, 'id' | 'tokenNumber' | 'status' | 'registeredAt'>): Promise<Patient> => {
-    const clinicGroup = await getClinicGroupById(data.clinicId);
+export const getPatientsByGroupId = async (groupId: string): Promise<Patient[]> => {
+  const filtered = patients.filter(p => p.groupId === groupId);
+  return Promise.resolve(filtered);
+};
+
+
+export const addPatient = async (data: Omit<Patient, 'id' | 'tokenNumber' | 'status' | 'registeredAt' | 'clinicId'> & { groupId: string }): Promise<Patient> => {
+    const clinicGroup = await getClinicGroupById(data.groupId);
+    if (!clinicGroup) {
+      throw new Error('Clinic group not found');
+    }
     const prefix = clinicGroup ? clinicGroup.name.substring(0,1).toUpperCase() : 'Z';
     const lastToken = patients
-        .filter(p => p.clinicId === data.clinicId)
+        .filter(p => p.groupId === data.groupId)
         .map(p => parseInt(p.tokenNumber.slice(1), 10))
         .sort((a,b) => b-a)[0] || 0;
 
@@ -154,6 +175,7 @@ export const addPatient = async (data: Omit<Patient, 'id' | 'tokenNumber' | 'sta
         id: `pat_${Date.now()}`,
         tokenNumber: `${prefix}${lastToken + 1}`,
         status: 'waiting',
+        clinicId: clinicGroup.clinicId,
         registeredAt: new Date().toISOString()
     };
     patients.push(newPatient);
@@ -171,7 +193,7 @@ export const updatePatientStatus = async (patientId: string, status: Patient['st
 export const getPatientHistory = async (patientId: string): Promise<PatientHistoryEntry[]> => {
     const patientVisits = patients.filter(p => p.id === patientId);
     const history = patientVisits.map(visit => {
-        const clinic = clinicGroups.find(cg => cg.id === visit.clinicId);
+        const clinic = clinicGroups.find(cg => cg.id === visit.groupId);
         const consultation = consultations.find(c => c.patientId === visit.id);
         const startTime = consultation ? new Date(new Date(consultation.date).getTime() - 10 * 60000).toISOString() : undefined; // apx 10 mins before end time
         const endTime = consultation ? consultation.date : undefined;
@@ -193,15 +215,15 @@ export const getPatientHistory = async (patientId: string): Promise<PatientHisto
 // Queue Info (for display screen)
 export const getQueueInfoByScreenId = async (screenId: string) => {
     const relevantClinics = clinicGroups.filter(cg => cg.screen.id === screenId);
-    const clinicIds = relevantClinics.map(rc => rc.id);
-    const queuePatients = patients.filter(p => clinicIds.includes(p.clinicId) && (p.status === 'waiting' || p.status === 'called' || p.status === 'in-consultation'));
+    const groupIds = relevantClinics.map(rc => rc.id);
+    const queuePatients = patients.filter(p => groupIds.includes(p.groupId) && (p.status === 'waiting' || p.status === 'called' || p.status === 'in-consultation'));
 
     const calledPatient = queuePatients.find(p => p.status === 'called');
     
     // Find the clinic, cabin for the called patient
     const calledPatientInfo = calledPatient ? {
         ...calledPatient,
-        cabinName: clinicGroups.find(cg => cg.id === calledPatient.clinicId)?.cabin.name || '',
+        cabinName: clinicGroups.find(cg => cg.id === calledPatient.groupId)?.cabin.name || '',
     } : null;
 
     // After "calling" a patient, we set them back to 'in-consultation' after a delay so the notification disappears

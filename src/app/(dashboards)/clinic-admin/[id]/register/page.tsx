@@ -46,6 +46,7 @@ import {
   getAllPatients,
   getClinicGroupById,
   getPatientHistory,
+  getPatientsByClinicId,
 } from '@/lib/data';
 import type { Patient, ClinicGroup, PatientHistoryEntry } from '@/lib/types';
 import { format } from 'date-fns';
@@ -85,7 +86,7 @@ function VisitHistoryModal({
   useEffect(() => {
     if (patient) {
       getPatientHistory(patient.id).then(setHistory);
-      getClinicGroupById(patient.clinicId).then(setClinic);
+      getClinicGroupById(patient.groupId).then(setClinic);
     } else {
       setHistory([]);
       setClinic(null);
@@ -160,12 +161,12 @@ function VisitHistoryModal({
 function ManualCheckInModal({ 
     isOpen, 
     onClose, 
-    clinicId,
+    groupId,
     onPatientRegistered,
 } : {
     isOpen: boolean;
     onClose: () => void;
-    clinicId: string;
+    groupId: string;
     onPatientRegistered: () => void;
 }) {
   const [state, formAction] = useActionState(registerPatient, null);
@@ -196,7 +197,7 @@ function ManualCheckInModal({
             <CardDescription>Fill in the details to add a patient to the queue.</CardDescription>
           </DialogHeader>
           <form action={formAction} className="space-y-6 p-4">
-                <input type="hidden" name="clinicId" value={clinicId} />
+                <input type="hidden" name="groupId" value={groupId} />
                 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -244,7 +245,7 @@ function ManualCheckInModal({
 
 
 export default function PatientRegistryPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id: clinicId } = use(params);
+  const { id: clinicId } = use(params); // This is actually the clinic GROUP ID from the URL structure
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [clinic, setClinic] = useState<ClinicGroup | null>(null);
@@ -258,14 +259,20 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
   const { toast } = useToast();
 
   const fetchPatients = () => {
-    getAllPatients().then((data) => {
-        setAllPatients(data.filter(p => p.clinicId === clinicId));
+    getPatientsByClinicId(clinic!.clinicId).then((data) => {
+        setAllPatients(data);
     });
   }
 
   useEffect(() => {
-    fetchPatients();
-    getClinicGroupById(clinicId).then(setClinic);
+    getClinicGroupById(clinicId).then(group => {
+        setClinic(group);
+        if (group) {
+             getPatientsByClinicId(group.clinicId).then((data) => {
+                setAllPatients(data);
+             });
+        }
+    });
   }, [clinicId]);
   
   useEffect(() => {
@@ -323,6 +330,10 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
         title: "Token Generated",
         description: `New token generated for ${patient.name}.`
     });
+  }
+
+  if (!clinic) {
+    return <div>Loading...</div>
   }
 
   return (
@@ -464,7 +475,7 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
       <ManualCheckInModal 
         isOpen={isCheckInModalOpen}
         onClose={() => setCheckInModalOpen(false)}
-        clinicId={clinicId}
+        groupId={clinicId}
         onPatientRegistered={fetchPatients}
       />
     </div>

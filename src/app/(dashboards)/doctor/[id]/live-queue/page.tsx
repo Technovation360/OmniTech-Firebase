@@ -1,7 +1,8 @@
+
 'use client';
 
 import { use, useState, useEffect } from 'react';
-import { getPatientsByClinicId, getClinicGroupById } from '@/lib/data';
+import { getPatientsByGroupId, getClinicGroupById } from '@/lib/data';
 import type { Patient, ClinicGroup } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -30,10 +31,10 @@ export default function DoctorLiveQueuePage({ params }: { params: { id: string }
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'tokenNumber', direction: 'asc' });
 
   useEffect(() => {
-    const clinicId = doctorId === 'doc_ashish' ? 'grp_cardiology_01' : 'grp_ortho_01';
+    const groupId = doctorId === 'doc_ashish' ? 'grp_cardiology_01' : 'grp_ortho_01';
     Promise.all([
-        getClinicGroupById(clinicId),
-        getPatientsByClinicId(clinicId)
+        getClinicGroupById(groupId),
+        getPatientsByGroupId(groupId)
     ]).then(([clinicData, patientData]) => {
       setClinic(clinicData || null);
       setAllPatients(patientData.filter(p => ['waiting', 'called', 'in-consultation'].includes(p.status)));

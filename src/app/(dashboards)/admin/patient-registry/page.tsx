@@ -45,8 +45,9 @@ import {
   getAllPatients,
   getClinicGroups,
   getPatientHistory,
+  getClinics as getAllClinics,
 } from '@/lib/data';
-import type { Patient, ClinicGroup, PatientHistoryEntry } from '@/lib/types';
+import type { Patient, ClinicGroup, PatientHistoryEntry, Clinic } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -202,7 +203,7 @@ function VisitHistoryModal({
 export default function PatientRegistryPage() {
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
-  const [clinics, setClinics] = useState<ClinicGroup[]>([]);
+  const [clinics, setClinics] = useState<Clinic[]>([]);
   const [sortConfig, setSortConfig] = useState<{
     key: keyof Patient;
     direction: 'asc' | 'desc';
@@ -216,7 +217,7 @@ export default function PatientRegistryPage() {
     getAllPatients().then((data) => {
       setAllPatients(data);
     });
-    getClinicGroups().then(setClinics);
+    getAllClinics().then(setClinics);
   }, []);
   
   useEffect(() => {

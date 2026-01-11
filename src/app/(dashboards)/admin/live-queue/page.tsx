@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { getPatientsByClinicId, getClinicGroups } from '@/lib/data';
+import { getPatientsByGroupId, getClinicGroups, getAllPatients } from '@/lib/data';
 import type { Patient, ClinicGroup } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -52,22 +52,21 @@ export default function LiveQueuePage() {
   useEffect(() => {
     getClinicGroups().then(allClinics => {
         setClinics(allClinics);
-        // Fetch patients from all clinics
-        Promise.all(allClinics.map(c => getPatientsByClinicId(c.id))).then(patientArrays => {
-            const allPatientsData = patientArrays.flat()
-                .filter(p => p.status === 'waiting' || p.status === 'called' || p.status === 'in-consultation')
-                .sort((a,b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime());
-            setAllPatients(allPatientsData);
-        })
+    });
+    getAllPatients().then(allPatientsData => {
+        const activePatients = allPatientsData
+            .filter(p => p.status === 'waiting' || p.status === 'called' || p.status === 'in-consultation')
+            .sort((a,b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime());
+        setAllPatients(activePatients);
     });
   }, []);
   
-  const getClinicName = (clinicId: string) => {
-    return clinics.find(c => c.id === clinicId)?.name || 'Unknown';
+  const getClinicName = (groupId: string) => {
+    return clinics.find(c => c.id === groupId)?.name || 'Unknown';
   }
 
-  const getDoctorName = (clinicId: string) => {
-      return clinics.find(c => c.id === clinicId)?.doctor.name || 'Unknown';
+  const getDoctorName = (groupId: string) => {
+      return clinics.find(c => c.id === groupId)?.doctor.name || 'Unknown';
   }
 
   useEffect(() => {
@@ -82,15 +81,15 @@ export default function LiveQueuePage() {
         filteredData = filteredData.filter(patient => 
             patient.name.toLowerCase().includes(lowercasedQuery) ||
             patient.tokenNumber.toLowerCase().includes(lowercasedQuery) ||
-            getClinicName(patient.clinicId).toLowerCase().includes(lowercasedQuery) ||
-            getDoctorName(patient.clinicId).toLowerCase().includes(lowercasedQuery)
+            getClinicName(patient.groupId).toLowerCase().includes(lowercasedQuery) ||
+            getDoctorName(patient.groupId).toLowerCase().includes(lowercasedQuery)
         );
     }
     
     if (sortConfig) {
       const sorted = [...filteredData].sort((a, b) => {
-        const aVal = sortConfig.key === 'clinic' ? getClinicName(a.clinicId) : sortConfig.key === 'doctor' ? getDoctorName(a.clinicId) : a[sortConfig.key as keyof Patient];
-        const bVal = sortConfig.key === 'clinic' ? getClinicName(b.clinicId) : sortConfig.key === 'doctor' ? getDoctorName(b.clinicId) : b[sortConfig.key as keyof Patient];
+        const aVal = sortConfig.key === 'clinic' ? getClinicName(a.clinicId) : sortConfig.key === 'doctor' ? getDoctorName(a.groupId) : a[sortConfig.key as keyof Patient];
+        const bVal = sortConfig.key === 'clinic' ? getClinicName(b.clinicId) : sortConfig.key === 'doctor' ? getDoctorName(b.groupId) : b[sortConfig.key as keyof Patient];
 
         if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
         if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
@@ -133,7 +132,7 @@ export default function LiveQueuePage() {
                   <SelectContent>
                       <SelectItem value="all" className="text-xs">All Clinics</SelectItem>
                       {clinics.map(clinic => (
-                          <SelectItem key={clinic.id} value={clinic.id} className="text-xs">{clinic.name}</SelectItem>
+                          <SelectItem key={clinic.id} value={clinic.clinicId} className="text-xs">{clinic.name}</SelectItem>
                       ))}
                   </SelectContent>
               </Select>
@@ -203,8 +202,8 @@ export default function LiveQueuePage() {
                 <TableCell className="font-bold py-2 text-xs">{patient.tokenNumber}</TableCell>
                 <TableCell className="py-2 text-xs">{patient.name}</TableCell>
                 <TableCell className="py-2 text-xs">{getClinicName(patient.clinicId)}</TableCell>
-                <TableCell className="py-2 text-xs">{getClinicName(patient.clinicId)}</TableCell>
-                <TableCell className="py-2 text-xs">{getDoctorName(patient.clinicId)}</TableCell>
+                <TableCell className="py-2 text-xs">{getClinicName(patient.groupId)}</TableCell>
+                <TableCell className="py-2 text-xs">{getDoctorName(patient.groupId)}</TableCell>
                 <TableCell className="py-2 text-xs">{format(new Date(patient.registeredAt), 'hh:mm a')}</TableCell>
                 <TableCell className="py-2 text-xs">
                    <Badge variant={'secondary'} className={cn("text-[10px] border-transparent capitalize", badgeColors[patient.status])}>

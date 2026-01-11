@@ -8,6 +8,7 @@ export type Patient = {
   emailAddress: string;
   tokenNumber: string;
   status: 'waiting' | 'in-consultation' | 'consultation-done' | 'no-show' | 'called';
+  groupId: string;
   clinicId: string;
   registeredAt: string; // ISO 8601 date string
 };

@@ -3,7 +3,7 @@
 
 import { use, useState, useEffect } from 'react';
 import {
-  getPatientsByClinicId,
+  getPatientsByGroupId,
   getClinicGroups,
   getPatientHistory,
 } from '@/lib/data';
@@ -212,8 +212,8 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
   useEffect(() => {
-    const clinicId = doctorId === 'doc_ashish' ? 'grp_cardiology_01' : 'grp_ortho_01';
-    getPatientsByClinicId(clinicId).then((data) => {
+    const groupId = doctorId === 'doc_ashish' ? 'grp_cardiology_01' : 'grp_ortho_01';
+    getPatientsByGroupId(groupId).then((data) => {
       setAllPatients(data);
     });
   }, [doctorId]);
@@ -407,7 +407,3 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
     </>
   );
 }
-
-    
-
-    
