@@ -126,7 +126,7 @@ export default function LiveQueuePage() {
       <CardHeader>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-                <CardTitle className="text-[22px]">Live Queue</CardTitle>
+                <CardTitle className="text-2xl">Live Queue</CardTitle>
             </div>
             <div className="flex items-center gap-4 w-full sm:w-auto">
               <div className="space-y-1">
