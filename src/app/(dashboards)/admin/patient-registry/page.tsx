@@ -40,7 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowUp, ArrowDown, Search, History } from 'lucide-react';
+import { ArrowUp, ArrowDown, Search, History, PlusCircle } from 'lucide-react';
 import {
   getAllPatients,
   getClinicGroups,
@@ -50,6 +50,11 @@ import {
 import type { Patient, ClinicGroup, PatientHistoryEntry, Clinic } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import { registerPatient } from '@/lib/actions';
+import { useActionState } from 'react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+
 
 const badgeColors: Record<Patient['status'], string> = {
   waiting: 'bg-blue-100 text-blue-800',
@@ -200,6 +205,106 @@ function VisitHistoryModal({
   );
 }
 
+function ManualCheckInModal({ 
+    isOpen, 
+    onClose, 
+    clinicGroups,
+    onPatientRegistered,
+} : {
+    isOpen: boolean;
+    onClose: () => void;
+    clinicGroups: ClinicGroup[];
+    onPatientRegistered: () => void;
+}) {
+  const [state, formAction] = useActionState(registerPatient, null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (state?.success && state.tokenNumber) {
+      toast({
+        title: 'Patient Registered',
+        description: `Token number ${state.tokenNumber} has been assigned.`,
+      });
+      onPatientRegistered();
+      onClose();
+    } else if (state?.message && !state.success) {
+      toast({
+        variant: 'destructive',
+        title: 'Registration Failed',
+        description: state.message,
+      });
+    }
+  }, [state, toast, onClose, onPatientRegistered]);
+
+  return (
+     <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Manual Patient Check-in</DialogTitle>
+            <CardDescription>Fill in the details to add a patient to the queue.</CardDescription>
+          </DialogHeader>
+          <form action={formAction} className="space-y-6 p-4">
+               <div className="space-y-2">
+                <Label htmlFor="groupId">Clinic Department</Label>
+                <Select name="groupId" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clinicGroups.map((group) => (
+                      <SelectItem key={group.id} value={group.id}>
+                        {group.name} (Dr. {group.doctors.map(d => d.name).join(', ')})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                 {state?.errors?.groupId && <p className="text-sm text-destructive">{state.errors.groupId[0]}</p>}
+              </div>
+                
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="name">Patient Name</Label>
+                    <Input id="name" name="name" placeholder="e.g., John Doe" required />
+                    {state?.errors?.name && <p className="text-sm text-destructive">{state.errors.name[0]}</p>}
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="age">Age</Label>
+                    <Input id="age" name="age" type="number" placeholder="e.g., 42" required />
+                    {state?.errors?.age && <p className="text-sm text-destructive">{state.errors.age[0]}</p>}
+                </div>
+              </div>
+
+
+              <div className="space-y-2">
+                <Label>Gender</Label>
+                <RadioGroup name="gender" defaultValue="male" className="flex gap-4">
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="male" id="male" />
+                    <Label htmlFor="male">Male</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="female" id="female" />
+                    <Label htmlFor="female">Female</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="other" id="other" />
+                    <Label htmlFor="other">Other</Label>
+                  </div>
+                </RadioGroup>
+                {state?.errors?.gender && <p className="text-sm text-destructive">{state.errors.gender[0]}</p>}
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={onClose}>Cancel</Button>
+                <Button type="submit">Register Patient</Button>
+              </DialogFooter>
+            </form>
+        </DialogContent>
+      </Dialog>
+  );
+}
+
 export default function PatientRegistryPage() {
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
@@ -210,14 +315,21 @@ export default function PatientRegistryPage() {
   } | null>({ key: 'name', direction: 'asc' });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [isCheckInModalOpen, setCheckInModalOpen] = useState(false);
   const [selectedClinic, setSelectedClinic] = useState<string>('all');
+  const [clinicGroups, setClinicGroups] = useState<ClinicGroup[]>([]);
+  const { toast } = useToast();
 
+  const fetchPatients = () => {
+    getAllPatients().then((data) => {
+        setAllPatients(data);
+    });
+  }
 
   useEffect(() => {
-    getAllPatients().then((data) => {
-      setAllPatients(data);
-    });
+    fetchPatients();
     getAllClinics().then(setClinics);
+    getClinicGroups().then(setClinicGroups);
   }, []);
   
   useEffect(() => {
@@ -274,38 +386,82 @@ export default function PatientRegistryPage() {
     setSelectedPatient(null);
   };
 
+  const handleGenerateToken = async (patient: Patient) => {
+    // This function needs to be more robust. A patient can't just generate a token for any group.
+    // For now, let's assume they re-register for their last group.
+    
+    if (!patient.groupId) {
+         toast({
+            title: "Error",
+            description: `Could not determine the group for ${patient.name}. Please use manual check-in.`
+        });
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('name', patient.name);
+    formData.append('age', patient.age.toString());
+    formData.append('gender', patient.gender);
+    formData.append('groupId', patient.groupId);
+
+    const result = await registerPatient(null, formData);
+
+    if (result.success) {
+        toast({
+            title: "Token Generated",
+            description: `New token ${result.tokenNumber} generated for ${patient.name}.`
+        });
+        fetchPatients(); // Re-fetch patients to show the new token status
+    } else {
+         toast({
+            variant: "destructive",
+            title: "Failed to generate token",
+            description: result.message || "An unknown error occurred."
+        });
+    }
+  }
+
+
   return (
     <>
       <Card>
         <CardHeader>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <CardTitle className="text-lg">Patient Registry</CardTitle>
-              <CardDescription className="text-xs mt-1">
-                Global list of all registered patients.
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Select value={selectedClinic} onValueChange={setSelectedClinic}>
-                  <SelectTrigger className="h-9 w-full sm:w-48 text-xs">
-                      <SelectValue placeholder="Filter by Clinic" />
-                  </SelectTrigger>
-                  <SelectContent>
-                      <SelectItem value="all" className="text-xs">All Clinics</SelectItem>
-                      {clinics.map(clinic => (
-                          <SelectItem key={clinic.id} value={clinic.id} className="text-xs">{clinic.name}</SelectItem>
-                      ))}
-                  </SelectContent>
-              </Select>
-              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search..."
-                  className="pl-9 h-9"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4 w-full sm:w-auto">
+              <div className="space-y-1 w-full sm:w-auto">
+                <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">PATIENT SEARCH</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="search"
+                    placeholder="Name, Phone, Email..."
+                    className="pl-9 h-10 w-full sm:w-64"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
               </div>
+              <div className="space-y-1 w-full sm:w-auto">
+                <Label htmlFor="clinicFilter" className="text-xs font-semibold text-muted-foreground">FILTER BY CLINIC</Label>
+                <Select value={selectedClinic} onValueChange={setSelectedClinic}>
+                    <SelectTrigger id="clinicFilter" className="h-10 w-full sm:w-48 text-sm">
+                        <SelectValue placeholder="Filter by Clinic" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all" className="text-sm">All Clinics</SelectItem>
+                        {clinics.map(clinic => (
+                            <SelectItem key={clinic.id} value={clinic.id} className="text-sm">{clinic.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex flex-col items-end gap-1">
+                <p className="text-xs font-medium text-muted-foreground text-right">{filteredPatients.length} REGISTERED PATIENTS</p>
+                <Button onClick={() => setCheckInModalOpen(true)} className="h-10 w-full sm:w-auto">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    MANUAL CHECK-IN
+                </Button>
             </div>
           </div>
         </CardHeader>
@@ -373,6 +529,7 @@ export default function PatientRegistryPage() {
                     {getSortIcon('registeredAt')}
                   </Button>
                 </TableHead>
+                <TableHead className="text-center">Token</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -391,6 +548,9 @@ export default function PatientRegistryPage() {
                   <TableCell className="py-2 text-xs">
                      {format(new Date(patient.registeredAt), 'P, pp')}
                   </TableCell>
+                  <TableCell className="py-2 text-xs text-center">
+                     <Button size="xs" onClick={() => handleGenerateToken(patient)}>GENERATE</Button>
+                  </TableCell>
                   <TableCell className="py-2 text-xs">
                     <Button
                       variant="default"
@@ -406,7 +566,7 @@ export default function PatientRegistryPage() {
               ))}
                {filteredPatients.length === 0 && (
                 <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-4 text-sm">
+                    <TableCell colSpan={8} className="text-center text-muted-foreground py-4 text-sm">
                         No patients found.
                     </TableCell>
                 </TableRow>
@@ -420,6 +580,12 @@ export default function PatientRegistryPage() {
         isOpen={!!selectedPatient}
         onClose={closeHistoryModal}
         patient={selectedPatient}
+      />
+       <ManualCheckInModal 
+        isOpen={isCheckInModalOpen}
+        onClose={() => setCheckInModalOpen(false)}
+        clinicGroups={clinicGroups}
+        onPatientRegistered={fetchPatients}
       />
     </>
   );
