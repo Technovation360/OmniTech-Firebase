@@ -384,7 +384,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                       <Badge variant="secondary" className="px-1 py-0 text-[10px] leading-tight bg-purple-100 text-purple-800">{group.cabins.length} Cabins</Badge>
                                   </div>
                                 </div>
-                                <div className="col-span-3 p-4 flex items-center justify-center gap-2">
+                                <div className="col-span-3 p-4 flex items-center justify-center gap-1">
                                     <Button variant="outline" size="icon-xs" asChild>
                                         <Link href={`/register/${group.id}`} target="_blank">
                                             <ExternalLink className="h-4 w-4"/>
@@ -399,7 +399,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                         <LinkIcon className="h-4 w-4"/>
                                     </Button>
                                 </div>
-                                <div className="col-span-3 p-4 flex justify-center gap-2">
+                                <div className="col-span-3 p-4 flex justify-start gap-1">
                                   <Button variant="ghost" size="icon-sm" onClick={() => openEditModal(group)}>
                                       <Edit className="h-4 w-4 text-muted-foreground"/>
                                   </Button>
@@ -469,3 +469,5 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
     </>
   );
 }
+
+    
