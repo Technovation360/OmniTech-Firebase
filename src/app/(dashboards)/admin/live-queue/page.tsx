@@ -126,7 +126,6 @@ export default function LiveQueuePage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
                 <CardTitle>Live Queue</CardTitle>
-                <CardDescription>A real-time overview of all patient queues across all clinics.</CardDescription>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <Select value={selectedClinic} onValueChange={setSelectedClinic}>
