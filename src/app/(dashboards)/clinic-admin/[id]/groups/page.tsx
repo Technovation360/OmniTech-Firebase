@@ -1,5 +1,4 @@
 
-
 'use client';
 import { useState, useEffect, use } from 'react';
 import {
@@ -73,6 +72,10 @@ function GroupForm({
     }
   }, [group]);
 
+  const handleInputChange = (field: keyof typeof formData, value: string | string[]) => {
+      setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
   const handleConfirm = () => {
     if (formData.name && formData.tokenInitial && formData.doctorIds.length > 0) {
       onConfirm(formData);
@@ -91,18 +94,18 @@ function GroupForm({
         <div className="p-4 pb-4 grid grid-cols-2 gap-4">
             <div className="space-y-1">
                 <Label htmlFor="groupName" className="text-[10px] font-semibold text-gray-600">GROUP NAME</Label>
-                <Input id="groupName" className="h-7 text-[11px]" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                <Input id="groupName" className="h-7 text-[11px]" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} />
             </div>
              <div className="space-y-1">
                 <Label htmlFor="tokenInitial" className="text-[10px] font-semibold text-gray-600">TOKEN INITIALS</Label>
-                <Input id="tokenInitial" maxLength={3} className="h-7 text-[11px]" value={formData.tokenInitial} onChange={(e) => setFormData({...formData, tokenInitial: e.target.value.toUpperCase()})} />
+                <Input id="tokenInitial" maxLength={3} className="h-7 text-[11px]" value={formData.tokenInitial} onChange={(e) => handleInputChange('tokenInitial', e.target.value.toUpperCase())} />
             </div>
             <div className="space-y-1">
                 <Label htmlFor="doctor" className="text-[10px] font-semibold text-gray-600">ASSIGN DOCTORS</Label>
                 <MultiSelect
                     options={doctors.map(d => ({ value: d.id, label: d.name }))}
                     selected={formData.doctorIds}
-                    onChange={(selected) => setFormData({...formData, doctorIds: selected})}
+                    onChange={(selected) => handleInputChange('doctorIds', selected)}
                     className="text-xs"
                     placeholder="Select doctors..."
                 />
@@ -112,7 +115,7 @@ function GroupForm({
                 <MultiSelect
                     options={assistants.map(a => ({ value: a.id, label: a.name }))}
                     selected={formData.assistantIds}
-                    onChange={(selected) => setFormData({...formData, assistantIds: selected})}
+                    onChange={(selected) => handleInputChange('assistantIds', selected)}
                     className="text-xs"
                     placeholder="Select assistants..."
                 />
@@ -122,7 +125,7 @@ function GroupForm({
                  <MultiSelect
                     options={screens.map(s => ({ value: s.id, label: s.name }))}
                     selected={formData.screenIds}
-                    onChange={(selected) => setFormData({...formData, screenIds: selected})}
+                    onChange={(selected) => handleInputChange('screenIds', selected)}
                     className="text-xs"
                     placeholder="Select screens..."
                 />
@@ -132,7 +135,7 @@ function GroupForm({
                  <MultiSelect
                     options={cabins.map(c => ({ value: c.id, label: c.name }))}
                     selected={formData.cabinIds}
-                    onChange={(selected) => setFormData({...formData, cabinIds: selected})}
+                    onChange={(selected) => handleInputChange('cabinIds', selected)}
                     className="text-xs"
                     placeholder="Select cabins..."
                 />
@@ -317,7 +320,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                   <div className="col-span-2 pl-2">REGISTRATION FORM</div>
                   <div className="col-span-2 text-center">ACTIONS</div>
               </div>
-              <Accordion type="single" value={activeAccordionItem || ''} onValueChange={setActiveAccordionItem} collapsible>
+              <Accordion type="single" collapsible>
                   {allGroups.map((group) => (
                       <AccordionItem value={group.id} key={group.id} className="border-b last:border-b-0">
                            <div className="grid grid-cols-12 items-center group">
@@ -415,5 +418,5 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
         groupName={groupToDelete?.name || ''}
       />
     </>
-  );
-}
+  
+    
