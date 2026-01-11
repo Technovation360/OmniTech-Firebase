@@ -18,9 +18,7 @@ import { getClinicGroupById } from '@/lib/data';
 import type { ClinicGroup } from '@/lib/types';
 import Image from 'next/image';
 
-export default function SettingsPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id: clinicId } = use(params);
-  const [clinic, setClinic] = useState<ClinicGroup | null>(null);
+function ClinicDetails({ clinic }: { clinic: ClinicGroup }) {
   const [formData, setFormData] = useState({
     name: '',
     contact: '',
@@ -33,27 +31,20 @@ export default function SettingsPage({ params }: { params: Promise<{ id: string 
   });
 
   useEffect(() => {
-    getClinicGroupById(clinicId).then((data) => {
-      if (data) {
-        setClinic(data);
-        const [city, state] = data.location.split(', ');
-        setFormData({
-            name: data.name,
-            contact: data.contact,
-            phone: '555-0199', // mock
-            location: '123 Health Blvd', // mock
-            city: city || 'Metro City', // mock
-            state: state || 'California', // mock
-            zip: '90001', // mock
-            specialties: data.specialties,
-        });
-      }
-    });
-  }, [clinicId]);
-  
-  if (!clinic) {
-    return <div>Loading...</div>;
-  }
+    if (clinic) {
+      const [city, state] = clinic.location.split(', ');
+      setFormData({
+          name: clinic.name,
+          contact: clinic.contact,
+          phone: '555-0199', // mock
+          location: '123 Health Blvd', // mock
+          city: city || 'Metro City', // mock
+          state: state || 'California', // mock
+          zip: '90001', // mock
+          specialties: clinic.specialties,
+      });
+    }
+  }, [clinic]);
 
   const handleSpecialtyRemove = (specialtyToRemove: string) => {
     setFormData(prev => ({
@@ -63,12 +54,15 @@ export default function SettingsPage({ params }: { params: Promise<{ id: string 
   };
 
   return (
-     <div className="space-y-6">
-      <Card>
+    <Card>
+        <CardHeader>
+            <CardTitle>Clinic Profile</CardTitle>
+            <CardDescription>Manage your clinic's public information and branding.</CardDescription>
+        </CardHeader>
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="md:col-span-1">
-              <h3 className="font-semibold mb-2">CLINIC BRANDING</h3>
+              <h3 className="font-semibold mb-2 text-sm text-muted-foreground">CLINIC BRANDING</h3>
                <Card className="relative aspect-square w-full max-w-xs mx-auto flex items-center justify-center bg-muted/30">
                 <div className="text-center text-muted-foreground">
                     <Image src="https://picsum.photos/seed/logo/200" alt="Clinic Logo" width={100} height={100} className="mx-auto mb-2 opacity-20" />
@@ -142,11 +136,31 @@ export default function SettingsPage({ params }: { params: Promise<{ id: string 
           </div>
         </CardContent>
       </Card>
-    </div>
   );
 }
 
-// Dummy ChevronLeft for styling, as it's not available in lucide-react by default in this setup
-const ChevronLeft = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m15 18-6-6 6-6"/></svg>
-);
+
+export default function SettingsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: clinicId } = use(params);
+  const [clinic, setClinic] = useState<ClinicGroup | null>(null);
+
+  useEffect(() => {
+    getClinicGroupById(clinicId).then((data) => {
+      if (data) {
+        setClinic(data);
+      }
+    });
+  }, [clinicId]);
+  
+  if (!clinic) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+     <div className="space-y-6">
+        <h1 className="text-3xl font-bold font-headline">Clinic Settings</h1>
+        <p className="text-muted-foreground">Manage overall settings for {clinic.name}.</p>
+        <ClinicDetails clinic={clinic} />
+    </div>
+  );
+}

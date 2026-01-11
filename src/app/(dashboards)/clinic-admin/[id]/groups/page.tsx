@@ -5,6 +5,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription
 } from '@/components/ui/card';
 import {
   Table,
@@ -17,23 +18,15 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  ChevronDown,
-  ChevronRight,
   Edit,
   Trash2,
-  Wand2,
-  LayoutGrid,
-  Link,
-  Printer,
+  ArrowUp, 
+  ArrowDown,
+  Search
 } from 'lucide-react';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
 import { getClinicGroups } from '@/lib/data';
 import type { ClinicGroup } from '@/lib/types';
-import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
 
 
 // Mocking more data based on the screenshot for a richer UI
@@ -71,80 +64,112 @@ const getGroupsForClinic = (clinicId: string, allGroups: ClinicGroup[]): (Clinic
 
 export default function GroupsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: clinicId } = use(params);
-  const [groups, setGroups] = useState<(ClinicGroup & { resources: any })[]>([]);
-  const [openGroupId, setOpenGroupId] = useState<string | null>(null);
+  const [allGroups, setAllGroups] = useState<(ClinicGroup & { resources: any })[]>([]);
+  const [filteredGroups, setFilteredGroups] = useState<(ClinicGroup & { resources: any })[]>([]);
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc' });
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    getClinicGroups().then(allGroups => {
-        const clinicGroups = getGroupsForClinic(clinicId, allGroups);
-        setGroups(clinicGroups);
-        if (clinicGroups.length > 0) {
-            setOpenGroupId(clinicGroups[0].id); // Default to open the first group
-        }
+    getClinicGroups().then(allGroupsData => {
+        const clinicGroups = getGroupsForClinic(clinicId, allGroupsData);
+        setAllGroups(clinicGroups);
     })
   }, [clinicId]);
+
+  useEffect(() => {
+    let filteredData = allGroups;
+    if (searchQuery) {
+        const lowercasedQuery = searchQuery.toLowerCase();
+        filteredData = allGroups.filter(group =>
+            group.name.toLowerCase().includes(lowercasedQuery)
+        );
+    }
+    
+    if (sortConfig) {
+      const sorted = [...filteredData].sort((a, b) => {
+        const aVal = a[sortConfig.key as keyof ClinicGroup] as any;
+        const bVal = b[sortConfig.key as keyof ClinicGroup] as any;
+
+        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+      setFilteredGroups(sorted);
+    } else {
+        setFilteredGroups(filteredData);
+    }
+
+  }, [searchQuery, allGroups, sortConfig]);
+
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
   
-  const toggleGroup = (groupId: string) => {
-    setOpenGroupId(prevId => (prevId === groupId ? null : groupId));
+  const getSortIcon = (key: string) => {
+    if (!sortConfig || sortConfig.key !== key) return null;
+    if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3" />;
+    return <ArrowDown className="ml-2 h-3 w-3" />;
   };
 
 
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Clinic Groups</CardTitle>
-          <Button>CREATE GROUP</Button>
+        <CardHeader>
+             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <CardTitle className="text-lg">Clinic Groups</CardTitle>
+                    <CardDescription className="text-xs mt-1">Manage clinical groups within your clinic.</CardDescription>
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="relative w-full sm:w-64">
+                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                       <Input 
+                            placeholder="Search by name..." 
+                            className="pl-9 h-9" 
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    <Button size="sm" className="w-auto sm:w-auto flex-shrink-0">CREATE GROUP</Button>
+                </div>
+            </div>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[25%]">GROUP NAME</TableHead>
-                <TableHead className="w-[25%]">RESOURCES</TableHead>
-                <TableHead className="w-[25%]">REGISTRATION FORM</TableHead>
-                <TableHead className="w-[25%] text-right">ACTIONS</TableHead>
+                <TableHead>
+                    <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('name')}>
+                        Group Name
+                        {getSortIcon('name')}
+                    </Button>
+                </TableHead>
+                <TableHead>Resources</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {groups.map((group) => (
-                <Collapsible key={group.id} asChild open={openGroupId === group.id} onOpenChange={() => toggleGroup(group.id)}>
-                    <TableRow className="hover:bg-transparent [&[data-state=open]]:bg-muted/50">
-                      <TableCell className="font-medium py-3">
-                         <CollapsibleTrigger asChild>
-                            <div className="flex items-center gap-3 cursor-pointer">
-                                {openGroupId === group.id ? <ChevronDown className="h-4 w-4"/> : <ChevronRight className="h-4 w-4"/>}
-                                <div>
-                                    <span className="font-semibold">{group.name}</span>
-                                    <p className="text-xs text-muted-foreground">Initial: {group.tokenInitial}</p>
-                                </div>
-                            </div>
-                        </CollapsibleTrigger>
-                      </TableCell>
-                       <TableCell className="py-3">
+              {filteredGroups.map((group) => (
+                <TableRow key={group.id}>
+                    <TableCell className="font-medium py-2 text-xs">{group.name}</TableCell>
+                    <TableCell className="py-2 text-xs">
                         <div className="flex flex-wrap gap-2">
                             <Badge variant="secondary" className="bg-blue-100 text-blue-800">{group.resources.docs} Docs</Badge>
                             <Badge variant="secondary" className="bg-orange-100 text-orange-800">{group.resources.asst} Asst</Badge>
                             <Badge variant="secondary" className="bg-green-100 text-green-800">{group.resources.screens} Screens</Badge>
                             <Badge variant="secondary" className="bg-purple-100 text-purple-800">{group.resources.cabins} Cabins</Badge>
                         </div>
-                      </TableCell>
-                      <TableCell className="py-3">
-                         <div className="flex items-center gap-2">
-                            <Button variant="outline" size="icon-xs"><Wand2 className="h-4 w-4" /></Button>
-                            <Button variant="outline" size="icon-xs"><LayoutGrid className="h-4 w-4" /></Button>
-                            <Button variant="outline" size="icon-xs"><Link className="h-4 w-4" /></Button>
-                            <Button variant="outline" size="icon-xs"><Printer className="h-4 w-4" /></Button>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right py-3">
-                        <div className="flex items-center justify-end gap-2">
-                            <Button variant="ghost" size="icon-xs"><Edit className="h-4 w-4"/></Button>
-                            <Button variant="ghost" size="icon-xs"><Trash2 className="h-4 w-4 text-destructive"/></Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                </Collapsible>
+                    </TableCell>
+                    <TableCell className="flex gap-2 py-2">
+                        <Button variant="ghost" size="icon-xs"><Edit className="h-3 w-3"/></Button>
+                        <Button variant="ghost" size="icon-xs"><Trash2 className="h-3 w-3 text-destructive"/></Button>
+                    </TableCell>
+                </TableRow>
               ))}
             </TableBody>
           </Table>

@@ -5,6 +5,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from '@/components/ui/card';
 import {
   Table,
@@ -34,7 +35,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, Search, ArrowUp, ArrowDown } from 'lucide-react';
 import { getClinicGroupById } from '@/lib/data';
 import type { Cabin } from '@/lib/types';
 
@@ -139,17 +140,19 @@ function DeleteCabinDialog({
 
 export default function StationsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: clinicId } = use(params);
-  const [cabins, setCabins] = useState<Cabin[]>([]);
+  const [allCabins, setAllCabins] = useState<Cabin[]>([]);
+  const [filteredCabins, setFilteredCabins] = useState<Cabin[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [cabinToEdit, setCabinToEdit] = useState<Cabin | null>(null);
   const [cabinToDelete, setCabinToDelete] = useState<Cabin | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Cabin; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc' });
+  const [searchQuery, setSearchQuery] = useState('');
+
 
   useEffect(() => {
     getClinicGroupById(clinicId).then((clinic) => {
       if (clinic) {
-        // In a real app, you would fetch all cabins for a clinic.
-        // For this mock, we'll just use the one from the group and add a few more.
-        setCabins([
+        setAllCabins([
           clinic.cabin,
           { id: 'cab_102', name: 'Consultation Room 2' },
           { id: 'cab_103', name: 'Consultation Room 3' },
@@ -158,6 +161,29 @@ export default function StationsPage({ params }: { params: Promise<{ id: string 
       }
     });
   }, [clinicId]);
+
+  useEffect(() => {
+    let filteredData = allCabins;
+    if (searchQuery) {
+        const lowercasedQuery = searchQuery.toLowerCase();
+        filteredData = allCabins.filter(cabin =>
+            cabin.name.toLowerCase().includes(lowercasedQuery)
+        );
+    }
+    
+    if (sortConfig) {
+      const sorted = [...filteredData].sort((a, b) => {
+        const aVal = a[sortConfig.key];
+        const bVal = b[sortConfig.key];
+        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+      setFilteredCabins(sorted);
+    } else {
+        setFilteredCabins(filteredData);
+    }
+  }, [searchQuery, allCabins, sortConfig]);
 
   const openEditModal = (cabin: Cabin) => {
     setCabinToEdit(cabin);
@@ -184,15 +210,15 @@ export default function StationsPage({ params }: { params: Promise<{ id: string 
 
   const handleDeleteConfirm = () => {
     if (cabinToDelete) {
-      setCabins(cabins.filter((c) => c.id !== cabinToDelete.id));
+      setAllCabins(allCabins.filter((c) => c.id !== cabinToDelete.id));
       closeDeleteDialog();
     }
   };
 
   const handleFormConfirm = (formData: { name: string }) => {
     if (cabinToEdit) {
-      setCabins(
-        cabins.map((c) =>
+      setAllCabins(
+        allCabins.map((c) =>
           c.id === cabinToEdit.id ? { ...c, name: formData.name } : c
         )
       );
@@ -201,46 +227,81 @@ export default function StationsPage({ params }: { params: Promise<{ id: string 
         id: `cab_${Date.now()}`,
         name: formData.name,
       };
-      setCabins([...cabins, newCabin]);
+      setAllCabins([...allCabins, newCabin]);
     }
     closeModal();
+  };
+
+  const handleSort = (key: keyof Cabin) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+  
+  const getSortIcon = (key: keyof Cabin) => {
+    if (!sortConfig || sortConfig.key !== key) return null;
+    if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3" />;
+    return <ArrowDown className="ml-2 h-3 w-3" />;
   };
 
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Clinic Stations</CardTitle>
-          <Button onClick={openCreateModal}>ADD CABIN</Button>
+        <CardHeader>
+             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <CardTitle className="text-lg">Clinic Stations</CardTitle>
+                    <CardDescription className="text-xs mt-1">Manage consultation cabins for your clinic.</CardDescription>
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="relative w-full sm:w-64">
+                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                       <Input 
+                            placeholder="Search by name..." 
+                            className="pl-9 h-9" 
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    <Button onClick={openCreateModal} size="sm" className="w-auto sm:w-auto flex-shrink-0">ADD CABIN</Button>
+                </div>
+            </div>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>NAME</TableHead>
-                <TableHead>STATUS</TableHead>
-                <TableHead>ACTIONS</TableHead>
+                 <TableHead>
+                  <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('name')}>
+                    Cabin Name
+                    {getSortIcon('name')}
+                  </Button>
+                </TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {cabins.map((cabin) => (
+              {filteredCabins.map((cabin) => (
                 <TableRow key={cabin.id}>
-                  <TableCell className="font-medium">{cabin.name}</TableCell>
-                  <TableCell>VACANT</TableCell>
-                  <TableCell className="flex gap-2">
+                  <TableCell className="font-medium py-2 text-xs">{cabin.name}</TableCell>
+                  <TableCell className="py-2 text-xs">VACANT</TableCell>
+                  <TableCell className="flex gap-2 py-2">
                     <Button
                       variant="ghost"
-                      size="icon"
+                      size="icon-xs"
                       onClick={() => openEditModal(cabin)}
                     >
-                      <Edit className="h-4 w-4" />
+                      <Edit className="h-3 w-3" />
                     </Button>
                     <Button
                       variant="ghost"
-                      size="icon"
+                      size="icon-xs"
                       onClick={() => openDeleteDialog(cabin)}
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                      <Trash2 className="h-3 w-3 text-destructive" />
                     </Button>
                   </TableCell>
                 </TableRow>

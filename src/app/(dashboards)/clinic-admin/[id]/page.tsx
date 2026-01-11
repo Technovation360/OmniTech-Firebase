@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -14,30 +13,33 @@ import {
   XCircle,
   Loader,
 } from 'lucide-react';
-import { getClinicGroupById } from '@/lib/data';
+import { getClinicGroupById, getPatientsByClinicId } from '@/lib/data';
 import { use, useState, useEffect } from 'react';
-import { ClinicGroup } from '@/lib/types';
+import { ClinicGroup, Patient } from '@/lib/types';
 
-const stats = [
-  { title: 'TOTAL PATIENTS', value: '30', icon: Users },
-  { title: 'IN WAITING', value: '30', icon: Clock },
-  { title: 'ATTENDED', value: '0', icon: CheckCircle },
-  { title: 'SKIPPED', value: '0', icon: XCircle },
-];
+function InsightsTab({ patients }: { patients: Patient[] }) {
+    const totalPatients = patients.length;
+    const inWaiting = patients.filter(p => p.status === 'waiting' || p.status === 'called').length;
+    const attended = patients.filter(p => p.status === 'consultation-done').length;
+    const skipped = patients.filter(p => p.status === 'no-show').length;
 
-function InsightsTab() {
+    const stats = [
+      { title: 'TOTAL PATIENTS', value: totalPatients, icon: Users },
+      { title: 'IN WAITING', value: inWaiting, icon: Clock },
+      { title: 'ATTENDED', value: attended, icon: CheckCircle },
+      { title: 'SKIPPED', value: skipped, icon: XCircle },
+    ];
+
   return (
-    <div className="grid gap-6 md:grid-cols-2">
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
       {stats.map((stat) => (
         <Card key={stat.title} className="shadow-sm">
-          <CardHeader className="pb-2 text-center">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
              <CardTitle className="text-sm font-medium uppercase text-muted-foreground tracking-wider">{stat.title}</CardTitle>
+             <stat.icon className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
-          <CardContent className="flex items-center justify-center gap-4">
-            <div className="p-3 bg-accent rounded-full">
-               <stat.icon className="h-6 w-6 text-accent-foreground" />
-            </div>
-            <div className="text-4xl font-bold">{stat.value}</div>
+          <CardContent>
+            <div className="text-3xl font-bold">{stat.value}</div>
           </CardContent>
         </Card>
       ))}
@@ -52,12 +54,13 @@ export default function ClinicAdminPage({
 }) {
   const { id } = use(params);
   const [clinic, setClinic] = useState<ClinicGroup | null>(null);
+  const [patients, setPatients] = useState<Patient[]>([]);
 
   useEffect(() => {
     getClinicGroupById(id).then((data) => {
-      // If data is undefined, we default to null to match the state type
       setClinic(data ?? null);
     });
+    getPatientsByClinicId(id).then(setPatients);
   }, [id]);
 
   if (!clinic) {
@@ -72,8 +75,8 @@ export default function ClinicAdminPage({
     <div className="space-y-6">
        <h1 className="text-3xl font-bold font-headline">Clinic Admin Dashboard</h1>
        <p className="text-muted-foreground">Welcome to the dashboard for {clinic.name}.</p>
-       <div className="max-w-4xl mx-auto pt-4">
-        <InsightsTab />
+       <div className="pt-4">
+        <InsightsTab patients={patients} />
        </div>
     </div>
   );

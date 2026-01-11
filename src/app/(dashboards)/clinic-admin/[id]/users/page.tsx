@@ -44,7 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Edit, Trash2, KeyRound } from 'lucide-react';
+import { Edit, Trash2, KeyRound, ArrowUp, ArrowDown, Search } from 'lucide-react';
 import type { UserRole } from '@/lib/roles';
 import { cn } from '@/lib/utils';
 import { getClinicGroupById } from '@/lib/data';
@@ -250,10 +250,14 @@ function DeleteUserDialog({
 export default function UsersPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: clinicId } = use(params);
   const [clinic, setClinic] = useState<ClinicGroup | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: keyof User; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc' });
+  const [searchQuery, setSearchQuery] = useState('');
+
   
   useEffect(() => {
     getClinicGroupById(clinicId).then(clinicData => {
@@ -261,10 +265,35 @@ export default function UsersPage({ params }: { params: Promise<{ id: string }> 
         if (clinicData) {
             // Filter mock users by clinic affiliation
             const clinicUsers = mockUsers.filter(u => u.affiliation === clinicData.name);
-            setUsers(clinicUsers);
+            setAllUsers(clinicUsers);
         }
     })
   }, [clinicId]);
+
+  useEffect(() => {
+    let filteredData = allUsers;
+    if (searchQuery) {
+        const lowercasedQuery = searchQuery.toLowerCase();
+        filteredData = allUsers.filter(user => 
+            user.name.toLowerCase().includes(lowercasedQuery) ||
+            user.email.toLowerCase().includes(lowercasedQuery)
+        );
+    }
+    
+    if (sortConfig) {
+      const sorted = [...filteredData].sort((a, b) => {
+        const aVal = a[sortConfig.key] || '';
+        const bVal = b[sortConfig.key] || '';
+        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+      setFilteredUsers(sorted);
+    } else {
+        setFilteredUsers(filteredData);
+    }
+
+  }, [searchQuery, allUsers, sortConfig]);
 
 
   const openEditModal = (user: User) => {
@@ -292,64 +321,110 @@ export default function UsersPage({ params }: { params: Promise<{ id: string }> 
 
   const handleDeleteConfirm = () => {
     if (userToDelete) {
-      setUsers(users.filter(u => u.id !== userToDelete.id));
+      setAllUsers(allUsers.filter(u => u.id !== userToDelete.id));
       closeDeleteDialog();
     }
   }
 
   const handleFormConfirm = (formData: Omit<User, 'id'>) => {
     if (userToEdit) {
-      setUsers(users.map(u => u.id === userToEdit.id ? { ...userToEdit, ...formData } : u));
+      setAllUsers(allUsers.map(u => u.id === userToEdit.id ? { ...userToEdit, ...formData } : u));
     } else {
       const newUser: User = {
         ...formData,
         id: `user_${Date.now()}`
       };
-      setUsers([newUser, ...users]);
+      setAllUsers([newUser, ...allUsers]);
     }
     closeModal();
+  };
+
+  const handleSort = (key: keyof User) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+  
+  const getSortIcon = (key: keyof User) => {
+    if (!sortConfig || sortConfig.key !== key) return null;
+    if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3" />;
+    return <ArrowDown className="ml-2 h-3 w-3" />;
   };
 
   return (
     <>
      <Card>
       <CardHeader>
-        <div className="flex flex-row items-center justify-between">
-          <CardTitle>Users</CardTitle>
-          <Button onClick={openCreateModal}>ONBOARD STAFF</Button>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+                <CardTitle className="text-lg">Staff Users</CardTitle>
+                <CardDescription className="text-xs mt-1">Manage user accounts for your clinic.</CardDescription>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="relative w-full sm:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Search users..." 
+                        className="pl-9 h-9" 
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                    />
+                </div>
+                <Button onClick={openCreateModal} size="sm" className="w-auto sm:w-auto flex-shrink-0">Onboard Staff</Button>
+            </div>
         </div>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>NAME</TableHead>
-              <TableHead>ROLE</TableHead>
-              <TableHead>EMAIL</TableHead>
-              <TableHead>PHONE</TableHead>
-              <TableHead>SPECIALTY</TableHead>
-              <TableHead>ACTIONS</TableHead>
+              <TableHead>
+                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('name')}>
+                    Name
+                    {getSortIcon('name')}
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('email')}>
+                    Email
+                    {getSortIcon('email')}
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('role')}>
+                    Role
+                    {getSortIcon('role')}
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('specialty')}>
+                    Specialty
+                    {getSortIcon('specialty')}
+                </Button>
+              </TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
+            {filteredUsers.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="py-2 text-xs font-medium">{user.name}</TableCell>
-                <TableCell className="py-2 text-xs">
-                  <Badge variant="secondary" className={cn("text-[10px] border-transparent font-bold", roleColorMap[user.role as UserRole])}>{roleLabels[user.role as UserRole] || 'Unknown'}</Badge>
-                </TableCell>
                 <TableCell className="py-2 text-xs text-muted-foreground">{user.email}</TableCell>
-                <TableCell className="py-2 text-xs">{user.phone || '-'}</TableCell>
+                <TableCell className="py-2 text-xs">
+                  <Badge variant="secondary" className={cn("text-[10px] border-transparent font-semibold", roleColorMap[user.role as UserRole])}>{roleLabels[user.role as UserRole] || 'Unknown'}</Badge>
+                </TableCell>
                 <TableCell className="py-2 text-xs">{user.specialty || '-'}</TableCell>
                 <TableCell className="flex gap-2 py-2">
-                   <Button variant="outline" size="icon-xs">
-                    <KeyRound className="h-4 w-4" />
+                   <Button variant="ghost" size="icon-xs">
+                    <KeyRound className="h-3 w-3" />
                   </Button>
-                  <Button variant="outline" size="icon-xs" onClick={() => openEditModal(user)}>
-                    <Edit className="h-4 w-4" />
+                  <Button variant="ghost" size="icon-xs" onClick={() => openEditModal(user)}>
+                    <Edit className="h-3 w-3" />
                   </Button>
-                  <Button variant="outline" size="icon-xs" onClick={() => openDeleteDialog(user)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
+                  <Button variant="ghost" size="icon-xs" onClick={() => openDeleteDialog(user)}>
+                    <Trash2 className="h-3 w-3 text-destructive" />
                   </Button>
                 </TableCell>
               </TableRow>
