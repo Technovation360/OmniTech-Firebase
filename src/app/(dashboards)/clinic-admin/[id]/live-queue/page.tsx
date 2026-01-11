@@ -1,5 +1,4 @@
 
-
 'use client';
 import { useState, useEffect, use } from 'react';
 import {
@@ -139,8 +138,7 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
       <CardHeader>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-                <CardTitle>Live Queue - {clinic?.name}</CardTitle>
-                <CardDescription>A real-time overview of the patient queue across all groups.</CardDescription>
+                <CardTitle>Live Queue</CardTitle>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
                <Select value={selectedGroup} onValueChange={setSelectedGroup}>
