@@ -25,7 +25,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { MultiSelect } from '@/components/ui/multi-select';
 
@@ -278,7 +277,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
       // Add new group
         const newGroup: ClinicGroup = {
           id: `grp_${Date.now()}`,
-          clinicId: clinicId,
+          clinicId: clinic.id,
           name: formData.name,
           tokenInitial: formData.tokenInitial,
           location: clinic.location,
@@ -409,3 +408,5 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
     </>
   );
 }
+
+    

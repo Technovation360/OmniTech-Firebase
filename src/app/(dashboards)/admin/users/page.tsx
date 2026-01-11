@@ -47,8 +47,8 @@ import {
 import { Edit, Trash2, KeyRound, ArrowUp, ArrowDown, Search } from 'lucide-react';
 import type { UserRole } from '@/lib/roles';
 import { cn } from '@/lib/utils';
-import { getClinicGroups } from '@/lib/data';
-import type { ClinicGroup } from '@/lib/types';
+import { getClinicGroups, getClinics } from '@/lib/data';
+import type { Clinic, ClinicGroup } from '@/lib/types';
 
 
 type User = {
@@ -113,7 +113,8 @@ function UserForm({
   onConfirm: (formData: Omit<User, 'id'>) => void;
 }) {
   const isEditMode = !!user;
-  const [clinics, setClinics] = useState<ClinicGroup[]>([]);
+  const [clinics, setClinics] = useState<Clinic[]>([]);
+  const [clinicGroups, setClinicGroups] = useState<ClinicGroup[]>([]);
   const [formData, setFormData] = useState<Omit<User, 'id'>>({
       name: '',
       email: '',
@@ -125,7 +126,8 @@ function UserForm({
 
   useEffect(() => {
     if (isOpen) {
-      getClinicGroups().then(setClinics);
+      getClinics().then(setClinics);
+      getClinicGroups().then(setClinicGroups);
       if(user) {
         setFormData({
             name: user.name,
@@ -152,6 +154,9 @@ function UserForm({
       onClose();
   }
 
+  const affiliations = [...clinics.map(c => c.name), ...clinicGroups.map(cg => cg.name), "Omni Platform", "HealthCare Insurance"];
+  const uniqueAffiliations = [...new Set(affiliations)];
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -176,17 +181,15 @@ function UserForm({
               </Select>
             </div>
              <div className="space-y-1">
-              <Label htmlFor="affiliation" className="text-[10px] font-semibold text-gray-600">AFFILIATED CLINIC</Label>
+              <Label htmlFor="affiliation" className="text-[10px] font-semibold text-gray-600">AFFILIATION</Label>
               <Select value={formData.affiliation} onValueChange={(value) => handleInputChange('affiliation', value)}>
                 <SelectTrigger className="h-7 text-[11px]">
-                    <SelectValue placeholder="Select Clinic..."/>
+                    <SelectValue placeholder="Select Affiliation..."/>
                 </SelectTrigger>
                 <SelectContent>
-                    {clinics.map(clinic => (
-                         <SelectItem key={clinic.id} value={clinic.name} className="text-[11px]">{clinic.name}</SelectItem>
+                    {uniqueAffiliations.map(aff => (
+                         <SelectItem key={aff} value={aff} className="text-[11px]">{aff}</SelectItem>
                     ))}
-                     <SelectItem value="Omni Platform" className="text-[11px]">Omni Platform</SelectItem>
-                     <SelectItem value="HealthCare Insurance" className="text-[11px]">HealthCare Insurance</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -458,9 +461,5 @@ export default function UsersPage() {
     </>
   )
 }
-
-    
-
-    
 
     
