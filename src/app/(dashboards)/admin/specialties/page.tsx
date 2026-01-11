@@ -287,9 +287,9 @@ export default function SpecialtiesPage() {
                     {getSortIcon('name')}
                   </Button>
                 </TableHead>
-                <TableHead>For Clinic</TableHead>
-                <TableHead>For Doctors</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="text-xs">For Clinic</TableHead>
+                <TableHead className="text-xs">For Doctors</TableHead>
+                <TableHead className="text-xs">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -331,5 +331,7 @@ export default function SpecialtiesPage() {
     </>
   );
 }
+
+    
 
     
