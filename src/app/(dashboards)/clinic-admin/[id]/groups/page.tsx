@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, use } from 'react';
 import {
@@ -262,14 +263,14 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
               <Accordion type="single" value={activeAccordionItem || ""} onValueChange={setActiveAccordionItem} collapsible>
                   {allGroups.map((group) => (
                       <AccordionItem value={group.id} key={group.id} className="border-b last:border-b-0">
-                          <AccordionTrigger className="grid grid-cols-12 p-4 items-center hover:no-underline hover:bg-muted/50 transition-colors group">
-                            <div className="col-span-3 text-left flex items-center gap-3">
+                          <div className="grid grid-cols-12 p-4 items-center hover:bg-muted/50 transition-colors group">
+                            <AccordionTrigger className="col-span-3 text-left flex items-center gap-3 hover:no-underline">
                                   <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
                                   <div>
                                       <p className="font-semibold text-sm text-card-foreground">{group.name}</p>
                                       <p className="text-xs text-muted-foreground">Initial: {getInitials(group.name)}</p>
                                   </div>
-                              </div>
+                            </AccordionTrigger>
                               <div className="col-span-3">
                                   <div className="flex flex-wrap gap-2">
                                       <Badge variant="secondary" className="bg-blue-100 text-blue-800">{group.resources?.docs || 0} Docs</Badge>
@@ -303,7 +304,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                       <Trash2 className="h-4 w-4 text-destructive"/>
                                   </Button>
                               </div>
-                          </AccordionTrigger>
+                          </div>
                           <AccordionContent className="bg-muted/30 p-6">
                               <div className="grid grid-cols-4 gap-6 text-xs">
                                   <div>
@@ -354,3 +355,5 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
     </>
   );
 }
+
+    
