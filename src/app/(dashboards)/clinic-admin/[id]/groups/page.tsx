@@ -74,7 +74,7 @@ function GroupForm({
   }, [group]);
 
   const handleConfirm = () => {
-    if (formData.name && formData.tokenInitial && formData.doctorIds.length > 0 && formData.assistantIds.length > 0 && formData.screenIds.length > 0 && formData.cabinIds.length > 0) {
+    if (formData.name && formData.tokenInitial && formData.doctorIds.length > 0) {
       onConfirm(formData);
       onClose();
     }
@@ -262,11 +262,11 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
     const selectedScreens = formData.screenIds.map(id => screens.find(s => s.id === id)).filter(Boolean) as User[];
     const selectedCabins = formData.cabinIds.map(id => cabins.find(c => c.id === id)).filter(Boolean) as Cabin[];
     
-    if (selectedDoctors.length === 0 || selectedAssistants.length === 0 || selectedScreens.length === 0 || selectedCabins.length === 0) {
+    if (selectedDoctors.length === 0) {
         toast({
             variant: "destructive",
             title: "Missing Information",
-            description: "Please assign at least one of each resource type.",
+            description: "Please assign at least one doctor.",
         });
         return;
     }
@@ -317,7 +317,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                   <div className="col-span-2 pl-2">REGISTRATION FORM</div>
                   <div className="col-span-2 text-center">ACTIONS</div>
               </div>
-              <Accordion type="single" value={activeAccordionItem || undefined} onValueChange={setActiveAccordionItem} collapsible>
+              <Accordion type="single" value={activeAccordionItem || ''} onValueChange={setActiveAccordionItem} collapsible>
                   {allGroups.map((group) => (
                       <AccordionItem value={group.id} key={group.id} className="border-b last:border-b-0">
                            <div className="grid grid-cols-12 items-center group">
