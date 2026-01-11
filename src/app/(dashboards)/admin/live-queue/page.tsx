@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   CardContent,
@@ -62,17 +62,17 @@ export default function LiveQueuePage() {
     });
   }, []);
   
-  const getClinicName = (clinicId: string) => {
+  const getClinicName = useCallback((clinicId: string) => {
     return clinics.find(c => c.id === clinicId)?.name || 'Unknown';
-  }
+  }, [clinics]);
 
-  const getGroupName = (groupId: string) => {
+  const getGroupName = useCallback((groupId: string) => {
     return clinicGroups.find(g => g.id === groupId)?.name || 'Unknown';
-  }
+  }, [clinicGroups]);
 
-  const getDoctorName = (groupId: string) => {
+  const getDoctorName = useCallback((groupId: string) => {
       return clinicGroups.find(c => c.id === groupId)?.doctors[0]?.name || 'Unknown';
-  }
+  }, [clinicGroups]);
 
   useEffect(() => {
     let filteredData = allPatients;

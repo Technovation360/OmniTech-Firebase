@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useCallback } from 'react';
 import {
   Card,
   CardContent,
@@ -65,13 +65,13 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
     });
   }, [clinicId]);
   
-  const getGroupName = (groupId: string) => {
+  const getGroupName = useCallback((groupId: string) => {
     return clinicGroups.find(g => g.id === groupId)?.name || 'Unknown';
-  }
+  }, [clinicGroups]);
 
-  const getDoctorName = (groupId: string) => {
+  const getDoctorName = useCallback((groupId: string) => {
     return clinicGroups.find(g => g.id === groupId)?.doctors[0].name || 'Unknown';
-  }
+  }, [clinicGroups]);
 
   useEffect(() => {
     let filteredData = allPatients;
