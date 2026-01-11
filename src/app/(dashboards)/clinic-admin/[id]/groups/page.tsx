@@ -355,9 +355,9 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
             <CardHeader>
               <div className="grid grid-cols-12 font-semibold text-xs text-muted-foreground">
                   <div className="col-span-3">GROUP NAME</div>
-                  <div className="col-span-5 pl-2">RESOURCES</div>
-                  <div className="col-span-2 text-center">REGISTRATION</div>
-                  <div className="col-span-2 text-center">ACTIONS</div>
+                  <div className="col-span-3 pl-2">RESOURCES</div>
+                  <div className="col-span-3 text-center">REGISTRATION</div>
+                  <div className="col-span-3 text-center">ACTIONS</div>
               </div>
             </CardHeader>
             <CardContent className="p-0">
@@ -376,15 +376,15 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                         </div>
                                     </AccordionTrigger>
                                 </div>
-                                <div className="col-span-5 py-0 px-2">
+                                <div className="col-span-3 py-0 px-2">
                                   <div className="grid grid-cols-2 gap-1">
-                                      <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] leading-none bg-blue-100 text-blue-800">{group.doctors.length} Docs</Badge>
-                                      <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] leading-none bg-yellow-100 text-yellow-800">{group.assistants.length} Asst</Badge>
-                                      <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] leading-none bg-green-100 text-green-800">{group.screens.length} Displays</Badge>
-                                      <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] leading-none bg-purple-100 text-purple-800">{group.cabins.length} Cabins</Badge>
+                                      <Badge variant="secondary" className="px-1 py-0 text-[10px] leading-tight bg-blue-100 text-blue-800">{group.doctors.length} Docs</Badge>
+                                      <Badge variant="secondary" className="px-1 py-0 text-[10px] leading-tight bg-yellow-100 text-yellow-800">{group.assistants.length} Asst</Badge>
+                                      <Badge variant="secondary" className="px-1 py-0 text-[10px] leading-tight bg-green-100 text-green-800">{group.screens.length} Displays</Badge>
+                                      <Badge variant="secondary" className="px-1 py-0 text-[10px] leading-tight bg-purple-100 text-purple-800">{group.cabins.length} Cabins</Badge>
                                   </div>
                                 </div>
-                                <div className="col-span-2 p-4 flex items-center justify-center gap-2">
+                                <div className="col-span-3 p-4 flex items-center justify-center gap-2">
                                     <Button variant="outline" size="icon-xs" asChild>
                                         <Link href={`/register/${group.id}`} target="_blank">
                                             <ExternalLink className="h-4 w-4"/>
@@ -399,7 +399,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                         <LinkIcon className="h-4 w-4"/>
                                     </Button>
                                 </div>
-                                <div className="col-span-2 p-4 flex justify-center gap-2">
+                                <div className="col-span-3 p-4 flex justify-center gap-2">
                                   <Button variant="ghost" size="icon-sm" onClick={() => openEditModal(group)}>
                                       <Edit className="h-4 w-4 text-muted-foreground"/>
                                   </Button>
