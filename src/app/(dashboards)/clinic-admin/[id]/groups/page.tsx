@@ -184,7 +184,7 @@ function DeleteGroupDialog({
 }
 
 
-export default function GroupsPage({ params }: { params: Promise<{ id: string }> }) {
+export default function GroupsPage({ params }: { params: { id: string } }) {
   const { id: clinicId } = use(params);
   const [clinic, setClinic] = useState<Clinic | null>(null);
   const [allGroups, setAllGroups] = useState<ClinicGroup[]>([]);
@@ -327,20 +327,23 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
       <div className="space-y-6">
         <Card>
             <CardHeader>
-              <div className="flex flex-col sm:flex-row items-end justify-between gap-4">
-                 <div className="space-y-1 w-full sm:w-auto">
-                  <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">SEARCH GROUP</Label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="search"
-                      placeholder="Name, initials..."
-                      className="pl-9 h-10 w-full sm:w-64"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-                </div>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                 <div className="flex items-center gap-4 w-full sm:w-auto">
+                    <div className="space-y-1 w-full sm:w-auto">
+                      <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">SEARCH GROUP</Label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="search"
+                          placeholder="Name, initials..."
+                          className="pl-9 h-10 w-full sm:w-64"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <p className="text-sm font-medium text-muted-foreground whitespace-nowrap pt-5">{filteredGroups.length} TOTAL GROUPS</p>
+                 </div>
                 <Button onClick={openCreateModal} className="h-10">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     CREATE GROUP
