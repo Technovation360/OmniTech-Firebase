@@ -424,12 +424,12 @@ export default function PatientRegistryPage() {
 
   return (
     <>
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold font-headline">Patient Registry</h1>
-      </div>
-      <Card className="mt-6">
+      <Card>
         <CardHeader>
-           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+                 <CardTitle className="text-lg">Patient Registry</CardTitle>
+            </div>
             <div className="flex items-center gap-4 w-full sm:w-auto">
               <div className="space-y-1 w-full sm:w-auto">
                 <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">PATIENT SEARCH</Label>
@@ -458,13 +458,13 @@ export default function PatientRegistryPage() {
                     </SelectContent>
                 </Select>
               </div>
-            </div>
-            <div className="flex flex-col items-end gap-1">
+               <div className="flex flex-col items-end gap-1 self-end">
                 <p className="text-xs font-medium text-muted-foreground text-right">{filteredPatients.length} REGISTERED PATIENTS</p>
                 <Button onClick={() => setCheckInModalOpen(true)} className="h-10 w-full sm:w-auto">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     MANUAL CHECK-IN
                 </Button>
+            </div>
             </div>
           </div>
         </CardHeader>
