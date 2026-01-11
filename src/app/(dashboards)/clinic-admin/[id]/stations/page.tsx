@@ -266,7 +266,9 @@ export default function StationsPage({ params }: { params: Promise<{ id: string 
       
       <Card>
           <CardHeader>
-            <div className="grid grid-cols-12 font-semibold text-xs text-muted-foreground">
+            <CardTitle>Stations</CardTitle>
+            <CardDescription>Manage consultation rooms and other physical stations in your clinic.</CardDescription>
+            <div className="grid grid-cols-12 font-semibold text-xs text-muted-foreground pt-4">
                 <div className="col-span-6">STATION NAME</div>
                 <div className="col-span-3 text-center">STATUS</div>
                 <div className="col-span-3 text-center">ACTIONS</div>
