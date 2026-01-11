@@ -249,7 +249,6 @@ export default function ClinicsPage() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                     <CardTitle className="text-lg">Clinics Management</CardTitle>
-                    <CardDescription className="text-xs mt-1">Onboard, edit, and manage clinics.</CardDescription>
                 </div>
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                     <div className="relative w-full sm:w-64">
@@ -318,5 +317,3 @@ export default function ClinicsPage() {
     </>
   )
 }
-
-    
