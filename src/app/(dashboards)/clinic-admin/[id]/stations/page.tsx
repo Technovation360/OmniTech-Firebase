@@ -36,7 +36,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Edit, Trash2, Search, ArrowUp, ArrowDown } from 'lucide-react';
+import { Edit, Trash2, Search, ArrowUp, ArrowDown, PlusCircle } from 'lucide-react';
 import { getCabinsByClinicId } from '@/lib/data';
 import type { Cabin } from '@/lib/types';
 
@@ -240,29 +240,40 @@ export default function StationsPage({ params }: { params: Promise<{ id: string 
   };
 
   return (
-    <>
+    <div className="space-y-6">
+       <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+             <div className="space-y-1 w-full sm:w-auto">
+              <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">SEARCH STATION</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="search"
+                  placeholder="Cabin name..."
+                  className="pl-9 h-10 w-full sm:w-64"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-4 w-full sm:w-auto">
+              <p className="text-sm font-medium text-muted-foreground whitespace-nowrap">{filteredCabins.length} TOTAL STATIONS</p>
+              <Button onClick={openCreateModal} className="h-10 w-full sm:w-auto">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                ADD STATION
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+      
       <Card>
         <CardHeader>
-             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                    <CardTitle className="text-lg">Clinic Stations</CardTitle>
-                    <CardDescription className="text-xs mt-1">Manage consultation cabins for your clinic.</CardDescription>
-                </div>
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <div className="relative w-full sm:w-64">
-                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                       <Input 
-                            placeholder="Search by name..." 
-                            className="pl-9 h-9" 
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                    <Button onClick={openCreateModal} size="sm" className="w-auto sm:w-auto flex-shrink-0">ADD CABIN</Button>
-                </div>
-            </div>
+          <CardTitle>Clinic Stations</CardTitle>
+          <CardDescription>Manage consultation cabins for your clinic.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -299,10 +310,18 @@ export default function StationsPage({ params }: { params: Promise<{ id: string 
                   </TableCell>
                 </TableRow>
               ))}
+               {filteredCabins.length === 0 && (
+                  <TableRow>
+                      <TableCell colSpan={3} className="text-center text-muted-foreground py-4 text-sm">
+                          No stations found.
+                      </TableCell>
+                  </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
       <CabinForm
         isOpen={isModalOpen}
         onClose={closeModal}
@@ -315,7 +334,6 @@ export default function StationsPage({ params }: { params: Promise<{ id: string 
         onConfirm={handleDeleteConfirm}
         cabinName={cabinToDelete?.name || ''}
       />
-    </>
+    </div>
   );
 }
-
