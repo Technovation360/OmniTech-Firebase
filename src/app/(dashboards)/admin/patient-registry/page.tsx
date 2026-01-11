@@ -427,7 +427,7 @@ export default function PatientRegistryPage() {
       <Card>
         <CardHeader>
            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div>
+            <div className="flex-1">
               <CardTitle className="text-lg">Patient Registry</CardTitle>
             </div>
             <div className="flex items-center gap-4 w-full sm:w-auto">
@@ -488,8 +488,18 @@ export default function PatientRegistryPage() {
                     className="text-xs p-0 hover:bg-transparent"
                     onClick={() => handleSort('age')}
                   >
-                    Age / Gender
+                    Age
                     {getSortIcon('age')}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    className="text-xs p-0 hover:bg-transparent"
+                    onClick={() => handleSort('gender')}
+                  >
+                    Gender
+                    {getSortIcon('gender')}
                   </Button>
                 </TableHead>
                 <TableHead>
@@ -531,8 +541,10 @@ export default function PatientRegistryPage() {
                 <TableRow key={patient.id}>
                   <TableCell className="font-medium py-2 text-xs">{patient.name}</TableCell>
                   <TableCell className="py-2 text-xs">
-                    {patient.age} / 
-                    <Badge variant="secondary" className={cn('ml-1 text-[10px] border-transparent capitalize', genderBadgeColors[patient.gender])}>
+                    {patient.age}
+                  </TableCell>
+                  <TableCell className="py-2 text-xs">
+                    <Badge variant="secondary" className={cn('text-[10px] border-transparent capitalize', genderBadgeColors[patient.gender])}>
                         {patient.gender}
                     </Badge>
                   </TableCell>
@@ -583,5 +595,7 @@ export default function PatientRegistryPage() {
     </>
   );
 }
+
+    
 
     
