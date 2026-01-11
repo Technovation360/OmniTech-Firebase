@@ -317,7 +317,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                   <div className="col-span-2 pl-2">REGISTRATION FORM</div>
                   <div className="col-span-2 text-center">ACTIONS</div>
               </div>
-              <Accordion type="single" value={activeAccordionItem || ""} onValueChange={setActiveAccordionItem} collapsible>
+              <Accordion type="single" value={activeAccordionItem || undefined} onValueChange={setActiveAccordionItem} collapsible>
                   {allGroups.map((group) => (
                       <AccordionItem value={group.id} key={group.id} className="border-b last:border-b-0">
                            <div className="grid grid-cols-12 items-center group">
