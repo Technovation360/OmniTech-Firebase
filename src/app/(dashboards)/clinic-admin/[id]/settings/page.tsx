@@ -18,8 +18,8 @@ import { getClinicById } from '@/lib/data';
 import type { Clinic } from '@/lib/types';
 import Image from 'next/image';
 
-function ClinicDetails({ clinic }: { clinic: Clinic }) {
-  const { id: clinicId } = use(params);
+function ClinicDetails({ clinic, params }: { clinic: Clinic, params: { id: string } }) {
+  const { id: clinicId } = params;
   const [formData, setFormData] = useState({
     name: '',
     contact: 'contact@example.com',
@@ -143,16 +143,16 @@ function ClinicDetails({ clinic }: { clinic: Clinic }) {
 
 
 export default function SettingsPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id: clinicId } = use(params);
+  const resolvedParams = use(params);
   const [clinic, setClinic] = useState<Clinic | null>(null);
 
   useEffect(() => {
-    getClinicById(clinicId).then((data) => {
+    getClinicById(resolvedParams.id).then((data) => {
       if (data) {
         setClinic(data);
       }
     });
-  }, [clinicId]);
+  }, [resolvedParams.id]);
   
   if (!clinic) {
     return <div>Loading...</div>;
@@ -160,7 +160,7 @@ export default function SettingsPage({ params }: { params: Promise<{ id: string 
 
   return (
      <div className="space-y-6">
-        <ClinicDetails clinic={clinic} />
+        <ClinicDetails clinic={clinic} params={resolvedParams} />
     </div>
   );
 }
