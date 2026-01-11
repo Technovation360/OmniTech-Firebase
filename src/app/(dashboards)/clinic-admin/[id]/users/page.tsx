@@ -47,8 +47,8 @@ import {
 import { Edit, Trash2, KeyRound, ArrowUp, ArrowDown, Search } from 'lucide-react';
 import type { UserRole } from '@/lib/roles';
 import { cn } from '@/lib/utils';
-import { getClinicGroupById } from '@/lib/data';
-import type { ClinicGroup } from '@/lib/types';
+import { getClinicById } from '@/lib/data';
+import type { Clinic } from '@/lib/types';
 
 
 type User = {
@@ -249,7 +249,7 @@ function DeleteUserDialog({
 
 export default function UsersPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: clinicId } = use(params);
-  const [clinic, setClinic] = useState<ClinicGroup | null>(null);
+  const [clinic, setClinic] = useState<Clinic | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -260,7 +260,7 @@ export default function UsersPage({ params }: { params: Promise<{ id: string }> 
 
   
   useEffect(() => {
-    getClinicGroupById(clinicId).then(clinicData => {
+    getClinicById(clinicId).then(clinicData => {
         setClinic(clinicData || null);
         if (clinicData) {
             // Filter mock users by clinic affiliation
@@ -451,3 +451,5 @@ export default function UsersPage({ params }: { params: Promise<{ id: string }> 
     </>
   )
 }
+
+    
