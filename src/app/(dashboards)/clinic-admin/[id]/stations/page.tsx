@@ -6,7 +6,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -133,7 +132,7 @@ function DeleteCabinDialog({
   );
 }
 
-export default function StationsPage({ params }: { params: Promise<{ id: string }> }) {
+export default function StationsPage({ params }: { params: { id: string } }) {
   const { id: clinicId } = use(params);
   const [allCabins, setAllCabins] = useState<Cabin[]>([]);
   const [filteredCabins, setFilteredCabins] = useState<Cabin[]>([]);
@@ -281,7 +280,6 @@ export default function StationsPage({ params }: { params: Promise<{ id: string 
                               <div className="col-span-6 p-4">
                                   <AccordionTrigger className="hover:no-underline p-0 w-full">
                                       <div className="flex items-center gap-3">
-                                          <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:-rotate-180" />
                                           <div>
                                               <p className="font-semibold text-sm text-card-foreground">{cabin.name}</p>
                                           </div>
