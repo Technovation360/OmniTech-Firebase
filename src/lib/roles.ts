@@ -1,4 +1,5 @@
 
+
 export type UserRole = 'central-admin' | 'clinic-admin' | 'doctor' | 'assistant' | 'display' | 'advertiser';
 
 const userRoles: Record<string, UserRole> = {
@@ -14,11 +15,11 @@ const userRoles: Record<string, UserRole> = {
 };
 
 const affiliationMap: Record<string, string> = {
-    'clinic-admin-city@omni.com': 'grp_cardiology_01',
-    'clinic-admin-health@omni.com': 'grp_ortho_01',
-    'doc_ashish@omni.com': 'grp_cardiology_01', // Also used for redirect
-    'doc_vijay@omni.com': 'grp_ortho_01',
-    'asst_sunita@omni.com': 'asst_sunita', // This seems to be assistant ID not clinic ID
+    'clinic-admin-city@omni.com': 'clinic_01',
+    'clinic-admin-health@omni.com': 'clinic_02',
+    'doc_ashish@omni.com': 'grp_cardiology_01', // This is a group id
+    'doc_vijay@omni.com': 'grp_ortho_01', // This is a group id
+    'asst_sunita@omni.com': 'asst_sunita', 
     'asst_rajesh@omni.com': 'asst_rajesh',
 };
 

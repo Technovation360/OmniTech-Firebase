@@ -1,3 +1,4 @@
+
 export type Patient = {
   id: string;
   name: string;
@@ -31,8 +32,15 @@ export type Screen = {
   name: string;
 };
 
+export type Clinic = {
+  id: string;
+  name: string;
+  location: string;
+};
+
 export type ClinicGroup = {
   id: string;
+  clinicId: string;
   name: string;
   location: string;
   specialties: string[];

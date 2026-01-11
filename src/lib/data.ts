@@ -1,9 +1,16 @@
-import type { ClinicGroup, Patient, Advertisement, Consultation, PatientHistoryEntry } from './types';
+
+import type { Clinic, ClinicGroup, Patient, Advertisement, Consultation, PatientHistoryEntry } from './types';
+
+let clinics: Clinic[] = [
+    { id: 'clinic_01', name: 'City Care Clinic', location: 'Maharashtra, Mumbai' },
+    { id: 'clinic_02', name: 'Health Plus Clinic', location: 'Delhi, Delhi' },
+];
 
 let clinicGroups: ClinicGroup[] = [
   {
     id: 'grp_cardiology_01',
-    name: 'City Care Clinic',
+    clinicId: 'clinic_01',
+    name: 'Cardiology',
     location: 'Maharashtra, Mumbai',
     specialties: ['Cardiology', 'General Medicine'],
     contact: 'contact@citycare.com',
@@ -13,14 +20,39 @@ let clinicGroups: ClinicGroup[] = [
     screen: { id: 'scr_main_hall', name: 'Main Hall Display' },
   },
   {
+    id: 'grp_gen_med_01',
+    clinicId: 'clinic_01',
+    name: 'General Medicine',
+    location: 'Maharashtra, Mumbai',
+    specialties: ['General Medicine'],
+    contact: 'contact@citycare.com',
+    doctor: { id: 'doc_other', name: 'Dr. Mehta' },
+    assistants: [{ id: 'asst_other', name: 'Ravi' }],
+    cabin: { id: 'cab_103', name: 'Cabin 103' },
+    screen: { id: 'scr_main_hall', name: 'Main Hall Display' },
+  },
+  {
     id: 'grp_ortho_01',
-    name: 'Health Plus Clinic',
+    clinicId: 'clinic_02',
+    name: 'Orthopedics',
     location: 'Delhi, Delhi',
-    specialties: ['Orthopedics', 'Pediatrics'],
+    specialties: ['Orthopedics'],
     contact: 'contact@healthplus.com',
     doctor: { id: 'doc_vijay', name: 'Dr. Vijay' },
     assistants: [{ id: 'asst_rajesh', name: 'Rajesh' }],
     cabin: { id: 'cab_102', name: 'Cabin 102' },
+    screen: { id: 'scr_main_hall', name: 'Main Hall Display' },
+  },
+    {
+    id: 'grp_pediatrics_01',
+    clinicId: 'clinic_02',
+    name: 'Pediatrics',
+    location: 'Delhi, Delhi',
+    specialties: ['Pediatrics'],
+    contact: 'contact@healthplus.com',
+    doctor: { id: 'doc_singh', name: 'Dr. Singh' },
+    assistants: [{ id: 'asst_kumar', name: 'Kumar' }],
+    cabin: { id: 'cab_104', name: 'Cabin 104' },
     screen: { id: 'scr_main_hall', name: 'Main Hall Display' },
   },
 ];
@@ -50,8 +82,20 @@ let advertisements: Advertisement[] = [
 
 // --- API Functions ---
 
+// Clinics
+export const getClinics = async (): Promise<Clinic[]> => {
+    return Promise.resolve(clinics);
+}
+
+export const getClinicById = async (id: string): Promise<Clinic | undefined> => {
+    return Promise.resolve(clinics.find(c => c.id === id));
+}
+
 // Clinic Groups
-export const getClinicGroups = async (): Promise<ClinicGroup[]> => {
+export const getClinicGroups = async (clinicId?: string): Promise<ClinicGroup[]> => {
+  if (clinicId) {
+    return Promise.resolve(clinicGroups.filter(cg => cg.clinicId === clinicId));
+  }
   return Promise.resolve(clinicGroups);
 };
 
@@ -74,8 +118,8 @@ export const getPatientsByClinicId = async (clinicId: string): Promise<Patient[]
 };
 
 export const addPatient = async (data: Omit<Patient, 'id' | 'tokenNumber' | 'status' | 'registeredAt'>): Promise<Patient> => {
-    const clinic = await getClinicGroupById(data.clinicId);
-    const prefix = clinic ? clinic.name.substring(0,1).toUpperCase() : 'Z';
+    const clinicGroup = await getClinicGroupById(data.clinicId);
+    const prefix = clinicGroup ? clinicGroup.name.substring(0,1).toUpperCase() : 'Z';
     const lastToken = patients
         .filter(p => p.clinicId === data.clinicId)
         .map(p => parseInt(p.tokenNumber.slice(1), 10))
@@ -109,7 +153,7 @@ export const getPatientHistory = async (patientId: string): Promise<PatientHisto
         const endTime = consultation ? consultation.date : undefined;
         return {
             tokenNumber: visit.tokenNumber,
-            clinicName: clinic?.name || 'Unknown Clinic',
+            clinicName: clinics.find(c => c.id === clinic?.clinicId)?.name || 'Unknown Clinic',
             groupName: clinic?.name || 'Unknown Group',
             doctorName: clinic?.doctor.name || 'Unknown Doctor',
             issuedAt: visit.registeredAt,

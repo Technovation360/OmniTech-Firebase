@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -13,9 +14,9 @@ import {
   XCircle,
   Loader,
 } from 'lucide-react';
-import { getClinicGroupById, getPatientsByClinicId } from '@/lib/data';
+import { getClinicById, getPatientsByClinicId } from '@/lib/data';
 import { use, useState, useEffect } from 'react';
-import { ClinicGroup, Patient } from '@/lib/types';
+import { Clinic, Patient } from '@/lib/types';
 
 function InsightsTab({ patients }: { patients: Patient[] }) {
     const totalPatients = patients.length;
@@ -53,11 +54,11 @@ export default function ClinicAdminPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const [clinic, setClinic] = useState<ClinicGroup | null>(null);
+  const [clinic, setClinic] = useState<Clinic | null>(null);
   const [patients, setPatients] = useState<Patient[]>([]);
 
   useEffect(() => {
-    getClinicGroupById(id).then((data) => {
+    getClinicById(id).then((data) => {
       setClinic(data ?? null);
     });
     getPatientsByClinicId(id).then(setPatients);
