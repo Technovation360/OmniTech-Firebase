@@ -129,7 +129,7 @@ export default function LiveQueuePage() {
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <Select value={selectedClinic} onValueChange={setSelectedClinic}>
-                  <SelectTrigger className="h-8 w-full sm:w-40 text-xs">
+                  <SelectTrigger className="h-6 w-full sm:w-40 text-xs">
                       <SelectValue placeholder="Filter by Clinic" />
                   </SelectTrigger>
                   <SelectContent>
