@@ -18,7 +18,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { getClinicGroups, getClinicById, mockUsers, getCabinsByClinicId } from '@/lib/data';
-import type { ClinicGroup, Doctor, Assistant, Screen, User, Cabin } from '@/lib/types';
+import type { ClinicGroup, User, Cabin } from '@/lib/types';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -26,6 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { MultiSelect } from '@/components/ui/multi-select';
 
 
 function GroupForm({
@@ -52,7 +53,7 @@ function GroupForm({
     name: '', 
     tokenInitial: '',
     doctorId: '',
-    assistantId: '',
+    assistantIds: [] as string[],
     screenId: '',
     cabinId: '',
   });
@@ -63,17 +64,17 @@ function GroupForm({
         name: group.name, 
         tokenInitial: group.tokenInitial,
         doctorId: group.doctor.id,
-        assistantId: group.assistants[0]?.id || '',
+        assistantIds: group.assistants.map(a => a.id),
         screenId: group.screen.id,
         cabinId: group.cabin.id,
       });
     } else {
-      setFormData({ name: '', tokenInitial: '', doctorId: '', assistantId: '', screenId: '', cabinId: '' });
+      setFormData({ name: '', tokenInitial: '', doctorId: '', assistantIds: [], screenId: '', cabinId: '' });
     }
   }, [group]);
 
   const handleConfirm = () => {
-    if (formData.name && formData.tokenInitial && formData.doctorId && formData.assistantId && formData.screenId && formData.cabinId) {
+    if (formData.name && formData.tokenInitial && formData.doctorId && formData.assistantIds.length > 0 && formData.screenId && formData.cabinId) {
       onConfirm(formData);
       onClose();
     }
@@ -110,17 +111,14 @@ function GroupForm({
                 </Select>
             </div>
             <div className="space-y-1">
-                <Label htmlFor="assistant" className="text-[10px] font-semibold text-gray-600">ASSIGN ASSISTANT</Label>
-                <Select value={formData.assistantId} onValueChange={(value) => setFormData({...formData, assistantId: value})}>
-                  <SelectTrigger className="h-7 text-[11px]">
-                    <SelectValue placeholder="Select an assistant" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {assistants.map(asst => (
-                      <SelectItem key={asst.id} value={asst.id} className="text-[11px]">{asst.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="assistant" className="text-[10px] font-semibold text-gray-600">ASSIGN ASSISTANTS</Label>
+                <MultiSelect
+                    options={assistants.map(a => ({ value: a.id, label: a.name }))}
+                    selected={formData.assistantIds}
+                    onChange={(selected) => setFormData({...formData, assistantIds: selected})}
+                    className="text-xs"
+                    placeholder="Select assistants..."
+                />
             </div>
              <div className="space-y-1">
                 <Label htmlFor="screen" className="text-[10px] font-semibold text-gray-600">ASSIGN SCREEN</Label>
@@ -279,13 +277,13 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
     }
   }
 
-  const handleFormConfirm = (formData: { name: string, tokenInitial: string, doctorId: string, assistantId: string, screenId: string, cabinId: string }) => {
+  const handleFormConfirm = (formData: { name: string, tokenInitial: string, doctorId: string, assistantIds: string[], screenId: string, cabinId: string }) => {
     const doctor = users.find(d => d.id === formData.doctorId);
-    const assistant = users.find(a => a.id === formData.assistantId);
+    const selectedAssistants = formData.assistantIds.map(id => assistants.find(a => a.id === id)).filter(Boolean) as User[];
     const screen = users.find(s => s.id === formData.screenId);
     const cabin = cabins.find(c => c.id === formData.cabinId);
     
-    if (!doctor || !assistant || !screen || !cabin || !clinic) return;
+    if (!doctor || selectedAssistants.length === 0 || !screen || !cabin || !clinic) return;
 
     if (groupToEdit) {
       // Update existing group
@@ -294,7 +292,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
         name: formData.name,
         tokenInitial: formData.tokenInitial,
         doctor: {id: doctor.id, name: doctor.name},
-        assistants: [{id: assistant.id, name: assistant.name}],
+        assistants: selectedAssistants.map(a => ({ id: a.id, name: a.name })),
         screen: {id: screen.id, name: screen.name},
         cabin: cabin,
       } : g));
@@ -309,7 +307,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
           specialties: [],
           contact: `contact@${clinic.name.toLowerCase().replace(/\s/g, '')}.com`,
           doctor: {id: doctor.id, name: doctor.name},
-          assistants: [{id: assistant.id, name: assistant.name}],
+          assistants: selectedAssistants.map(a => ({ id: a.id, name: a.name })),
           cabin: cabin,
           screen: { id: screen.id, name: screen.name},
         };
@@ -348,7 +346,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                         </div>
                                     </AccordionTrigger>
                                 </div>
-                                <div className="col-span-4 p-4 pl-6">
+                                <div className="col-span-4 p-4 pl-2">
                                   <div className="flex items-center gap-2 flex-wrap">
                                       <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] leading-none bg-blue-100 text-blue-800">{group.resources?.docs || 0} Docs</Badge>
                                       <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] leading-none bg-yellow-100 text-yellow-800">{group.resources?.asst || 0} Asst</Badge>
@@ -433,3 +431,5 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
     </>
   );
 }
+
+    
