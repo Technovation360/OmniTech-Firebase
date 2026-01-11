@@ -356,7 +356,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
               <div className="grid grid-cols-12 font-semibold text-xs text-muted-foreground">
                   <div className="col-span-3">GROUP NAME</div>
                   <div className="col-span-5 pl-2">RESOURCES</div>
-                  <div className="col-span-2 pl-2">REGISTRATION</div>
+                  <div className="col-span-2 text-center">REGISTRATION</div>
                   <div className="col-span-2 text-center">ACTIONS</div>
               </div>
             </CardHeader>
@@ -384,7 +384,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                       <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] leading-none bg-purple-100 text-purple-800">{group.cabins.length} Cabins</Badge>
                                   </div>
                                 </div>
-                                <div className="col-span-2 p-4 flex items-center gap-2 pl-6">
+                                <div className="col-span-2 p-4 flex items-center justify-center gap-2">
                                     <Button variant="outline" size="icon-xs" asChild>
                                         <Link href={`/register/${group.id}`} target="_blank">
                                             <ExternalLink className="h-4 w-4"/>
