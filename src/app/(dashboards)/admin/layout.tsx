@@ -146,7 +146,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                     <PanelLeft />
                 </Button>
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/20 hover:text-white hidden md:flex" onClick={toggleSidebar}>
+                    <Button variant="secondary" size="icon" className="h-8 w-8 bg-white text-primary hover:bg-white/90 hidden md:flex" onClick={toggleSidebar}>
                         <ChevronLeft className="h-5 w-5 opacity-80 transition-transform duration-300" data-state={state} style={{ transform: state === 'collapsed' ? 'rotate(180deg)' : 'rotate(0deg)' }}/>
                     </Button>
                     <span className="text-sm font-medium capitalize">Home / {pageName}</span>
