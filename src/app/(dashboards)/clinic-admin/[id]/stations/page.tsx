@@ -139,8 +139,8 @@ function DeleteCabinDialog({
   );
 }
 
-export default function StationsPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id: clinicId } = use(params);
+export default function StationsPage({ params }: { params: { id: string } }) {
+  const { id: clinicId } = params;
   const [allCabins, setAllCabins] = useState<Cabin[]>([]);
   const [filteredCabins, setFilteredCabins] = useState<Cabin[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -257,12 +257,12 @@ export default function StationsPage({ params }: { params: Promise<{ id: string 
                 />
               </div>
             </div>
-            <div className="flex items-center gap-4 w-full sm:w-auto">
-              <p className="text-sm font-medium text-muted-foreground whitespace-nowrap">{filteredCabins.length} TOTAL STATIONS</p>
+            <div className="flex flex-col items-end gap-1">
               <Button onClick={openCreateModal} className="h-10 w-full sm:w-auto">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 ADD STATION
               </Button>
+              <p className="text-xs font-medium text-muted-foreground text-right">{filteredCabins.length} TOTAL STATIONS</p>
             </div>
           </div>
         </CardHeader>
