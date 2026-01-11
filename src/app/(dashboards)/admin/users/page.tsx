@@ -373,7 +373,6 @@ export default function UsersPage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
                 <CardTitle className="text-lg">Platform Users</CardTitle>
-                <CardDescription className="text-xs mt-1">Manage user accounts and roles.</CardDescription>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
                 <div className="relative w-full sm:w-64">
@@ -461,5 +460,3 @@ export default function UsersPage() {
     </>
   )
 }
-
-    
