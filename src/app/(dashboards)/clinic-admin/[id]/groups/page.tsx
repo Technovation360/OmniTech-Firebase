@@ -356,7 +356,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
               <div className="grid grid-cols-12 font-semibold text-xs text-muted-foreground">
                   <div className="col-span-3">GROUP NAME</div>
                   <div className="col-span-5 pl-2">RESOURCES</div>
-                  <div className="col-span-2 pl-2">REGISTRATION FORM</div>
+                  <div className="col-span-2 pl-2">REGISTRATION</div>
                   <div className="col-span-2 text-center">ACTIONS</div>
               </div>
             </CardHeader>
