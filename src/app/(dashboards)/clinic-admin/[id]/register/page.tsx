@@ -384,12 +384,12 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
                 />
               </div>
             </div>
-            <div className="flex items-center gap-4 w-full sm:w-auto">
-              <p className="text-sm font-medium text-muted-foreground whitespace-nowrap">{filteredPatients.length} REGISTERED PATIENTS</p>
-              <Button onClick={() => setCheckInModalOpen(true)} className="h-10 w-full sm:w-auto">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                MANUAL CHECK-IN
-              </Button>
+            <div className="flex flex-col items-end gap-1">
+                <p className="text-xs font-medium text-muted-foreground text-right">{filteredPatients.length} REGISTERED PATIENTS</p>
+                <Button onClick={() => setCheckInModalOpen(true)} className="h-10 w-full sm:w-auto">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    MANUAL CHECK-IN
+                </Button>
             </div>
           </div>
         </CardHeader>
