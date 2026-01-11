@@ -9,6 +9,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Printer } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 function QRCodePageContent({ params }: { params: Promise<{ id: string }> }) {
   const { id: clinicId } = use(params);
@@ -36,7 +43,15 @@ function QRCodePageContent({ params }: { params: Promise<{ id: string }> }) {
   }
   
   const registrationUrl = `${window.location.origin}/register/${selectedGroup.id}`;
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(registrationUrl)}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(registrationUrl)}`;
+
+  const handleGroupChange = (groupId: string) => {
+    const group = groups.find(g => g.id === groupId);
+    if (group) {
+        setSelectedGroup(group);
+    }
+  };
+
 
   return (
     <div className="space-y-6">
@@ -54,34 +69,36 @@ function QRCodePageContent({ params }: { params: Promise<{ id: string }> }) {
             <CardHeader>
               <CardTitle>Select Group</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              {groups.map(group => (
-                <Button 
-                    key={group.id} 
-                    variant={selectedGroup.id === group.id ? 'default' : 'outline'}
-                    className="w-full justify-start"
-                    onClick={() => setSelectedGroup(group)}
-                >
-                  {group.name}
-                </Button>
-              ))}
+            <CardContent>
+              <Select value={selectedGroup.id} onValueChange={handleGroupChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a group" />
+                </SelectTrigger>
+                <SelectContent>
+                  {groups.map(group => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </CardContent>
           </Card>
         </div>
         <div className="md:col-span-2">
             <Card className="printable-area">
                 <CardHeader className="text-center">
-                    <CardTitle className="text-xl">{clinic.name}</CardTitle>
-                    <CardDescription className="text-base">Scan to Register for</CardDescription>
-                    <p className="text-2xl font-bold text-primary">{selectedGroup.name}</p>
+                    <CardTitle className="text-lg">{clinic.name}</CardTitle>
+                    <CardDescription className="text-sm">Scan to Register for</CardDescription>
+                    <p className="text-xl font-bold text-primary">{selectedGroup.name}</p>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center justify-center p-8">
-                   <div className="bg-white p-4 border rounded-lg">
+                <CardContent className="flex flex-col items-center justify-center p-6">
+                   <div className="bg-white p-3 border rounded-md">
                      <Image
                         src={qrCodeUrl}
                         alt={`QR Code for ${selectedGroup.name}`}
-                        width={300}
-                        height={300}
+                        width={200}
+                        height={200}
                         unoptimized
                     />
                    </div>
