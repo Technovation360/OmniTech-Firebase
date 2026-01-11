@@ -70,7 +70,7 @@ export default function LiveQueuePage() {
   }
 
   const getDoctorName = (groupId: string) => {
-      return clinicGroups.find(c => c.id === groupId)?.doctor.name || 'Unknown';
+      return clinicGroups.find(c => c.id === groupId)?.doctors[0]?.name || 'Unknown';
   }
 
   useEffect(() => {
