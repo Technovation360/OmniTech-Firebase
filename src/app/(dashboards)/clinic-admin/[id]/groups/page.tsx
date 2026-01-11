@@ -11,33 +11,34 @@ import { Badge } from '@/components/ui/badge';
 import {
   Edit,
   Trash2,
+  ExternalLink,
   QrCode,
   Link as LinkIcon,
-  Printer,
-  Sparkles,
   ChevronDown
 } from 'lucide-react';
 import { getClinicGroups } from '@/lib/data';
 import type { ClinicGroup } from '@/lib/types';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+
 
 export default function GroupsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: clinicId } = use(params);
   const [allGroups, setAllGroups] = useState<(ClinicGroup & { resources?: any; cabins?: any[] })[]>([]);
   const [activeAccordionItem, setActiveAccordionItem] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     getClinicGroups(clinicId).then(allGroupsData => {
-        const groupsWithResources = allGroupsData.map((group, index) => ({
+        const groupsWithResources = allGroupsData.map((group) => ({
             ...group,
             resources: {
-                docs: [group.doctor].length, // Assuming one doctor for now
+                docs: [group.doctor].length, 
                 asst: group.assistants.length,
-                screens: 1, // Mock
-                cabins: 4, // Mock
+                displays: 1, 
+                cabins: 4, 
             },
-            cabins: [ // Mock cabin data
+            cabins: [
               {id: 'cab_1', name: 'Consultation Room 1'},
               {id: 'cab_2', name: 'Consultation Room 2'},
               {id: 'cab_3', name: 'Consultation Room 3'},
@@ -54,6 +55,21 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('');
   }
+  
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+        toast({
+            title: "Link Copied!",
+            description: "The registration link has been copied to your clipboard.",
+        });
+    }, (err) => {
+        toast({
+            variant: "destructive",
+            title: "Failed to copy",
+            description: "Could not copy the link to your clipboard.",
+        });
+    });
+  };
 
 
   return (
@@ -74,38 +90,35 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                 {allGroups.map((group) => (
                     <AccordionItem value={group.id} key={group.id} className="border-b last:border-b-0">
                         <AccordionTrigger className="grid grid-cols-12 p-4 items-center hover:no-underline hover:bg-muted/50 transition-colors group">
-                            <div className="col-span-3 text-left">
-                                <div className="flex items-center gap-3">
-                                    <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                                    <div>
-                                        <p className="font-semibold text-sm text-card-foreground">{group.name}</p>
-                                        <p className="text-xs text-muted-foreground">Initial: {getInitials(group.name)}</p>
-                                    </div>
+                           <div className="col-span-3 text-left flex items-center gap-3">
+                                <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                                <div>
+                                    <p className="font-semibold text-sm text-card-foreground">{group.name}</p>
+                                    <p className="text-xs text-muted-foreground">Initial: {getInitials(group.name)}</p>
                                 </div>
                             </div>
                             <div className="col-span-3">
                                  <div className="flex flex-wrap gap-2">
                                     <Badge variant="secondary" className="bg-blue-100 text-blue-800">{group.resources.docs} Docs</Badge>
                                     <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">{group.resources.asst} Asst</Badge>
-                                    <Badge variant="secondary" className="bg-green-100 text-green-800">{group.resources.screens} Screens</Badge>
+                                    <Badge variant="secondary" className="bg-green-100 text-green-800">{group.resources.displays} Displays</Badge>
                                     <Badge variant="secondary" className="bg-purple-100 text-purple-800">{group.resources.cabins} Cabins</Badge>
                                 </div>
                             </div>
                             <div className="col-span-3">
                                <div className="flex gap-2">
-                                    <Button variant="outline" size="icon-sm" className="bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100">
-                                        <Sparkles className="h-4 w-4" />
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href={`/register/${group.id}`} target="_blank">
+                                            <ExternalLink className="mr-2 h-3 w-3"/> Preview
+                                        </Link>
                                     </Button>
-                                    <Button variant="outline" size="icon-sm" className="bg-green-50 border-green-200 text-green-600 hover:bg-green-100" asChild>
+                                    <Button variant="outline" size="sm" asChild>
                                       <Link href={`/clinic-admin/${clinicId}/groups/qr-code?groupId=${group.id}`}>
-                                        <QrCode className="h-4 w-4"/>
+                                        <QrCode className="mr-2 h-3 w-3"/> View QR
                                       </Link>
                                     </Button>
-                                    <Button variant="outline" size="icon-sm" className="bg-purple-50 border-purple-200 text-purple-600 hover:bg-purple-100">
-                                        <LinkIcon className="h-4 w-4"/>
-                                    </Button>
-                                    <Button variant="outline" size="icon-sm" className="bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100">
-                                        <Printer className="h-4 w-4"/>
+                                    <Button variant="outline" size="sm" onClick={() => copyToClipboard(`${window.location.origin}/register/${group.id}`)}>
+                                        <LinkIcon className="mr-2 h-3 w-3"/> Copy Link
                                     </Button>
                                </div>
                             </div>
@@ -124,7 +137,6 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                     <h4 className="font-semibold text-muted-foreground mb-2">DOCTORS</h4>
                                     <ul className="space-y-1">
                                         <li>{group.doctor.name}</li>
-                                        {/* Mocking a second doctor */}
                                         {group.name === 'General Medicine' && <li>doctor2</li>}
                                     </ul>
                                 </div>
@@ -135,9 +147,9 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                     </ul>
                                 </div>
                                  <div>
-                                    <h4 className="font-semibold text-muted-foreground mb-2">SCREENS</h4>
+                                    <h4 className="font-semibold text-muted-foreground mb-2">DISPLAYS</h4>
                                     <ul className="space-y-1">
-                                       <li>{group.screen.name}</li>
+                                       <li>{group.screen.name} (Display User)</li>
                                     </ul>
                                 </div>
                                  <div>
