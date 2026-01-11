@@ -17,8 +17,8 @@ import {
   Link as LinkIcon,
   ChevronDown
 } from 'lucide-react';
-import { getClinicGroups, getClinicById } from '@/lib/data';
-import type { ClinicGroup, Doctor } from '@/lib/types';
+import { getClinicGroups, getClinicById, mockUsers } from '@/lib/data';
+import type { ClinicGroup, Doctor, Assistant, Screen, User } from '@/lib/types';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -33,27 +33,41 @@ function GroupForm({
   onClose,
   group,
   onConfirm,
-  doctors
+  doctors,
+  assistants,
+  screens
 }: {
   isOpen: boolean;
   onClose: () => void;
   group: ClinicGroup | null;
   onConfirm: (formData: any) => void;
-  doctors: Doctor[];
+  doctors: User[];
+  assistants: User[];
+  screens: User[];
 }) {
   const isEditMode = !!group;
-  const [formData, setFormData] = useState({ name: '', doctorId: '' });
+  const [formData, setFormData] = useState({ 
+    name: '', 
+    doctorId: '',
+    assistantId: '',
+    screenId: '',
+  });
 
   useEffect(() => {
     if (group) {
-      setFormData({ name: group.name, doctorId: group.doctor.id });
+      setFormData({ 
+        name: group.name, 
+        doctorId: group.doctor.id,
+        assistantId: group.assistants[0]?.id || '',
+        screenId: group.screen.id
+      });
     } else {
-      setFormData({ name: '', doctorId: '' });
+      setFormData({ name: '', doctorId: '', assistantId: '', screenId: '' });
     }
   }, [group]);
 
   const handleConfirm = () => {
-    if (formData.name && formData.doctorId) {
+    if (formData.name && formData.doctorId && formData.assistantId && formData.screenId) {
       onConfirm(formData);
       onClose();
     }
@@ -81,6 +95,32 @@ function GroupForm({
                   <SelectContent>
                     {doctors.map(doc => (
                       <SelectItem key={doc.id} value={doc.id} className="text-[11px]">{doc.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+            </div>
+            <div className="space-y-1">
+                <Label htmlFor="assistant" className="text-[10px] font-semibold text-gray-600">ASSIGN ASSISTANT</Label>
+                <Select value={formData.assistantId} onValueChange={(value) => setFormData({...formData, assistantId: value})}>
+                  <SelectTrigger className="h-7 text-[11px]">
+                    <SelectValue placeholder="Select an assistant" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {assistants.map(asst => (
+                      <SelectItem key={asst.id} value={asst.id} className="text-[11px]">{asst.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+            </div>
+             <div className="space-y-1">
+                <Label htmlFor="screen" className="text-[10px] font-semibold text-gray-600">ASSIGN SCREEN</Label>
+                <Select value={formData.screenId} onValueChange={(value) => setFormData({...formData, screenId: value})}>
+                  <SelectTrigger className="h-7 text-[11px]">
+                    <SelectValue placeholder="Select a screen user" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {screens.map(scr => (
+                      <SelectItem key={scr.id} value={scr.id} className="text-[11px]">{scr.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -127,23 +167,23 @@ function DeleteGroupDialog({
 
 export default function GroupsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: clinicId } = use(params);
+  const [clinic, setClinic] = useState<{name: string} | null>(null);
   const [allGroups, setAllGroups] = useState<(ClinicGroup & { resources?: any; cabins?: any[] })[]>([]);
   const [activeAccordionItem, setActiveAccordionItem] = useState<string | null>(null);
   const { toast } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [groupToEdit, setGroupToEdit] = useState<ClinicGroup | null>(null);
   const [groupToDelete, setGroupToDelete] = useState<ClinicGroup | null>(null);
-  // In a real app, this would be fetched
-  const availableDoctors: Doctor[] = [
-    { id: 'doc_ashish', name: 'Dr. Ashish' },
-    { id: 'doc_vijay', name: 'Dr. Vijay' },
-    { id: 'doc_mehta', name: 'Dr. Mehta' },
-    { id: 'doc_gupta', name: 'Dr. Gupta' },
-    { id: 'doc_singh', name: 'Dr. Singh' },
-    { id: 'doc_joshi', name: 'Dr. Joshi' },
-  ];
+  const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
+    getClinicById(clinicId).then(clinicData => {
+      setClinic(clinicData || null);
+      if(clinicData) {
+        setUsers(mockUsers.filter(u => u.affiliation === clinicData.name));
+      }
+    });
+
     getClinicGroups(clinicId).then(allGroupsData => {
         const groupsWithResources = allGroupsData.map((group) => ({
             ...group,
@@ -163,6 +203,10 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
         setAllGroups(groupsWithResources);
     })
   }, [clinicId]);
+
+  const doctors = users.filter(u => u.role === 'doctor');
+  const assistants = users.filter(u => u.role === 'assistant');
+  const screens = users.filter(u => u.role === 'display');
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('');
@@ -213,17 +257,24 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
     }
   }
 
-  const handleFormConfirm = (formData: { name: string, doctorId: string }) => {
-    const doctor = availableDoctors.find(d => d.id === formData.doctorId);
-    if (!doctor) return;
+  const handleFormConfirm = (formData: { name: string, doctorId: string, assistantId: string, screenId: string }) => {
+    const doctor = users.find(d => d.id === formData.doctorId);
+    const assistant = users.find(a => a.id === formData.assistantId);
+    const screen = users.find(s => s.id === formData.screenId);
+    
+    if (!doctor || !assistant || !screen || !clinic) return;
 
     if (groupToEdit) {
       // Update existing group
-      setAllGroups(allGroups.map(g => g.id === groupToEdit.id ? { ...groupToEdit, name: formData.name, doctor: doctor } : g));
+      setAllGroups(allGroups.map(g => g.id === groupToEdit.id ? { 
+        ...groupToEdit, 
+        name: formData.name, 
+        doctor: {id: doctor.id, name: doctor.name},
+        assistants: [{id: assistant.id, name: assistant.name}],
+        screen: {id: screen.id, name: screen.name}
+      } : g));
     } else {
       // Add new group
-      getClinicById(clinicId).then(clinic => {
-        if (!clinic) return;
         const newGroup: ClinicGroup = {
           id: `grp_${Date.now()}`,
           clinicId: clinicId,
@@ -231,13 +282,12 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
           location: clinic.location,
           specialties: [],
           contact: `contact@${clinic.name.toLowerCase().replace(/\s/g, '')}.com`,
-          doctor: doctor,
-          assistants: [],
+          doctor: {id: doctor.id, name: doctor.name},
+          assistants: [{id: assistant.id, name: assistant.name}],
           cabin: { id: 'cab_new', name: 'New Cabin'},
-          screen: { id: 'scr_main_hall', name: 'Main Hall Display'},
+          screen: { id: screen.id, name: screen.name},
         };
         setAllGroups(prev => [newGroup, ...prev]);
-      });
     }
     closeModal();
   };
@@ -253,8 +303,8 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
           <div className="bg-card rounded-2xl border">
               <div className="grid grid-cols-12 p-4 border-b font-semibold text-xs text-muted-foreground">
                   <div className="col-span-3">GROUP NAME</div>
-                  <div className="col-span-4">RESOURCES</div>
-                  <div className="col-span-3">REGISTRATION FORM</div>
+                  <div className="col-span-4 pl-2">RESOURCES</div>
+                  <div className="col-span-3 pl-2">REGISTRATION FORM</div>
                   <div className="col-span-2 text-center">ACTIONS</div>
               </div>
               <Accordion type="single" value={activeAccordionItem || ""} onValueChange={setActiveAccordionItem} collapsible>
@@ -272,7 +322,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                         </div>
                                     </AccordionTrigger>
                                 </div>
-                                <div className="col-span-4 p-4">
+                                <div className="col-span-4 p-4 pl-6">
                                   <div className="flex items-center gap-2 flex-wrap">
                                       <Badge variant="secondary" className="px-2 py-1 text-[10px] leading-none bg-blue-100 text-blue-800">{group.resources?.docs || 0} Docs</Badge>
                                       <Badge variant="secondary" className="px-2 py-1 text-[10px] leading-none bg-yellow-100 text-yellow-800">{group.resources?.asst || 0} Asst</Badge>
@@ -280,7 +330,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                       <Badge variant="secondary" className="px-2 py-1 text-[10px] leading-none bg-purple-100 text-purple-800">{group.resources?.cabins || 0} Cabins</Badge>
                                   </div>
                                 </div>
-                                <div className="col-span-3 p-4 flex items-center gap-2">
+                                <div className="col-span-3 p-4 flex items-center gap-2 pl-6">
                                     <Button variant="outline" size="icon-xs" asChild>
                                         <Link href={`/register/${group.id}`} target="_blank">
                                             <ExternalLink className="h-4 w-4"/>
@@ -322,7 +372,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                   <div>
                                       <h4 className="font-semibold text-muted-foreground mb-2">DISPLAYS</h4>
                                       <ul className="space-y-1">
-                                        <li>{group.screen.name} (Display User)</li>
+                                        <li>{group.screen.name}</li>
                                       </ul>
                                   </div>
                                   <div>
@@ -343,7 +393,9 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
         onClose={closeModal}
         group={groupToEdit}
         onConfirm={handleFormConfirm}
-        doctors={availableDoctors}
+        doctors={doctors}
+        assistants={assistants}
+        screens={screens}
       />
       <DeleteGroupDialog
         isOpen={!!groupToDelete}
@@ -354,3 +406,5 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
     </>
   );
 }
+
+    

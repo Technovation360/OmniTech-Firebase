@@ -14,10 +14,10 @@ let clinicGroups: ClinicGroup[] = [
     location: 'Maharashtra, Mumbai',
     specialties: ['Cardiology', 'General Medicine'],
     contact: 'contact@citycare.com',
-    doctor: { id: 'doc_ashish', name: 'Dr. Ashish' },
-    assistants: [{ id: 'asst_sunita', name: 'Sunita' }],
+    doctor: { id: 'user_3', name: 'Dr. Ashish' },
+    assistants: [{ id: 'user_5', name: 'Sunita' }],
     cabin: { id: 'cab_101', name: 'Cabin 101' },
-    screen: { id: 'scr_main_hall', name: 'Main Hall Display' },
+    screen: { id: 'user_7', name: 'Display User' },
   },
   {
     id: 'grp_gen_med_01',
@@ -50,8 +50,8 @@ let clinicGroups: ClinicGroup[] = [
     location: 'Delhi, Delhi',
     specialties: ['Orthopedics'],
     contact: 'contact@healthplus.com',
-    doctor: { id: 'doc_vijay', name: 'Dr. Vijay' },
-    assistants: [{ id: 'asst_rajesh', name: 'Rajesh' }],
+    doctor: { id: 'user_4', name: 'Dr. Vijay' },
+    assistants: [{ id: 'user_6', name: 'Rajesh' }],
     cabin: { id: 'cab_201', name: 'Cabin 201' },
     screen: { id: 'scr_main_hall_hp', name: 'Main Hall Display HP' },
   },
@@ -259,5 +259,7 @@ export const addConsultation = async (data: Omit<Consultation, 'id'>): Promise<C
     consultations.push(newConsultation);
     return Promise.resolve(newConsultation);
 }
+
+    
 
     
