@@ -426,7 +426,7 @@ export default function PatientRegistryPage() {
     <>
       <Card>
         <CardHeader>
-           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-8">
+           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <div>
               <CardTitle className="text-lg">Patient Registry</CardTitle>
             </div>
@@ -488,18 +488,8 @@ export default function PatientRegistryPage() {
                     className="text-xs p-0 hover:bg-transparent"
                     onClick={() => handleSort('age')}
                   >
-                    Age
+                    Age / Gender
                     {getSortIcon('age')}
-                  </Button>
-                </TableHead>
-                <TableHead>
-                   <Button
-                    variant="ghost"
-                    className="text-xs p-0 hover:bg-transparent"
-                    onClick={() => handleSort('gender')}
-                  >
-                    Gender
-                    {getSortIcon('gender')}
                   </Button>
                 </TableHead>
                 <TableHead>
@@ -540,9 +530,9 @@ export default function PatientRegistryPage() {
               {filteredPatients.map((patient) => (
                 <TableRow key={patient.id}>
                   <TableCell className="font-medium py-2 text-xs">{patient.name}</TableCell>
-                  <TableCell className="py-2 text-xs">{patient.age}</TableCell>
-                  <TableCell className="py-2 text-xs capitalize">
-                    <Badge variant="secondary" className={cn('text-[10px] border-transparent capitalize', genderBadgeColors[patient.gender])}>
+                  <TableCell className="py-2 text-xs">
+                    {patient.age} / 
+                    <Badge variant="secondary" className={cn('ml-1 text-[10px] border-transparent capitalize', genderBadgeColors[patient.gender])}>
                         {patient.gender}
                     </Badge>
                   </TableCell>
@@ -569,7 +559,7 @@ export default function PatientRegistryPage() {
               ))}
                {filteredPatients.length === 0 && (
                 <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground py-4 text-sm">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-4 text-sm">
                         No patients found.
                     </TableCell>
                 </TableRow>
@@ -593,3 +583,5 @@ export default function PatientRegistryPage() {
     </>
   );
 }
+
+    
