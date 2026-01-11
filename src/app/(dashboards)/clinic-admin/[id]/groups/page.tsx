@@ -184,7 +184,7 @@ function DeleteGroupDialog({
 }
 
 
-export default function GroupsPage({ params }: { params: { id: string } }) {
+export default function GroupsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: clinicId } = use(params);
   const [clinic, setClinic] = useState<Clinic | null>(null);
   const [allGroups, setAllGroups] = useState<ClinicGroup[]>([]);
@@ -341,12 +341,12 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
                     />
                   </div>
                 </div>
-                <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
-                    <p className="text-sm font-medium text-muted-foreground whitespace-nowrap">{filteredGroups.length} TOTAL GROUPS</p>
-                    <Button onClick={openCreateModal} className="h-10">
+                <div className="flex flex-col items-end gap-1">
+                    <Button onClick={openCreateModal} size="sm">
                         <PlusCircle className="mr-2 h-4 w-4" />
                         CREATE GROUP
                     </Button>
+                    <p className="text-xs font-medium text-muted-foreground text-right">{filteredGroups.length} TOTAL GROUPS</p>
                 </div>
               </div>
             </CardHeader>
@@ -400,7 +400,7 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
                                         <LinkIcon className="h-4 w-4"/>
                                     </Button>
                                 </div>
-                                <div className="col-span-3 p-4 flex justify-center gap-1">
+                                <div className="col-span-3 p-4 flex justify-start gap-1">
                                   <Button variant="ghost" size="icon-xs" onClick={() => openEditModal(group)}>
                                       <Edit className="h-4 w-4 text-muted-foreground"/>
                                   </Button>
@@ -470,3 +470,5 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
     </>
   );
 }
+
+    
