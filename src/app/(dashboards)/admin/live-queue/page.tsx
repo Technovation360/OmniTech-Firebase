@@ -18,8 +18,8 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { getPatientsByGroupId, getClinicGroups, getAllPatients } from '@/lib/data';
-import type { Patient, ClinicGroup } from '@/lib/types';
+import { getClinicGroups, getAllPatients, getClinics } from '@/lib/data';
+import type { Patient, ClinicGroup, Clinic } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ArrowUp, ArrowDown, Search } from 'lucide-react';
@@ -44,15 +44,15 @@ const badgeColors: Record<Patient['status'], string> = {
 export default function LiveQueuePage() {
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
-  const [clinics, setClinics] = useState<ClinicGroup[]>([]);
+  const [clinicGroups, setClinicGroups] = useState<ClinicGroup[]>([]);
+  const [clinics, setClinics] = useState<Clinic[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'tokenNumber', direction: 'asc' });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClinic, setSelectedClinic] = useState<string>('all');
 
   useEffect(() => {
-    getClinicGroups().then(allClinics => {
-        setClinics(allClinics);
-    });
+    getClinics().then(setClinics);
+    getClinicGroups().then(setClinicGroups);
     getAllPatients().then(allPatientsData => {
         const activePatients = allPatientsData
             .filter(p => p.status === 'waiting' || p.status === 'called' || p.status === 'in-consultation')
@@ -61,12 +61,16 @@ export default function LiveQueuePage() {
     });
   }, []);
   
-  const getClinicName = (groupId: string) => {
-    return clinics.find(c => c.id === groupId)?.name || 'Unknown';
+  const getClinicName = (clinicId: string) => {
+    return clinics.find(c => c.id === clinicId)?.name || 'Unknown';
+  }
+
+  const getGroupName = (groupId: string) => {
+    return clinicGroups.find(g => g.id === groupId)?.name || 'Unknown';
   }
 
   const getDoctorName = (groupId: string) => {
-      return clinics.find(c => c.id === groupId)?.doctor.name || 'Unknown';
+      return clinicGroups.find(c => c.id === groupId)?.doctor.name || 'Unknown';
   }
 
   useEffect(() => {
@@ -81,15 +85,15 @@ export default function LiveQueuePage() {
         filteredData = filteredData.filter(patient => 
             patient.name.toLowerCase().includes(lowercasedQuery) ||
             patient.tokenNumber.toLowerCase().includes(lowercasedQuery) ||
-            getClinicName(patient.groupId).toLowerCase().includes(lowercasedQuery) ||
+            getGroupName(patient.groupId).toLowerCase().includes(lowercasedQuery) ||
             getDoctorName(patient.groupId).toLowerCase().includes(lowercasedQuery)
         );
     }
     
     if (sortConfig) {
       const sorted = [...filteredData].sort((a, b) => {
-        const aVal = sortConfig.key === 'clinic' ? getClinicName(a.clinicId) : sortConfig.key === 'doctor' ? getDoctorName(a.groupId) : a[sortConfig.key as keyof Patient];
-        const bVal = sortConfig.key === 'clinic' ? getClinicName(b.clinicId) : sortConfig.key === 'doctor' ? getDoctorName(b.groupId) : b[sortConfig.key as keyof Patient];
+        const aVal = sortConfig.key === 'clinic' ? getClinicName(a.clinicId) : sortConfig.key === 'group' ? getGroupName(a.groupId) : sortConfig.key === 'doctor' ? getDoctorName(a.groupId) : a[sortConfig.key as keyof Patient];
+        const bVal = sortConfig.key === 'clinic' ? getClinicName(b.clinicId) : sortConfig.key === 'group' ? getGroupName(b.groupId) : sortConfig.key === 'doctor' ? getDoctorName(b.groupId) : b[sortConfig.key as keyof Patient];
 
         if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
         if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
@@ -100,7 +104,7 @@ export default function LiveQueuePage() {
         setFilteredPatients(filteredData);
     }
 
-  }, [searchQuery, allPatients, sortConfig, clinics, selectedClinic]);
+  }, [searchQuery, allPatients, sortConfig, clinicGroups, clinics, selectedClinic]);
 
   const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -132,7 +136,7 @@ export default function LiveQueuePage() {
                   <SelectContent>
                       <SelectItem value="all" className="text-xs">All Clinics</SelectItem>
                       {clinics.map(clinic => (
-                          <SelectItem key={clinic.id} value={clinic.clinicId} className="text-xs">{clinic.name}</SelectItem>
+                          <SelectItem key={clinic.id} value={clinic.id} className="text-xs">{clinic.name}</SelectItem>
                       ))}
                   </SelectContent>
               </Select>
@@ -202,7 +206,7 @@ export default function LiveQueuePage() {
                 <TableCell className="font-bold py-2 text-xs">{patient.tokenNumber}</TableCell>
                 <TableCell className="py-2 text-xs">{patient.name}</TableCell>
                 <TableCell className="py-2 text-xs">{getClinicName(patient.clinicId)}</TableCell>
-                <TableCell className="py-2 text-xs">{getClinicName(patient.groupId)}</TableCell>
+                <TableCell className="py-2 text-xs">{getGroupName(patient.groupId)}</TableCell>
                 <TableCell className="py-2 text-xs">{getDoctorName(patient.groupId)}</TableCell>
                 <TableCell className="py-2 text-xs">{format(new Date(patient.registeredAt), 'hh:mm a')}</TableCell>
                 <TableCell className="py-2 text-xs">
