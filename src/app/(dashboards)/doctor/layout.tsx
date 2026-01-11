@@ -68,7 +68,7 @@ function DoctorSidebar() {
         <Logo variant="enterprise" />
       </SidebarHeader>
       <SidebarContent>
-        <div className="flex flex-col gap-2 p-4">
+        <div className="flex flex-col px-4 pt-4">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             NAVIGATION
           </span>
