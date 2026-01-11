@@ -36,7 +36,7 @@ function QRCodePageContent({ params }: { params: Promise<{ id: string }> }) {
   }
   
   const registrationUrl = `${window.location.origin}/register/${selectedGroup.id}`;
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(registrationUrl)}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(registrationUrl)}`;
 
   return (
     <div className="space-y-6">
@@ -71,21 +71,21 @@ function QRCodePageContent({ params }: { params: Promise<{ id: string }> }) {
         <div className="md:col-span-2">
             <Card className="printable-area">
                 <CardHeader className="text-center">
-                    <CardTitle className="text-2xl">{clinic.name}</CardTitle>
-                    <CardDescription className="text-lg">Scan to Register for</CardDescription>
-                    <p className="text-3xl font-bold text-primary">{selectedGroup.name}</p>
+                    <CardTitle className="text-xl">{clinic.name}</CardTitle>
+                    <CardDescription className="text-base">Scan to Register for</CardDescription>
+                    <p className="text-2xl font-bold text-primary">{selectedGroup.name}</p>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center p-8">
                    <div className="bg-white p-4 border rounded-lg">
                      <Image
                         src={qrCodeUrl}
                         alt={`QR Code for ${selectedGroup.name}`}
-                        width={400}
-                        height={400}
+                        width={300}
+                        height={300}
                         unoptimized
                     />
                    </div>
-                    <p className="mt-4 text-sm text-muted-foreground text-center">
+                    <p className="mt-4 text-xs text-muted-foreground text-center">
                        Point your phone's camera at the code to open the registration link.
                     </p>
                 </CardContent>
