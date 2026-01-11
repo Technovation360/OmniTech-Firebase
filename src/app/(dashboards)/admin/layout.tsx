@@ -62,7 +62,7 @@ function AdminSidebar() {
         <Logo variant="enterprise" />
       </SidebarHeader>
       <SidebarContent>
-        <div className="flex flex-col px-4 pt-4">
+        <div className="flex flex-col px-4 pt-0">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Administration
           </span>

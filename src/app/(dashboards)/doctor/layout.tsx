@@ -22,6 +22,7 @@ import {
   PanelLeft,
   LogOut,
   Stethoscope,
+  ChevronLeft,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
@@ -68,7 +69,7 @@ function DoctorSidebar() {
         <Logo variant="enterprise" />
       </SidebarHeader>
       <SidebarContent>
-        <div className="flex flex-col px-4 pt-4">
+        <div className="flex flex-col px-4 pt-0">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             NAVIGATION
           </span>
@@ -120,7 +121,7 @@ function DoctorLayoutContent({ children }: { children: React.ReactNode }) {
                     <PanelLeft />
                 </Button>
                 <div className="flex items-center gap-2">
-                    <Link href="/"><ChevronLeftIcon className="h-5 w-5 opacity-80"/></Link>
+                    <Link href="/"><ChevronLeft className="h-5 w-5 opacity-80"/></Link>
                     <span className="text-sm font-medium">Home / Overview</span>
                 </div>
             </div>
@@ -145,25 +146,6 @@ function DoctorLayoutContent({ children }: { children: React.ReactNode }) {
     </>
   );
 }
-
-function ChevronLeftIcon(props: React.SVGProps<SVGSVGElement>) {
-    return (
-      <svg
-        {...props}
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="m15 18-6-6 6-6" />
-      </svg>
-    )
-  }
 
 export default function DoctorLayout({
   children,
