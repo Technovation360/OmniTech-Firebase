@@ -327,7 +327,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
       <div className="space-y-6">
         <Card>
             <CardHeader>
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row items-end justify-between gap-4">
                  <div className="space-y-1 w-full sm:w-auto">
                   <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">SEARCH GROUP</Label>
                   <div className="relative">
@@ -341,12 +341,10 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                     />
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                    <Button onClick={openCreateModal} size="sm">
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        CREATE GROUP
-                    </Button>
-                </div>
+                <Button onClick={openCreateModal} className="h-10">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    CREATE GROUP
+                </Button>
               </div>
             </CardHeader>
         </Card>
@@ -399,7 +397,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                         <LinkIcon className="h-4 w-4"/>
                                     </Button>
                                 </div>
-                                <div className="col-span-3 p-4 flex justify-start gap-1">
+                                <div className="col-span-3 p-4 flex justify-center gap-1">
                                   <Button variant="ghost" size="icon-xs" onClick={() => openEditModal(group)}>
                                       <Edit className="h-4 w-4 text-muted-foreground"/>
                                   </Button>
@@ -469,5 +467,3 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
     </>
   );
 }
-
-    
