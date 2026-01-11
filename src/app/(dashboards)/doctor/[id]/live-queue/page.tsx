@@ -109,11 +109,11 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
                 <CardTitle>Live Patient Queue</CardTitle>
                 <CardDescription>A real-time view of patients in your queue.</CardDescription>
             </div>
-             <div className="relative w-full sm:w-56">
+             <div className="relative w-full sm:w-44">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search by Name, Number, Email"
-                  className="pl-9 h-7 placeholder:text-xs"
+                  className="pl-9 h-6 placeholder:text-xs"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
