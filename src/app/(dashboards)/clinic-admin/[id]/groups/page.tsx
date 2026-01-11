@@ -255,12 +255,21 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
   }
 
   const handleFormConfirm = (formData: { name: string, tokenInitial: string, doctorIds: string[], assistantIds: string[], screenIds: string[], cabinIds: string[] }) => {
+    if (!clinic) return;
+
     const selectedDoctors = formData.doctorIds.map(id => doctors.find(d => d.id === id)).filter(Boolean) as User[];
     const selectedAssistants = formData.assistantIds.map(id => assistants.find(a => a.id === id)).filter(Boolean) as User[];
     const selectedScreens = formData.screenIds.map(id => screens.find(s => s.id === id)).filter(Boolean) as User[];
     const selectedCabins = formData.cabinIds.map(id => cabins.find(c => c.id === id)).filter(Boolean) as Cabin[];
     
-    if (selectedDoctors.length === 0 || selectedAssistants.length === 0 || selectedScreens.length === 0 || selectedCabins.length === 0 || !clinic) return;
+    if (selectedDoctors.length === 0 || selectedAssistants.length === 0 || selectedScreens.length === 0 || selectedCabins.length === 0) {
+        toast({
+            variant: "destructive",
+            title: "Missing Information",
+            description: "Please assign at least one of each resource type.",
+        });
+        return;
+    }
 
     if (groupToEdit) {
       // Update existing group
