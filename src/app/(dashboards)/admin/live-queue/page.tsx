@@ -142,7 +142,7 @@ export default function LiveQueuePage() {
               <div className="relative w-full sm:w-56">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input 
-                      placeholder="Search patients..." 
+                      placeholder="Search by Name, Number, Email" 
                       className="pl-9 h-7" 
                       value={searchQuery}
                       onChange={e => setSearchQuery(e.target.value)}
