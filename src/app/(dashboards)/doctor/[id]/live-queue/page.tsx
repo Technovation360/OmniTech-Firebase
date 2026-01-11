@@ -109,7 +109,7 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
                 <CardTitle>Live Patient Queue</CardTitle>
                 <CardDescription>A real-time view of patients in your queue.</CardDescription>
             </div>
-             <div className="relative w-full sm:w-64">
+             <div className="relative w-full sm:w-56">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search patients..."
