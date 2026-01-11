@@ -256,8 +256,8 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
           <div className="bg-card rounded-2xl border">
               <div className="grid grid-cols-12 p-4 border-b font-semibold text-xs text-muted-foreground">
                   <div className="col-span-3">GROUP NAME</div>
-                  <div className="col-span-4">RESOURCES</div>
-                  <div className="col-span-3">REGISTRATION FORM</div>
+                  <div className="col-span-5">RESOURCES</div>
+                  <div className="col-span-2">REGISTRATION FORM</div>
                   <div className="col-span-2 text-center">ACTIONS</div>
               </div>
               <Accordion type="single" value={activeAccordionItem || ""} onValueChange={setActiveAccordionItem} collapsible>
@@ -275,7 +275,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                     </div>
                                 </AccordionTrigger>
                             </div>
-                              <div className="col-span-4">
+                              <div className="col-span-5">
                                   <div className="flex items-center gap-2 flex-wrap">
                                       <Badge variant="secondary" className="px-2 py-1 text-[10px] leading-none bg-blue-100 text-blue-800">{group.resources?.docs || 0} Docs</Badge>
                                       <Badge variant="secondary" className="px-2 py-1 text-[10px] leading-none bg-yellow-100 text-yellow-800">{group.resources?.asst || 0} Asst</Badge>
@@ -283,7 +283,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                       <Badge variant="secondary" className="px-2 py-1 text-[10px] leading-none bg-purple-100 text-purple-800">{group.resources?.cabins || 0} Cabins</Badge>
                                   </div>
                               </div>
-                              <div className="col-span-3 flex items-center gap-2">
+                              <div className="col-span-2 flex items-center gap-2">
                                     <Button variant="outline" size="icon-xs" asChild>
                                         <Link href={`/register/${group.id}`} target="_blank">
                                             <ExternalLink className="h-4 w-4"/>
