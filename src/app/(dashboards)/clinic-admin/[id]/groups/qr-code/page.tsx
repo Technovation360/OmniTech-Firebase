@@ -2,7 +2,7 @@
 'use client';
 
 import { use, useEffect, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { getClinicGroups, getClinicById } from '@/lib/data';
 import type { ClinicGroup, Clinic } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,9 +17,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-function QRCodePageContent({ params }: { params: Promise<{ id: string }> }) {
+function QRCodePageContent({ params }: { params: { id: string } }) {
   const { id: clinicId } = use(params);
   const searchParams = useSearchParams();
+  const router = useRouter();
   const initialGroupId = searchParams.get('groupId');
 
   const [clinic, setClinic] = useState<Clinic | null>(null);
@@ -43,12 +44,14 @@ function QRCodePageContent({ params }: { params: Promise<{ id: string }> }) {
   }
   
   const registrationUrl = `${window.location.origin}/register/${selectedGroup.id}`;
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(registrationUrl)}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(registrationUrl)}`;
 
   const handleGroupChange = (groupId: string) => {
     const group = groups.find(g => g.id === groupId);
     if (group) {
         setSelectedGroup(group);
+        // Update URL to reflect selected group
+        router.push(`/clinic-admin/${clinicId}/groups/qr-code?groupId=${groupId}`);
     }
   };
 
@@ -87,22 +90,22 @@ function QRCodePageContent({ params }: { params: Promise<{ id: string }> }) {
         </div>
         <div className="md:col-span-2">
             <Card className="printable-area">
-                <CardHeader className="text-center">
-                    <CardTitle className="text-lg">{clinic.name}</CardTitle>
-                    <CardDescription className="text-sm">Scan to Register for</CardDescription>
-                    <p className="text-xl font-bold text-primary">{selectedGroup.name}</p>
+                <CardHeader className="text-center pb-2">
+                    <CardTitle className="text-base">{clinic.name}</CardTitle>
+                    <CardDescription className="text-xs">Scan to Register for</CardDescription>
+                    <p className="text-lg font-bold text-primary">{selectedGroup.name}</p>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center justify-center p-6">
-                   <div className="bg-white p-3 border rounded-md">
+                <CardContent className="flex flex-col items-center justify-center p-4">
+                   <div className="bg-white p-2 border rounded-md">
                      <Image
                         src={qrCodeUrl}
                         alt={`QR Code for ${selectedGroup.name}`}
-                        width={200}
-                        height={200}
+                        width={150}
+                        height={150}
                         unoptimized
                     />
                    </div>
-                    <p className="mt-4 text-xs text-muted-foreground text-center">
+                    <p className="mt-2 text-xs text-muted-foreground text-center">
                        Point your phone's camera at the code to open the registration link.
                     </p>
                 </CardContent>
