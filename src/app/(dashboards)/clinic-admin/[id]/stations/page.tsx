@@ -8,14 +8,6 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -39,6 +31,8 @@ import { Label } from '@/components/ui/label';
 import { Edit, Trash2, Search, ArrowUp, ArrowDown, PlusCircle } from 'lucide-react';
 import { getCabinsByClinicId } from '@/lib/data';
 import type { Cabin } from '@/lib/types';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { ChevronDown } from 'lucide-react';
 
 function CabinForm({
   isOpen,
@@ -139,7 +133,7 @@ function DeleteCabinDialog({
   );
 }
 
-export default function StationsPage({ params }: { params: Promise<{ id: string }> }) {
+export default function StationsPage({ params }: { params: { id: string } }) {
   const { id: clinicId } = use(params);
   const [allCabins, setAllCabins] = useState<Cabin[]>([]);
   const [filteredCabins, setFilteredCabins] = useState<Cabin[]>([]);
@@ -244,82 +238,79 @@ export default function StationsPage({ params }: { params: Promise<{ id: string 
        <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-             <div className="space-y-1 w-full sm:w-auto">
-              <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">SEARCH STATION</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="search"
-                  placeholder="Cabin name..."
-                  className="pl-9 h-10 w-full sm:w-64"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+            <div className="flex items-center gap-4 w-full sm:w-auto">
+              <div className="space-y-1 w-full sm:w-auto">
+                <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">SEARCH STATION</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="search"
+                    placeholder="Cabin name..."
+                    className="pl-9 h-10 w-full sm:w-64"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
-            <div className="flex flex-col items-end gap-1">
-              <Button onClick={openCreateModal} className="h-10 w-full sm:w-auto">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                ADD STATION
-              </Button>
-              <p className="text-xs font-medium text-muted-foreground text-right">{filteredCabins.length} TOTAL STATIONS</p>
+            <div className="flex items-center gap-4">
+                <p className="text-sm font-medium text-muted-foreground whitespace-nowrap">{filteredCabins.length} TOTAL STATIONS</p>
+                <Button onClick={openCreateModal} className="h-10">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    ADD STATION
+                </Button>
             </div>
           </div>
         </CardHeader>
       </Card>
       
       <Card>
-        <CardHeader>
-          <CardTitle>Clinic Stations</CardTitle>
-          <CardDescription>Manage consultation cabins for your clinic.</CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                 <TableHead>
-                  <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('name')}>
-                    Cabin Name
-                    {getSortIcon('name')}
-                  </Button>
-                </TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCabins.map((cabin) => (
-                <TableRow key={cabin.id}>
-                  <TableCell className="font-medium py-2 text-xs">{cabin.name}</TableCell>
-                  <TableCell className="py-2 text-xs">VACANT</TableCell>
-                  <TableCell className="flex gap-2 py-2">
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      onClick={() => openEditModal(cabin)}
-                    >
-                      <Edit className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      onClick={() => openDeleteDialog(cabin)}
-                    >
-                      <Trash2 className="h-3 w-3 text-destructive" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-               {filteredCabins.length === 0 && (
-                  <TableRow>
-                      <TableCell colSpan={3} className="text-center text-muted-foreground py-4 text-sm">
-                          No stations found.
-                      </TableCell>
-                  </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
+          <CardHeader>
+            <div className="grid grid-cols-12 font-semibold text-xs text-muted-foreground">
+                <div className="col-span-6">STATION NAME</div>
+                <div className="col-span-3 text-center">STATUS</div>
+                <div className="col-span-3 text-center">ACTIONS</div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Accordion type="single" collapsible>
+                {filteredCabins.map((cabin) => (
+                    <AccordionItem value={cabin.id} key={cabin.id} className="border-b last:border-b-0">
+                          <div className="grid grid-cols-12 items-center group">
+                              <div className="col-span-6 p-4">
+                                  <AccordionTrigger className="hover:no-underline p-0 w-full">
+                                      <div className="flex items-center gap-3">
+                                          <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:-rotate-180" />
+                                          <div>
+                                              <p className="font-semibold text-sm text-card-foreground">{cabin.name}</p>
+                                          </div>
+                                      </div>
+                                  </AccordionTrigger>
+                              </div>
+                              <div className="col-span-3 py-0 px-2 text-center">
+                                 <p className="text-xs text-green-600 font-semibold">VACANT</p>
+                              </div>
+                              <div className="col-span-3 p-4 flex justify-center gap-1">
+                                <Button variant="ghost" size="icon-xs" onClick={() => openEditModal(cabin)}>
+                                    <Edit className="h-4 w-4 text-muted-foreground"/>
+                                </Button>
+                                <Button variant="ghost" size="icon-xs" onClick={() => openDeleteDialog(cabin)}>
+                                    <Trash2 className="h-4 w-4 text-destructive"/>
+                                </Button>
+                              </div>
+                        </div>
+                        <AccordionContent className="bg-muted/30 p-6">
+                            <p className="text-center text-xs text-muted-foreground">No further details for this station.</p>
+                        </AccordionContent>
+                    </AccordionItem>
+                ))}
+                  {filteredCabins.length === 0 && (
+                    <div className="text-center text-muted-foreground p-8">
+                      No stations found.
+                    </div>
+                  )}
+            </Accordion>
+          </CardContent>
       </Card>
 
       <CabinForm
