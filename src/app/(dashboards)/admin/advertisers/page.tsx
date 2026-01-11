@@ -235,7 +235,6 @@ export default function AdvertisersPage() {
              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                     <CardTitle className="text-lg">Advertisers</CardTitle>
-                    <CardDescription className="text-xs mt-1">Manage advertisers on the platform.</CardDescription>
                 </div>
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                     <div className="relative w-full sm:w-64">
