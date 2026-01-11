@@ -346,7 +346,6 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         CREATE GROUP
                     </Button>
-                    <p className="text-xs font-medium text-muted-foreground text-right">{filteredGroups.length} TOTAL GROUPS</p>
                 </div>
               </div>
             </CardHeader>
