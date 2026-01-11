@@ -158,8 +158,6 @@ export default function SettingsPage({ params }: { params: Promise<{ id: string 
 
   return (
      <div className="space-y-6">
-        <h1 className="text-3xl font-bold font-headline">Clinic Settings</h1>
-        <p className="text-muted-foreground">Manage overall settings for {clinic.name}.</p>
         <ClinicDetails clinic={clinic} />
     </div>
   );
