@@ -281,19 +281,19 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                               </div>
                               <div className="col-span-4">
                                 <div className="flex gap-2">
-                                      <Button variant="outline" size="sm" asChild>
-                                          <Link href={`/register/${group.id}`} target="_blank">
-                                              <ExternalLink className="mr-2 h-3 w-3"/> Preview
-                                          </Link>
-                                      </Button>
-                                      <Button variant="outline" size="sm" asChild>
-                                        <Link href={`/clinic-admin/${clinicId}/groups/qr-code?groupId=${group.id}`}>
-                                          <QrCode className="mr-2 h-3 w-3"/> View QR
+                                    <Button variant="outline" size="icon-xs" asChild>
+                                        <Link href={`/register/${group.id}`} target="_blank">
+                                            <ExternalLink className="h-4 w-4"/>
                                         </Link>
-                                      </Button>
-                                      <Button variant="outline" size="sm" onClick={() => copyToClipboard(`${window.location.origin}/register/${group.id}`)}>
-                                          <LinkIcon className="mr-2 h-3 w-3"/> Copy Link
-                                      </Button>
+                                    </Button>
+                                    <Button variant="outline" size="icon-xs" asChild>
+                                        <Link href={`/clinic-admin/${clinicId}/groups/qr-code?groupId=${group.id}`}>
+                                            <QrCode className="h-4 w-4"/>
+                                        </Link>
+                                    </Button>
+                                    <Button variant="outline" size="icon-xs" onClick={() => copyToClipboard(`${window.location.origin}/register/${group.id}`)}>
+                                        <LinkIcon className="h-4 w-4"/>
+                                    </Button>
                                 </div>
                               </div>
                               <div className="col-span-2 flex justify-center gap-2">
@@ -355,3 +355,5 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
     </>
   );
 }
+
+    
