@@ -23,6 +23,7 @@ let clinicGroups: ClinicGroup[] = [
     id: 'grp_cardiology_01',
     clinicId: 'clinic_01',
     name: 'Cardiology',
+    tokenInitial: 'CR',
     location: 'Maharashtra, Mumbai',
     specialties: ['Cardiology', 'General Medicine'],
     contact: 'contact@citycare.com',
@@ -35,6 +36,7 @@ let clinicGroups: ClinicGroup[] = [
     id: 'grp_gen_med_01',
     clinicId: 'clinic_01',
     name: 'General Medicine',
+    tokenInitial: 'GM',
     location: 'Maharashtra, Mumbai',
     specialties: ['General Medicine'],
     contact: 'contact@citycare.com',
@@ -47,6 +49,7 @@ let clinicGroups: ClinicGroup[] = [
     id: 'grp_derma_01',
     clinicId: 'clinic_01',
     name: 'Dermatology',
+    tokenInitial: 'DR',
     location: 'Maharashtra, Mumbai',
     specialties: ['Dermatology'],
     contact: 'contact@citycare.com',
@@ -59,6 +62,7 @@ let clinicGroups: ClinicGroup[] = [
     id: 'grp_ortho_01',
     clinicId: 'clinic_02',
     name: 'Orthopedics',
+    tokenInitial: 'OR',
     location: 'Delhi, Delhi',
     specialties: ['Orthopedics'],
     contact: 'contact@healthplus.com',
@@ -71,6 +75,7 @@ let clinicGroups: ClinicGroup[] = [
     id: 'grp_pediatrics_01',
     clinicId: 'clinic_02',
     name: 'Pediatrics',
+    tokenInitial: 'PD',
     location: 'Delhi, Delhi',
     specialties: ['Pediatrics'],
     contact: 'contact@healthplus.com',
@@ -83,6 +88,7 @@ let clinicGroups: ClinicGroup[] = [
     id: 'grp_neurology_01',
     clinicId: 'clinic_02',
     name: 'Neurology',
+    tokenInitial: 'NR',
     location: 'Delhi, Delhi',
     specialties: ['Neurology'],
     contact: 'contact@healthplus.com',
@@ -94,9 +100,9 @@ let clinicGroups: ClinicGroup[] = [
 ];
 
 let patients: Patient[] = [
-  { id: 'pat_001', name: 'Rohan Sharma', age: 34, gender: 'male', contactNumber: '+91 9876543210', emailAddress: 'rohan.sharma@example.com', tokenNumber: 'A101', status: 'waiting', groupId: 'grp_cardiology_01', clinicId: 'clinic_01', registeredAt: new Date().toISOString() },
-  { id: 'pat_002', name: 'Priya Patel', age: 28, gender: 'female', contactNumber: '+91 9876543211', emailAddress: 'priya.patel@example.com', tokenNumber: 'B205', status: 'waiting', groupId: 'grp_ortho_01', clinicId: 'clinic_02', registeredAt: new Date().toISOString() },
-  { id: 'pat_003', name: 'Amit Singh', age: 45, gender: 'male', contactNumber: '+91 9876543212', emailAddress: 'amit.singh@example.com', tokenNumber: 'A102', status: 'waiting', groupId: 'grp_cardiology_01', clinicId: 'clinic_01', registeredAt: new Date().toISOString() },
+  { id: 'pat_001', name: 'Rohan Sharma', age: 34, gender: 'male', contactNumber: '+91 9876543210', emailAddress: 'rohan.sharma@example.com', tokenNumber: 'CR101', status: 'waiting', groupId: 'grp_cardiology_01', clinicId: 'clinic_01', registeredAt: new Date().toISOString() },
+  { id: 'pat_002', name: 'Priya Patel', age: 28, gender: 'female', contactNumber: '+91 9876543211', emailAddress: 'priya.patel@example.com', tokenNumber: 'OR205', status: 'waiting', groupId: 'grp_ortho_01', clinicId: 'clinic_02', registeredAt: new Date().toISOString() },
+  { id: 'pat_003', name: 'Amit Singh', age: 45, gender: 'male', contactNumber: '+91 9876543212', emailAddress: 'amit.singh@example.com', tokenNumber: 'CR102', status: 'waiting', groupId: 'grp_cardiology_01', clinicId: 'clinic_01', registeredAt: new Date().toISOString() },
 ];
 
 let consultations: Consultation[] = [
@@ -182,11 +188,11 @@ export const addPatient = async (data: Omit<Patient, 'id' | 'tokenNumber' | 'sta
     if (!clinicGroup) {
       throw new Error('Clinic group not found');
     }
-    const prefix = clinicGroup ? clinicGroup.name.substring(0,1).toUpperCase() : 'Z';
+    const prefix = clinicGroup.tokenInitial;
     const lastToken = patients
         .filter(p => p.groupId === data.groupId)
-        .map(p => parseInt(p.tokenNumber.slice(1), 10))
-        .sort((a,b) => b-a)[0] || 0;
+        .map(p => parseInt(p.tokenNumber.replace(prefix, ''), 10))
+        .sort((a,b) => b-a)[0] || 100;
 
     const newPatient: Patient = {
         ...data,
@@ -277,7 +283,3 @@ export const addConsultation = async (data: Omit<Consultation, 'id'>): Promise<C
     consultations.push(newConsultation);
     return Promise.resolve(newConsultation);
 }
-
-    
-
-    

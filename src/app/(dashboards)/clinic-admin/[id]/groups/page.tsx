@@ -1,5 +1,4 @@
 
-
 'use client';
 import { useState, useEffect, use } from 'react';
 import {
@@ -51,6 +50,7 @@ function GroupForm({
   const isEditMode = !!group;
   const [formData, setFormData] = useState({ 
     name: '', 
+    tokenInitial: '',
     doctorId: '',
     assistantId: '',
     screenId: '',
@@ -61,18 +61,19 @@ function GroupForm({
     if (group) {
       setFormData({ 
         name: group.name, 
+        tokenInitial: group.tokenInitial,
         doctorId: group.doctor.id,
         assistantId: group.assistants[0]?.id || '',
         screenId: group.screen.id,
         cabinId: group.cabin.id,
       });
     } else {
-      setFormData({ name: '', doctorId: '', assistantId: '', screenId: '', cabinId: '' });
+      setFormData({ name: '', tokenInitial: '', doctorId: '', assistantId: '', screenId: '', cabinId: '' });
     }
   }, [group]);
 
   const handleConfirm = () => {
-    if (formData.name && formData.doctorId && formData.assistantId && formData.screenId && formData.cabinId) {
+    if (formData.name && formData.tokenInitial && formData.doctorId && formData.assistantId && formData.screenId && formData.cabinId) {
       onConfirm(formData);
       onClose();
     }
@@ -80,16 +81,20 @@ function GroupForm({
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader className="p-4 pb-2">
           <DialogTitle className="text-base font-bold tracking-normal">
             {isEditMode ? 'EDIT GROUP' : 'CREATE GROUP'}
           </DialogTitle>
         </DialogHeader>
-        <div className="p-4 pb-4 space-y-4">
+        <div className="p-4 pb-4 grid grid-cols-2 gap-4">
             <div className="space-y-1">
                 <Label htmlFor="groupName" className="text-[10px] font-semibold text-gray-600">GROUP NAME</Label>
                 <Input id="groupName" className="h-7 text-[11px]" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+            </div>
+             <div className="space-y-1">
+                <Label htmlFor="tokenInitial" className="text-[10px] font-semibold text-gray-600">TOKEN INITIALS</Label>
+                <Input id="tokenInitial" maxLength={3} className="h-7 text-[11px]" value={formData.tokenInitial} onChange={(e) => setFormData({...formData, tokenInitial: e.target.value.toUpperCase()})} />
             </div>
             <div className="space-y-1">
                 <Label htmlFor="doctor" className="text-[10px] font-semibold text-gray-600">ASSIGN DOCTOR</Label>
@@ -274,7 +279,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
     }
   }
 
-  const handleFormConfirm = (formData: { name: string, doctorId: string, assistantId: string, screenId: string, cabinId: string }) => {
+  const handleFormConfirm = (formData: { name: string, tokenInitial: string, doctorId: string, assistantId: string, screenId: string, cabinId: string }) => {
     const doctor = users.find(d => d.id === formData.doctorId);
     const assistant = users.find(a => a.id === formData.assistantId);
     const screen = users.find(s => s.id === formData.screenId);
@@ -286,7 +291,8 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
       // Update existing group
       setAllGroups(allGroups.map(g => g.id === groupToEdit.id ? { 
         ...groupToEdit, 
-        name: formData.name, 
+        name: formData.name,
+        tokenInitial: formData.tokenInitial,
         doctor: {id: doctor.id, name: doctor.name},
         assistants: [{id: assistant.id, name: assistant.name}],
         screen: {id: screen.id, name: screen.name},
@@ -298,6 +304,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
           id: `grp_${Date.now()}`,
           clinicId: clinicId,
           name: formData.name,
+          tokenInitial: formData.tokenInitial,
           location: clinic.location,
           specialties: [],
           contact: `contact@${clinic.name.toLowerCase().replace(/\s/g, '')}.com`,
@@ -322,8 +329,8 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
           <div className="bg-card rounded-2xl border">
               <div className="grid grid-cols-12 p-4 border-b font-semibold text-xs text-muted-foreground">
                   <div className="col-span-3">GROUP NAME</div>
-                  <div className="col-span-3 pl-2">RESOURCES</div>
-                  <div className="col-span-4 pl-2">REGISTRATION FORM</div>
+                  <div className="col-span-4 pl-2">RESOURCES</div>
+                  <div className="col-span-3 pl-2">REGISTRATION FORM</div>
                   <div className="col-span-2 text-center">ACTIONS</div>
               </div>
               <Accordion type="single" value={activeAccordionItem || ""} onValueChange={setActiveAccordionItem} collapsible>
@@ -336,20 +343,20 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                             <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:-rotate-180" />
                                             <div>
                                                 <p className="font-semibold text-sm text-card-foreground">{group.name}</p>
-                                                <p className="text-xs text-muted-foreground">Initial: {getInitials(group.name)}</p>
+                                                <p className="text-xs text-muted-foreground">Initial: {group.tokenInitial}</p>
                                             </div>
                                         </div>
                                     </AccordionTrigger>
                                 </div>
-                                <div className="col-span-3 p-4 pl-6">
+                                <div className="col-span-4 p-4 pl-6">
                                   <div className="flex items-center gap-2 flex-wrap">
-                                      <Badge variant="secondary" className="px-2 py-1 text-[10px] leading-none bg-blue-100 text-blue-800">{group.resources?.docs || 0} Docs</Badge>
-                                      <Badge variant="secondary" className="px-2 py-1 text-[10px] leading-none bg-yellow-100 text-yellow-800">{group.resources?.asst || 0} Asst</Badge>
-                                      <Badge variant="secondary" className="px-2 py-1 text-[10px] leading-none bg-green-100 text-green-800">{group.resources?.displays || 0} Displays</Badge>
-                                      <Badge variant="secondary" className="px-2 py-1 text-[10px] leading-none bg-purple-100 text-purple-800">{group.resources?.cabins || 0} Cabins</Badge>
+                                      <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] leading-none bg-blue-100 text-blue-800">{group.resources?.docs || 0} Docs</Badge>
+                                      <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] leading-none bg-yellow-100 text-yellow-800">{group.resources?.asst || 0} Asst</Badge>
+                                      <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] leading-none bg-green-100 text-green-800">{group.resources?.displays || 0} Displays</Badge>
+                                      <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] leading-none bg-purple-100 text-purple-800">{group.resources?.cabins || 0} Cabins</Badge>
                                   </div>
                                 </div>
-                                <div className="col-span-4 p-4 flex items-center gap-2 pl-6">
+                                <div className="col-span-3 p-4 flex items-center gap-2 pl-6">
                                     <Button variant="outline" size="icon-xs" asChild>
                                         <Link href={`/register/${group.id}`} target="_blank">
                                             <ExternalLink className="h-4 w-4"/>
@@ -426,5 +433,3 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
     </>
   );
 }
-
-    

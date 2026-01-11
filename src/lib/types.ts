@@ -1,5 +1,4 @@
 
-
 export type Patient = {
   id: string;
   name: string;
@@ -45,6 +44,7 @@ export type ClinicGroup = {
   id: string;
   clinicId: string;
   name: string;
+  tokenInitial: string;
   location: string;
   specialties: string[];
   contact: string;
@@ -91,4 +91,3 @@ export type User = {
     phone?: string;
     specialty?: string;
 };
-    

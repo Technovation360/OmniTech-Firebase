@@ -2,7 +2,7 @@
 'use server';
 
 import { z } from 'zod';
-import { addPatient, addConsultation, updatePatientStatus } from './data';
+import { addPatient, addConsultation, updatePatientStatus, getClinicGroupById } from './data';
 import { summarizeConsultationNotes } from '@/ai/flows/summarize-consultation-notes';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -33,7 +33,15 @@ export async function registerPatient(prevState: any, formData: FormData) {
   }
   
   try {
-    const newPatient = await addPatient(validatedFields.data);
+    const group = await getClinicGroupById(validatedFields.data.groupId);
+    if (!group) {
+        return { message: "Invalid clinic group." };
+    }
+    
+    const newPatient = await addPatient({
+        ...validatedFields.data,
+        clinicId: group.clinicId,
+    });
     
     // Revalidate paths to update caches
     revalidatePath('/doctor');
