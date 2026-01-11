@@ -257,8 +257,8 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
               <div className="grid grid-cols-12 p-4 border-b font-semibold text-xs text-muted-foreground">
                   <div className="col-span-3">GROUP NAME</div>
                   <div className="col-span-3">RESOURCES</div>
-                  <div className="col-span-3">REGISTRATION FORM</div>
-                  <div className="col-span-3 text-center">ACTIONS</div>
+                  <div className="col-span-4">REGISTRATION FORM</div>
+                  <div className="col-span-2 text-center">ACTIONS</div>
               </div>
               <Accordion type="single" value={activeAccordionItem || ""} onValueChange={setActiveAccordionItem} collapsible>
                   {allGroups.map((group) => (
@@ -279,7 +279,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                       <Badge variant="secondary" className="bg-purple-100 text-purple-800">{group.resources?.cabins || 0} Cabins</Badge>
                                   </div>
                               </div>
-                              <div className="col-span-3">
+                              <div className="col-span-4">
                                 <div className="flex gap-2">
                                       <Button variant="outline" size="sm" asChild>
                                           <Link href={`/register/${group.id}`} target="_blank">
@@ -296,7 +296,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                       </Button>
                                 </div>
                               </div>
-                              <div className="col-span-3 flex justify-center gap-2">
+                              <div className="col-span-2 flex justify-center gap-2">
                                   <Button variant="ghost" size="icon-sm" onClick={() => openEditModal(group)}>
                                       <Edit className="h-4 w-4 text-muted-foreground"/>
                                   </Button>
@@ -355,5 +355,3 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
     </>
   );
 }
-
-    
