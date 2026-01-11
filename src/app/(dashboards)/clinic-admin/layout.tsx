@@ -66,7 +66,7 @@ function DashboardSidebar() {
         <Logo variant="enterprise" />
       </SidebarHeader>
       <SidebarContent>
-        <div className="flex flex-col px-4 pt-0">
+        <div className="flex flex-col px-4">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Navigation</span>
         </div>
         <SidebarMenu>
@@ -119,7 +119,7 @@ function DashboardLayoutContent({
 }: {
   children: React.ReactNode;
 }) {
-  const { toggleSidebar } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const pathname = usePathname();
   const pageName = pathname.split('/').pop()?.replace('-', ' ') || 'Dashboard';
   
@@ -133,7 +133,9 @@ function DashboardLayoutContent({
                     <PanelLeft />
                 </Button>
                 <div className="flex items-center gap-2">
-                    <Link href="/"><ChevronLeft className="h-5 w-5 opacity-80"/></Link>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/20 hover:text-white hidden md:flex" onClick={toggleSidebar}>
+                        <ChevronLeft className="h-5 w-5 opacity-80 transition-transform duration-300" data-state={state} style={{ transform: state === 'collapsed' ? 'rotate(180deg)' : 'rotate(0deg)' }}/>
+                    </Button>
                     <span className="text-sm font-medium capitalize">Home / {pageName}</span>
                 </div>
             </div>
