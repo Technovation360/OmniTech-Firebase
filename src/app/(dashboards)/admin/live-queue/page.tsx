@@ -130,7 +130,7 @@ export default function LiveQueuePage() {
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <div className="space-y-1">
-                <Label htmlFor="clinicFilter" className="font-medium text-sm text-muted-foreground">Group</Label>
+                <Label htmlFor="clinicFilter" className="font-medium text-xs text-muted-foreground">Group</Label>
                 <Select value={selectedClinic} onValueChange={setSelectedClinic}>
                     <SelectTrigger id="clinicFilter" className="h-6 w-full sm:w-40 text-xs">
                         <SelectValue placeholder="Filter by Clinic" />
