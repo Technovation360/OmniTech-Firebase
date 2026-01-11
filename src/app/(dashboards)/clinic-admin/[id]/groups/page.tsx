@@ -1,5 +1,4 @@
 
-
 'use client';
 import { useState, useEffect, use } from 'react';
 import {
@@ -184,7 +183,7 @@ function DeleteGroupDialog({
 }
 
 
-export default function GroupsPage({ params }: { params: { id: string } }) {
+export default function GroupsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: clinicId } = use(params);
   const [clinic, setClinic] = useState<Clinic | null>(null);
   const [allGroups, setAllGroups] = useState<ClinicGroup[]>([]);
@@ -342,12 +341,14 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
                         />
                       </div>
                     </div>
-                    <p className="text-sm font-medium text-muted-foreground whitespace-nowrap pt-5">{filteredGroups.length} TOTAL GROUPS</p>
                  </div>
-                <Button onClick={openCreateModal} className="h-10">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    CREATE GROUP
-                </Button>
+                <div className="flex flex-col items-end gap-1">
+                  <p className="text-xs font-medium text-muted-foreground text-right">{filteredGroups.length} TOTAL GROUPS</p>
+                  <Button onClick={openCreateModal} className="h-10">
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      CREATE GROUP
+                  </Button>
+                </div>
               </div>
             </CardHeader>
         </Card>
@@ -400,7 +401,7 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
                                         <LinkIcon className="h-4 w-4"/>
                                     </Button>
                                 </div>
-                                <div className="col-span-3 p-4 flex justify-center gap-1">
+                                <div className="col-span-3 p-4 flex justify-start gap-1">
                                   <Button variant="ghost" size="icon-xs" onClick={() => openEditModal(group)}>
                                       <Edit className="h-4 w-4 text-muted-foreground"/>
                                   </Button>
