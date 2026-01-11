@@ -130,7 +130,7 @@ export default function LiveQueuePage() {
               <div className="space-y-2">
                 <Label htmlFor="clinicFilter" className="font-semibold text-xs text-muted-foreground">FILTER BY GROUP</Label>
                 <Select value={selectedClinic} onValueChange={setSelectedClinic}>
-                    <SelectTrigger id="clinicFilter" className="h-10 w-full sm:w-48 text-sm">
+                    <SelectTrigger id="clinicFilter" className="h-6 w-full sm:w-48 text-sm">
                         <SelectValue placeholder="All Groups" />
                     </SelectTrigger>
                     <SelectContent>
@@ -148,7 +148,7 @@ export default function LiveQueuePage() {
                     <Input 
                         id="patientSearch"
                         placeholder="Name, token..." 
-                        className="pl-9 h-10" 
+                        className="pl-9 h-6" 
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
                     />
@@ -167,31 +167,31 @@ export default function LiveQueuePage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="p-4 cursor-pointer" onClick={() => handleSort('tokenNumber')}>
+              <TableHead className="px-4 py-3 cursor-pointer" onClick={() => handleSort('tokenNumber')}>
                 Token
                 {getSortIcon('tokenNumber')}
               </TableHead>
-              <TableHead className="p-4 cursor-pointer" onClick={() => handleSort('name')}>
+              <TableHead className="px-4 py-3 cursor-pointer" onClick={() => handleSort('name')}>
                 Patient
                 {getSortIcon('name')}
               </TableHead>
-              <TableHead className="p-4 cursor-pointer" onClick={() => handleSort('clinic')}>
+              <TableHead className="px-4 py-3 cursor-pointer" onClick={() => handleSort('clinic')}>
                 Clinic
                 {getSortIcon('clinic')}
               </TableHead>
-              <TableHead className="p-4 cursor-pointer" onClick={() => handleSort('group')}>
+              <TableHead className="px-4 py-3 cursor-pointer" onClick={() => handleSort('group')}>
                 Group
                 {getSortIcon('group')}
               </TableHead>
-              <TableHead className="p-4 cursor-pointer" onClick={() => handleSort('doctor')}>
+              <TableHead className="px-4 py-3 cursor-pointer" onClick={() => handleSort('doctor')}>
                 Doctor
                 {getSortIcon('doctor')}
               </TableHead>
-              <TableHead className="p-4 cursor-pointer" onClick={() => handleSort('registeredAt')}>
+              <TableHead className="px-4 py-3 cursor-pointer" onClick={() => handleSort('registeredAt')}>
                 Issued At
                 {getSortIcon('registeredAt')}
               </TableHead>
-              <TableHead className="p-4 cursor-pointer" onClick={() => handleSort('status')}>
+              <TableHead className="px-4 py-3 cursor-pointer" onClick={() => handleSort('status')}>
                 Status
                 {getSortIcon('status')}
               </TableHead>

@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useCallback } from 'react';
 import {
   Card,
   CardContent,
@@ -65,13 +65,13 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
     });
   }, [clinicId]);
   
-  const getGroupName = (groupId: string) => {
+  const getGroupName = useCallback((groupId: string) => {
     return clinicGroups.find(g => g.id === groupId)?.name || 'Unknown';
-  }
+  }, [clinicGroups]);
 
-  const getDoctorName = (groupId: string) => {
+  const getDoctorName = useCallback((groupId: string) => {
     return clinicGroups.find(g => g.id === groupId)?.doctors[0].name || 'Unknown';
-  }
+  }, [clinicGroups]);
 
   useEffect(() => {
     let filteredData = allPatients;
@@ -118,7 +118,7 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
         setFilteredPatients(filteredData);
     }
 
-  }, [searchQuery, allPatients, sortConfig, clinicGroups, selectedGroup]);
+  }, [searchQuery, allPatients, sortConfig, clinicGroups, selectedGroup, getGroupName, getDoctorName]);
 
   const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -130,8 +130,8 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
   
   const getSortIcon = (key: string) => {
     if (!sortConfig || sortConfig.key !== key) return null;
-    if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3" />;
-    return <ArrowDown className="ml-2 h-3 w-3" />;
+    if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3 inline-block" />;
+    return <ArrowDown className="ml-2 h-3 w-3 inline-block" />;
   };
 
   return (
@@ -140,11 +140,11 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4 w-full sm:w-auto">
-              <div className="space-y-1 w-full sm:w-auto">
+              <div className="space-y-2 w-full sm:w-auto">
                   <Label htmlFor="groupFilter" className="text-xs font-semibold text-muted-foreground">FILTER BY GROUP</Label>
                   <Select value={selectedGroup} onValueChange={setSelectedGroup}>
-                    <SelectTrigger id="groupFilter" className="h-10 w-full sm:w-48 text-sm">
-                        <SelectValue placeholder="Filter by Group" />
+                    <SelectTrigger id="groupFilter" className="h-6 w-full sm:w-48 text-sm">
+                        <SelectValue placeholder="All Groups" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all" className="text-sm">All Groups</SelectItem>
@@ -154,14 +154,14 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
                     </SelectContent>
                   </Select>
               </div>
-              <div className="space-y-1 w-full sm:w-auto">
+              <div className="space-y-2 w-full sm:w-auto">
                   <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">SEARCH PATIENT</Label>
                   <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input 
                           id="search"
                           placeholder="Name, token..." 
-                          className="pl-9 h-10 w-full sm:w-64" 
+                          className="pl-9 h-6 w-full sm:w-64" 
                           value={searchQuery}
                           onChange={e => setSearchQuery(e.target.value)}
                       />
@@ -175,59 +175,47 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
 
       <Card>
         <CardHeader>
-          <CardTitle>Live Queue</CardTitle>
+          <CardTitle className="text-xl font-bold">Live Queue</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>
-                  <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('tokenNumber')}>
-                      Token
-                      {getSortIcon('tokenNumber')}
-                  </Button>
+                <TableHead className="px-4 py-3 cursor-pointer" onClick={() => handleSort('tokenNumber')}>
+                    Token
+                    {getSortIcon('tokenNumber')}
                 </TableHead>
-                <TableHead>
-                  <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('name')}>
-                      Patient
-                      {getSortIcon('name')}
-                  </Button>
+                <TableHead className="px-4 py-3 cursor-pointer" onClick={() => handleSort('name')}>
+                    Patient
+                    {getSortIcon('name')}
                 </TableHead>
-                <TableHead>
-                  <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('group')}>
-                      Group
-                      {getSortIcon('group')}
-                  </Button>
+                <TableHead className="px-4 py-3 cursor-pointer" onClick={() => handleSort('group')}>
+                    Group
+                    {getSortIcon('group')}
                 </TableHead>
-                <TableHead>
-                  <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('doctor')}>
-                      Doctor
-                      {getSortIcon('doctor')}
-                  </Button>
+                <TableHead className="px-4 py-3 cursor-pointer" onClick={() => handleSort('doctor')}>
+                    Doctor
+                    {getSortIcon('doctor')}
                 </TableHead>
-                <TableHead>
-                  <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('registeredAt')}>
-                      Issued At
-                      {getSortIcon('registeredAt')}
-                  </Button>
+                <TableHead className="px-4 py-3 cursor-pointer" onClick={() => handleSort('registeredAt')}>
+                    Issued At
+                    {getSortIcon('registeredAt')}
                 </TableHead>
-                <TableHead>
-                  <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('status')}>
-                      Status
-                      {getSortIcon('status')}
-                  </Button>
+                <TableHead className="px-4 py-3 cursor-pointer" onClick={() => handleSort('status')}>
+                    Status
+                    {getSortIcon('status')}
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredPatients.map((patient) => (
                 <TableRow key={patient.id}>
-                  <TableCell className="font-bold py-2 text-xs">{patient.tokenNumber}</TableCell>
-                  <TableCell className="py-2 text-xs">{patient.name}</TableCell>
-                  <TableCell className="py-2 text-xs">{getGroupName(patient.groupId)}</TableCell>
-                  <TableCell className="py-2 text-xs">{getDoctorName(patient.groupId)}</TableCell>
-                  <TableCell className="py-2 text-xs">{format(new Date(patient.registeredAt), 'hh:mm a')}</TableCell>
-                  <TableCell className="py-2 text-xs">
+                  <TableCell className="font-bold py-2 px-4 text-xs">{patient.tokenNumber}</TableCell>
+                  <TableCell className="py-2 px-4 text-xs">{patient.name}</TableCell>
+                  <TableCell className="py-2 px-4 text-xs">{getGroupName(patient.groupId)}</TableCell>
+                  <TableCell className="py-2 px-4 text-xs">{getDoctorName(patient.groupId)}</TableCell>
+                  <TableCell className="py-2 px-4 text-xs">{format(new Date(patient.registeredAt), 'hh:mm a')}</TableCell>
+                  <TableCell className="py-2 px-4 text-xs">
                     <Badge variant={'secondary'} className={cn("text-[10px] border-transparent capitalize", badgeColors[patient.status])}>
                           {patient.status.replace('-', ' ')}
                       </Badge>
