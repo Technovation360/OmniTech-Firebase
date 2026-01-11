@@ -424,7 +424,11 @@ export default function PatientRegistryPage() {
 
   return (
     <>
-      <Card>
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold font-headline">Patient Registry</h1>
+        <p className="text-muted-foreground">Global list of all registered patients.</p>
+      </div>
+      <Card className="mt-6">
         <CardHeader>
            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4 w-full sm:w-auto">
