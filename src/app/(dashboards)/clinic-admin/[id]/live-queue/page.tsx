@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { getPatientsByGroupId, getClinicGroupById, getClinicGroups, getClinicById, getPatientsByClinicId } from '@/lib/data';
+import { getPatientsByClinicId, getClinicGroupById, getClinicGroups, getClinicById } from '@/lib/data';
 import type { Patient, ClinicGroup, Clinic } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -212,3 +212,5 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
     </Card>
   )
 }
+
+    

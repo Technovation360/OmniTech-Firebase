@@ -1,4 +1,5 @@
 
+
 export type Patient = {
   id: string;
   name: string;
@@ -79,3 +80,5 @@ export type PatientHistoryEntry = {
     endTime?: string; // ISO 8601 date string
     status: Patient['status'];
 }
+
+    

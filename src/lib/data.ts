@@ -259,3 +259,5 @@ export const addConsultation = async (data: Omit<Consultation, 'id'>): Promise<C
     consultations.push(newConsultation);
     return Promise.resolve(newConsultation);
 }
+
+    
