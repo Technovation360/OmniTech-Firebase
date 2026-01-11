@@ -377,7 +377,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                     </AccordionTrigger>
                                 </div>
                                 <div className="col-span-5 py-0 px-2">
-                                  <div className="flex items-center gap-1 flex-wrap">
+                                  <div className="grid grid-cols-2 gap-1">
                                       <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] leading-none bg-blue-100 text-blue-800">{group.doctors.length} Docs</Badge>
                                       <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] leading-none bg-yellow-100 text-yellow-800">{group.assistants.length} Asst</Badge>
                                       <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] leading-none bg-green-100 text-green-800">{group.screens.length} Displays</Badge>
