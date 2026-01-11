@@ -18,8 +18,8 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { getPatientsByClinicId, getClinicGroupById } from '@/lib/data';
-import type { Patient, ClinicGroup } from '@/lib/types';
+import { getPatientsByClinicId, getClinicGroupById, getClinicGroups, getClinicById } from '@/lib/data';
+import type { Patient, ClinicGroup, Clinic } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ArrowUp, ArrowDown, Search } from 'lucide-react';
@@ -35,25 +35,34 @@ const badgeColors: Record<Patient['status'], string> = {
 
 
 export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: string }>}) {
-  const { id } = use(params);
+  const { id: clinicId } = use(params);
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
-  const [clinic, setClinic] = useState<ClinicGroup | null>(null);
+  const [clinic, setClinic] = useState<Clinic | null>(null);
+  const [clinicGroups, setClinicGroups] = useState<ClinicGroup[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'tokenNumber', direction: 'asc' });
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    getClinicGroupById(id).then(setClinic);
-    getPatientsByClinicId(id).then(patientData => {
-        const activePatients = patientData
-            .filter(p => p.status === 'waiting' || p.status === 'called' || p.status === 'in-consultation')
-            .sort((a,b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime());
-        setAllPatients(activePatients);
+    getClinicById(clinicId).then(setClinic);
+    getClinicGroups(clinicId).then(groups => {
+        setClinicGroups(groups);
+        Promise.all(groups.map(g => getPatientsByClinicId(g.id)))
+            .then(patientArrays => {
+                const activePatients = patientArrays.flat()
+                    .filter(p => p.status === 'waiting' || p.status === 'called' || p.status === 'in-consultation')
+                    .sort((a,b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime());
+                setAllPatients(activePatients);
+            });
     });
-  }, [id]);
+  }, [clinicId]);
   
-  const getDoctorName = (clinicId: string) => {
-      return clinic?.doctor.name || 'Unknown';
+  const getGroupName = (patientClinicId: string) => {
+    return clinicGroups.find(g => g.id === patientClinicId)?.name || 'Unknown';
+  }
+
+  const getDoctorName = (patientClinicId: string) => {
+    return clinicGroups.find(g => g.id === patientClinicId)?.doctor.name || 'Unknown';
   }
 
   useEffect(() => {
@@ -63,14 +72,30 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
         const lowercasedQuery = searchQuery.toLowerCase();
         filteredData = filteredData.filter(patient => 
             patient.name.toLowerCase().includes(lowercasedQuery) ||
-            patient.tokenNumber.toLowerCase().includes(lowercasedQuery)
+            patient.tokenNumber.toLowerCase().includes(lowercasedQuery) ||
+            getGroupName(patient.clinicId).toLowerCase().includes(lowercasedQuery) ||
+            getDoctorName(patient.clinicId).toLowerCase().includes(lowercasedQuery)
         );
     }
     
     if (sortConfig) {
       const sorted = [...filteredData].sort((a, b) => {
-        const aVal = sortConfig.key === 'doctor' ? getDoctorName(a.clinicId) : a[sortConfig.key as keyof Patient];
-        const bVal = sortConfig.key === 'doctor' ? getDoctorName(b.clinicId) : b[sortConfig.key as keyof Patient];
+        let aVal, bVal;
+        
+        switch (sortConfig.key) {
+            case 'group':
+                aVal = getGroupName(a.clinicId);
+                bVal = getGroupName(b.clinicId);
+                break;
+            case 'doctor':
+                aVal = getDoctorName(a.clinicId);
+                bVal = getDoctorName(b.clinicId);
+                break;
+            default:
+                aVal = a[sortConfig.key as keyof Patient];
+                bVal = b[sortConfig.key as keyof Patient];
+        }
+
 
         if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
         if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
@@ -81,7 +106,7 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
         setFilteredPatients(filteredData);
     }
 
-  }, [searchQuery, allPatients, sortConfig, clinic]);
+  }, [searchQuery, allPatients, sortConfig, clinicGroups]);
 
   const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -103,7 +128,7 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
                 <CardTitle>Live Queue - {clinic?.name}</CardTitle>
-                <CardDescription>A real-time overview of the patient queue.</CardDescription>
+                <CardDescription>A real-time overview of the patient queue across all groups.</CardDescription>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <div className="relative w-full sm:w-64">
@@ -165,7 +190,7 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
               <TableRow key={patient.id}>
                 <TableCell className="font-bold py-2 text-xs">{patient.tokenNumber}</TableCell>
                 <TableCell className="py-2 text-xs">{patient.name}</TableCell>
-                <TableCell className="py-2 text-xs">{clinic?.name}</TableCell>
+                <TableCell className="py-2 text-xs">{getGroupName(patient.clinicId)}</TableCell>
                 <TableCell className="py-2 text-xs">{getDoctorName(patient.clinicId)}</TableCell>
                 <TableCell className="py-2 text-xs">{format(new Date(patient.registeredAt), 'hh:mm a')}</TableCell>
                 <TableCell className="py-2 text-xs">
