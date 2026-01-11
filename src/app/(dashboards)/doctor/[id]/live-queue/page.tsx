@@ -22,7 +22,7 @@ const badgeColors: Record<Patient['status'], string> = {
     'no-show': "bg-red-100 text-red-800",
 };
 
-export default function DoctorLiveQueuePage({ params }: { params: { id: string } }) {
+export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: string }> }) {
   const { id: doctorId } = use(params);
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
@@ -82,7 +82,7 @@ export default function DoctorLiveQueuePage({ params }: { params: { id: string }
     } else {
         setFilteredPatients(filteredData);
     }
-  }, [searchQuery, allPatients, sortConfig, clinic]);
+  }, [searchQuery, allPatients, sortConfig, clinic, getGroupName, getDoctorName]);
 
   const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';

@@ -31,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 const badgeColors: Record<Patient['status'], string> = {
     'waiting': "bg-blue-100 text-blue-800",
@@ -117,7 +118,7 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
         setFilteredPatients(filteredData);
     }
 
-  }, [searchQuery, allPatients, sortConfig, clinicGroups, selectedGroup]);
+  }, [searchQuery, allPatients, sortConfig, clinicGroups, selectedGroup, getGroupName, getDoctorName]);
 
   const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -134,104 +135,116 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
   };
 
   return (
-     <Card>
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-                <CardTitle>Live Queue</CardTitle>
-                <CardDescription>A real-time overview of the patient queue across all groups.</CardDescription>
-            </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-               <Select value={selectedGroup} onValueChange={setSelectedGroup}>
-                  <SelectTrigger className="h-9 w-full sm:w-48 text-xs">
-                      <SelectValue placeholder="Filter by Group" />
-                  </SelectTrigger>
-                  <SelectContent>
-                      <SelectItem value="all" className="text-xs">All Groups</SelectItem>
-                      {clinicGroups.map(group => (
-                          <SelectItem key={group.id} value={group.id} className="text-xs">{group.name}</SelectItem>
-                      ))}
-                  </SelectContent>
-              </Select>
-              <div className="relative w-full sm:w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                      placeholder="Search patients..." 
-                      className="pl-9 h-9" 
-                      value={searchQuery}
-                      onChange={e => setSearchQuery(e.target.value)}
-                  />
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4 w-full sm:w-auto">
+              <div className="space-y-1 w-full sm:w-auto">
+                  <Label htmlFor="groupFilter" className="text-xs font-semibold text-muted-foreground">FILTER BY GROUP</Label>
+                  <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+                    <SelectTrigger id="groupFilter" className="h-10 w-full sm:w-48 text-sm">
+                        <SelectValue placeholder="Filter by Group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all" className="text-sm">All Groups</SelectItem>
+                        {clinicGroups.map(group => (
+                            <SelectItem key={group.id} value={group.id} className="text-sm">{group.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+              </div>
+              <div className="space-y-1 w-full sm:w-auto">
+                  <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">SEARCH PATIENT</Label>
+                  <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                          id="search"
+                          placeholder="Name, token..." 
+                          className="pl-9 h-10 w-full sm:w-64" 
+                          value={searchQuery}
+                          onChange={e => setSearchQuery(e.target.value)}
+                      />
+                  </div>
               </div>
             </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>
-                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('tokenNumber')}>
-                    Token
-                    {getSortIcon('tokenNumber')}
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('name')}>
-                    Patient
-                    {getSortIcon('name')}
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('group')}>
-                    Group
-                    {getSortIcon('group')}
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('doctor')}>
-                    Doctor
-                    {getSortIcon('doctor')}
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('registeredAt')}>
-                    Issued At
-                    {getSortIcon('registeredAt')}
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('status')}>
-                    Status
-                    {getSortIcon('status')}
-                </Button>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredPatients.map((patient) => (
-              <TableRow key={patient.id}>
-                <TableCell className="font-bold py-2 text-xs">{patient.tokenNumber}</TableCell>
-                <TableCell className="py-2 text-xs">{patient.name}</TableCell>
-                <TableCell className="py-2 text-xs">{getGroupName(patient.groupId)}</TableCell>
-                <TableCell className="py-2 text-xs">{getDoctorName(patient.groupId)}</TableCell>
-                <TableCell className="py-2 text-xs">{format(new Date(patient.registeredAt), 'hh:mm a')}</TableCell>
-                <TableCell className="py-2 text-xs">
-                   <Badge variant={'secondary'} className={cn("text-[10px] border-transparent capitalize", badgeColors[patient.status])}>
-                        {patient.status.replace('-', ' ')}
-                    </Badge>
-                </TableCell>
+            <p className="text-sm font-medium text-muted-foreground whitespace-nowrap">{filteredPatients.length} ACTIVE PATIENTS</p>
+          </div>
+        </CardHeader>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Live Queue</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>
+                  <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('tokenNumber')}>
+                      Token
+                      {getSortIcon('tokenNumber')}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('name')}>
+                      Patient
+                      {getSortIcon('name')}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('group')}>
+                      Group
+                      {getSortIcon('group')}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('doctor')}>
+                      Doctor
+                      {getSortIcon('doctor')}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('registeredAt')}>
+                      Issued At
+                      {getSortIcon('registeredAt')}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('status')}>
+                      Status
+                      {getSortIcon('status')}
+                  </Button>
+                </TableHead>
               </TableRow>
-            ))}
-             {filteredPatients.length === 0 && (
-                <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-2 text-xs">
-                        No active patients in the queue.
-                    </TableCell>
+            </TableHeader>
+            <TableBody>
+              {filteredPatients.map((patient) => (
+                <TableRow key={patient.id}>
+                  <TableCell className="font-bold py-2 text-xs">{patient.tokenNumber}</TableCell>
+                  <TableCell className="py-2 text-xs">{patient.name}</TableCell>
+                  <TableCell className="py-2 text-xs">{getGroupName(patient.groupId)}</TableCell>
+                  <TableCell className="py-2 text-xs">{getDoctorName(patient.groupId)}</TableCell>
+                  <TableCell className="py-2 text-xs">{format(new Date(patient.registeredAt), 'hh:mm a')}</TableCell>
+                  <TableCell className="py-2 text-xs">
+                    <Badge variant={'secondary'} className={cn("text-[10px] border-transparent capitalize", badgeColors[patient.status])}>
+                          {patient.status.replace('-', ' ')}
+                      </Badge>
+                  </TableCell>
                 </TableRow>
-             )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+              ))}
+              {filteredPatients.length === 0 && (
+                  <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-2 text-xs">
+                          No active patients in the queue.
+                      </TableCell>
+                  </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
   )
 }

@@ -469,5 +469,3 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
     </>
   );
 }
-
-    

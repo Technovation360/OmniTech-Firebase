@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select';
 
 function QRCodePageContent({ params }: { params: { id: string } }) {
-  const { id: clinicId } = use(params);
+  const { id: clinicId } = params;
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialGroupId = searchParams.get('groupId');
@@ -135,9 +135,10 @@ function QRCodePageContent({ params }: { params: { id: string } }) {
 
 
 export default function QRCodePage({ params }: { params: Promise<{ id: string }> }) {
+    const resolvedParams = use(params);
     return (
         <Suspense fallback={<div>Loading QR Codes...</div>}>
-            <QRCodePageContent params={params} />
+            <QRCodePageContent params={resolvedParams} />
         </Suspense>
     )
 }
