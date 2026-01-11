@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -54,6 +53,7 @@ import { useToast } from '@/hooks/use-toast';
 import { registerPatient } from '@/lib/actions';
 import { useActionState } from 'react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { CardDescription } from '@/components/ui/card';
 
 
 const badgeColors: Record<Patient['status'], string> = {
@@ -426,9 +426,9 @@ export default function PatientRegistryPage() {
     <>
       <Card>
         <CardHeader>
-           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-8">
             <div>
-                 <CardTitle className="text-lg">Patient Registry</CardTitle>
+              <CardTitle className="text-lg">Patient Registry</CardTitle>
             </div>
             <div className="flex items-center gap-4 w-full sm:w-auto">
               <div className="space-y-1 w-full sm:w-auto">
