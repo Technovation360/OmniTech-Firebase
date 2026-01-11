@@ -161,9 +161,6 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
             ]
         }));
         setAllGroups(groupsWithResources);
-        if (groupsWithResources.length > 0) {
-            setActiveAccordionItem(groupsWithResources[0].id);
-        }
     })
   }, [clinicId]);
 
@@ -256,34 +253,34 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
           <div className="bg-card rounded-2xl border">
               <div className="grid grid-cols-12 p-4 border-b font-semibold text-xs text-muted-foreground">
                   <div className="col-span-3">GROUP NAME</div>
-                  <div className="col-span-5">RESOURCES</div>
-                  <div className="col-span-2">REGISTRATION FORM</div>
+                  <div className="col-span-4">RESOURCES</div>
+                  <div className="col-span-3">REGISTRATION FORM</div>
                   <div className="col-span-2 text-center">ACTIONS</div>
               </div>
               <Accordion type="single" value={activeAccordionItem || ""} onValueChange={setActiveAccordionItem} collapsible>
                   {allGroups.map((group) => (
                       <AccordionItem value={group.id} key={group.id} className="border-b last:border-b-0">
-                          <div className="grid grid-cols-12 p-4 items-center hover:bg-muted/50 transition-colors group">
-                            <div className="col-span-3">
-                                <AccordionTrigger className="hover:no-underline p-0 w-full">
-                                    <div className="flex items-center gap-3">
-                                        <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:-rotate-180" />
-                                        <div>
-                                            <p className="font-semibold text-sm text-card-foreground">{group.name}</p>
-                                            <p className="text-xs text-muted-foreground">Initial: {getInitials(group.name)}</p>
+                           <div className="grid grid-cols-12 items-center group">
+                                <div className="col-span-3 p-4">
+                                    <AccordionTrigger className="hover:no-underline p-0 w-full">
+                                        <div className="flex items-center gap-3">
+                                            <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:-rotate-180" />
+                                            <div>
+                                                <p className="font-semibold text-sm text-card-foreground">{group.name}</p>
+                                                <p className="text-xs text-muted-foreground">Initial: {getInitials(group.name)}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                </AccordionTrigger>
-                            </div>
-                              <div className="col-span-5">
+                                    </AccordionTrigger>
+                                </div>
+                                <div className="col-span-4 p-4">
                                   <div className="flex items-center gap-2 flex-wrap">
                                       <Badge variant="secondary" className="px-2 py-1 text-[10px] leading-none bg-blue-100 text-blue-800">{group.resources?.docs || 0} Docs</Badge>
                                       <Badge variant="secondary" className="px-2 py-1 text-[10px] leading-none bg-yellow-100 text-yellow-800">{group.resources?.asst || 0} Asst</Badge>
                                       <Badge variant="secondary" className="px-2 py-1 text-[10px] leading-none bg-green-100 text-green-800">{group.resources?.displays || 0} Displays</Badge>
                                       <Badge variant="secondary" className="px-2 py-1 text-[10px] leading-none bg-purple-100 text-purple-800">{group.resources?.cabins || 0} Cabins</Badge>
                                   </div>
-                              </div>
-                              <div className="col-span-2 flex items-center gap-2">
+                                </div>
+                                <div className="col-span-3 p-4 flex items-center gap-2">
                                     <Button variant="outline" size="icon-xs" asChild>
                                         <Link href={`/register/${group.id}`} target="_blank">
                                             <ExternalLink className="h-4 w-4"/>
@@ -297,15 +294,15 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                     <Button variant="outline" size="icon-xs" onClick={() => copyToClipboard(`${window.location.origin}/register/${group.id}`)}>
                                         <LinkIcon className="h-4 w-4"/>
                                     </Button>
-                              </div>
-                              <div className="col-span-2 flex justify-center gap-2">
+                                </div>
+                                <div className="col-span-2 p-4 flex justify-center gap-2">
                                   <Button variant="ghost" size="icon-sm" onClick={() => openEditModal(group)}>
                                       <Edit className="h-4 w-4 text-muted-foreground"/>
                                   </Button>
                                   <Button variant="ghost" size="icon-sm" onClick={() => openDeleteDialog(group)}>
                                       <Trash2 className="h-4 w-4 text-destructive"/>
                                   </Button>
-                              </div>
+                                </div>
                           </div>
                           <AccordionContent className="bg-muted/30 p-6">
                               <div className="grid grid-cols-4 gap-6 text-xs">
