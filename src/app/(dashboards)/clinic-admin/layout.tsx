@@ -14,6 +14,7 @@ import {
   useSidebar,
   SidebarMenuSub,
   SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/logo';
 import {
@@ -46,7 +47,15 @@ function DashboardSidebar() {
       { href: `/clinic-admin/${clinicId}/live-queue`, icon: Monitor, label: 'Live Queue', active: pathname === `/clinic-admin/${clinicId}/live-queue` },
       { href: `/clinic-admin/${clinicId}/register`, icon: Ticket, label: 'Patients Register', active: pathname === `/clinic-admin/${clinicId}/register` },
       { href: `/clinic-admin/${clinicId}/stations`, icon: Building, label: 'Stations', active: pathname === `/clinic-admin/${clinicId}/stations` },
-      { href: `/clinic-admin/${clinicId}/groups`, icon: Folder, label: 'Groups', active: pathname.includes(`/clinic-admin/${clinicId}/groups`) },
+      { 
+        icon: Folder, 
+        label: 'Groups', 
+        active: pathname.includes(`/clinic-admin/${clinicId}/groups`),
+        subItems: [
+          { href: `/clinic-admin/${clinicId}/groups`, label: 'Manage Groups', active: pathname === `/clinic-admin/${clinicId}/groups` },
+          { href: `/clinic-admin/${clinicId}/groups/qr-code`, label: 'QR Codes', active: pathname === `/clinic-admin/${clinicId}/groups/qr-code` },
+        ]
+      },
       { href: `/clinic-admin/${clinicId}/users`, icon: Users, label: 'Users', active: pathname === `/clinic-admin/${clinicId}/users` },
       { href: `/clinic-admin/${clinicId}/settings`, icon: Settings, label: 'Settings', active: pathname === `/clinic-admin/${clinicId}/settings` },
   ]
@@ -63,12 +72,30 @@ function DashboardSidebar() {
         <SidebarMenu>
             {menuItems.map(item => (
                  <SidebarMenuItem key={item.label}>
-                    <SidebarMenuButton asChild isActive={item.active}>
-                        <Link href={item.href!}>
-                            <item.icon />
-                            {item.label}
-                        </Link>
-                    </SidebarMenuButton>
+                    {!item.subItems ? (
+                        <SidebarMenuButton asChild isActive={item.active}>
+                            <Link href={item.href!}>
+                                <item.icon />
+                                {item.label}
+                            </Link>
+                        </SidebarMenuButton>
+                    ) : (
+                        <>
+                            <SidebarMenuButton>
+                                <item.icon />
+                                {item.label}
+                            </SidebarMenuButton>
+                            <SidebarMenuSub>
+                                {item.subItems.map(subItem => (
+                                    <SidebarMenuSubItem key={subItem.label}>
+                                        <SidebarMenuSubButton asChild isActive={subItem.active}>
+                                            <Link href={subItem.href}>{subItem.label}</Link>
+                                        </SidebarMenuSubButton>
+                                    </SidebarMenuSubItem>
+                                ))}
+                            </SidebarMenuSub>
+                        </>
+                    )}
                 </SidebarMenuItem>
             ))}
         </SidebarMenu>
