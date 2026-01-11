@@ -255,31 +255,35 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
 
           <div className="bg-card rounded-2xl border">
               <div className="grid grid-cols-12 p-4 border-b font-semibold text-xs text-muted-foreground">
-                  <div className="col-span-4">GROUP NAME</div>
+                  <div className="col-span-3">GROUP NAME</div>
                   <div className="col-span-4">RESOURCES</div>
-                  <div className="col-span-2">REGISTRATION FORM</div>
+                  <div className="col-span-3">REGISTRATION FORM</div>
                   <div className="col-span-2 text-center">ACTIONS</div>
               </div>
               <Accordion type="single" value={activeAccordionItem || ""} onValueChange={setActiveAccordionItem} collapsible>
                   {allGroups.map((group) => (
                       <AccordionItem value={group.id} key={group.id} className="border-b last:border-b-0">
                           <div className="grid grid-cols-12 p-4 items-center hover:bg-muted/50 transition-colors group">
-                            <AccordionTrigger className="col-span-4 text-left flex items-center gap-3 hover:no-underline">
-                                  <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                                  <div>
-                                      <p className="font-semibold text-sm text-card-foreground">{group.name}</p>
-                                      <p className="text-xs text-muted-foreground">Initial: {getInitials(group.name)}</p>
-                                  </div>
-                            </AccordionTrigger>
+                            <div className="col-span-3">
+                                <AccordionTrigger className="hover:no-underline p-0 w-full">
+                                    <div className="flex items-center gap-3">
+                                        <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:-rotate-180" />
+                                        <div>
+                                            <p className="font-semibold text-sm text-card-foreground">{group.name}</p>
+                                            <p className="text-xs text-muted-foreground">Initial: {getInitials(group.name)}</p>
+                                        </div>
+                                    </div>
+                                </AccordionTrigger>
+                            </div>
                               <div className="col-span-4">
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 flex-nowrap">
                                       <Badge variant="secondary" className="bg-blue-100 text-blue-800">{group.resources?.docs || 0} Docs</Badge>
                                       <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">{group.resources?.asst || 0} Asst</Badge>
                                       <Badge variant="secondary" className="bg-green-100 text-green-800">{group.resources?.displays || 0} Displays</Badge>
                                       <Badge variant="secondary" className="bg-purple-100 text-purple-800">{group.resources?.cabins || 0} Cabins</Badge>
                                   </div>
                               </div>
-                              <div className="col-span-2 flex items-center gap-2">
+                              <div className="col-span-3 flex items-center gap-2">
                                     <Button variant="outline" size="icon-xs" asChild>
                                         <Link href={`/register/${group.id}`} target="_blank">
                                             <ExternalLink className="h-4 w-4"/>
