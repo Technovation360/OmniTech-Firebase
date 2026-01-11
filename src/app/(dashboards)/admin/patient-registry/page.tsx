@@ -426,7 +426,6 @@ export default function PatientRegistryPage() {
     <>
       <div className="space-y-6">
         <h1 className="text-3xl font-bold font-headline">Patient Registry</h1>
-        <p className="text-muted-foreground">Global list of all registered patients.</p>
       </div>
       <Card className="mt-6">
         <CardHeader>
