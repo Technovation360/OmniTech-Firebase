@@ -44,7 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Edit, Trash2, KeyRound, ArrowUp, ArrowDown, Search } from 'lucide-react';
+import { Edit, Trash2, KeyRound, ArrowUp, ArrowDown, Search, PlusCircle } from 'lucide-react';
 import type { UserRole } from '@/lib/roles';
 import { cn } from '@/lib/utils';
 import { getClinicById } from '@/lib/data';
@@ -354,29 +354,40 @@ export default function UsersPage({ params }: { params: Promise<{ id: string }> 
   };
 
   return (
-    <>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+             <div className="space-y-1 w-full sm:w-auto">
+              <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">SEARCH USER</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="search"
+                  placeholder="Name, email..."
+                  className="pl-9 h-10 w-full sm:w-64"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-4 w-full sm:w-auto">
+              <p className="text-sm font-medium text-muted-foreground whitespace-nowrap">{filteredUsers.length} TOTAL USERS</p>
+              <Button onClick={openCreateModal} className="h-10 w-full sm:w-auto">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                ONBOARD STAFF
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+    
      <Card>
       <CardHeader>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-                <CardTitle className="text-lg">Staff Users</CardTitle>
-                <CardDescription className="text-xs mt-1">Manage user accounts for your clinic.</CardDescription>
-            </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-                <div className="relative w-full sm:w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                        placeholder="Search users..." 
-                        className="pl-9 h-9" 
-                        value={searchQuery}
-                        onChange={e => setSearchQuery(e.target.value)}
-                    />
-                </div>
-                <Button onClick={openCreateModal} size="sm" className="w-auto sm:w-auto flex-shrink-0">Onboard Staff</Button>
-            </div>
-        </div>
+        <CardTitle className="text-lg">Staff Users</CardTitle>
+        <CardDescription className="text-xs mt-1">Manage user accounts for your clinic.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         <Table>
           <TableHeader>
             <TableRow>
@@ -429,6 +440,13 @@ export default function UsersPage({ params }: { params: Promise<{ id: string }> 
                 </TableCell>
               </TableRow>
             ))}
+            {filteredUsers.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-4 text-sm">
+                        No users found.
+                    </TableCell>
+                </TableRow>
+             )}
           </TableBody>
         </Table>
       </CardContent>
@@ -448,8 +466,6 @@ export default function UsersPage({ params }: { params: Promise<{ id: string }> 
         onConfirm={handleDeleteConfirm}
         userName={userToDelete?.name || ''}
     />
-    </>
+    </div>
   )
 }
-
-    
