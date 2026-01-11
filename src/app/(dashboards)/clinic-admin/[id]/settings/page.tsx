@@ -19,6 +19,7 @@ import type { Clinic } from '@/lib/types';
 import Image from 'next/image';
 
 function ClinicDetails({ clinic }: { clinic: Clinic }) {
+  const { id: clinicId } = use(params);
   const [formData, setFormData] = useState({
     name: '',
     contact: 'contact@example.com',
@@ -61,17 +62,36 @@ function ClinicDetails({ clinic }: { clinic: Clinic }) {
         </CardHeader>
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="md:col-span-1">
-              <h3 className="font-semibold mb-2 text-sm text-muted-foreground">CLINIC BRANDING</h3>
-               <Card className="relative aspect-square w-full max-w-xs mx-auto flex items-center justify-center bg-muted/30">
-                <div className="text-center text-muted-foreground">
-                    <Image src="https://picsum.photos/seed/logo/200" alt="Clinic Logo" width={100} height={100} className="mx-auto mb-2 opacity-20" />
-                    <p className="text-sm font-medium">NO LOGO</p>
+            <div className="md:col-span-1 space-y-6">
+              <div>
+                <h3 className="font-semibold mb-2 text-sm text-muted-foreground">CLINIC BRANDING</h3>
+                 <Card className="relative aspect-square w-full max-w-xs mx-auto flex items-center justify-center bg-muted/30">
+                  <div className="text-center text-muted-foreground">
+                      <Image src="https://picsum.photos/seed/logo/200" alt="Clinic Logo" width={100} height={100} className="mx-auto mb-2 opacity-20" />
+                      <p className="text-sm font-medium">NO LOGO</p>
+                  </div>
+                  <Button size="icon" className="absolute bottom-4 right-4 rounded-full">
+                      <Camera className="h-5 w-5" />
+                  </Button>
+                 </Card>
+              </div>
+               <div>
+                <Label className="text-xs font-semibold">CLINICAL SPECIALTIES</Label>
+                <div className="flex flex-wrap items-center gap-2 mt-2">
+                    {formData.specialties.map(spec => (
+                        <Badge key={spec} variant="outline" className="pl-3 pr-2 py-1 text-sm bg-blue-100 border-blue-200 text-blue-800">
+                           {spec}
+                           <button onClick={() => handleSpecialtyRemove(spec)} className="ml-2 rounded-full hover:bg-black/10 p-0.5">
+                            <X className="h-3 w-3" />
+                           </button>
+                        </Badge>
+                    ))}
+                     <Button variant="ghost" size="sm" className="gap-1 text-primary">
+                        <PlusCircle className="h-4 w-4" />
+                        Add
+                    </Button>
                 </div>
-                <Button size="icon" className="absolute bottom-4 right-4 rounded-full">
-                    <Camera className="h-5 w-5" />
-                </Button>
-               </Card>
+              </div>
             </div>
 
             <div className="md:col-span-2 space-y-6">
@@ -108,24 +128,6 @@ function ClinicDetails({ clinic }: { clinic: Clinic }) {
                 <div className="space-y-1">
                   <Label htmlFor="zip" className="text-xs font-semibold">PINCODE / ZIP</Label>
                   <Input id="zip" value={formData.zip} onChange={e => setFormData({...formData, zip: e.target.value})} />
-                </div>
-              </div>
-              
-              <div>
-                <Label className="text-xs font-semibold">CLINICAL SPECIALTIES</Label>
-                <div className="flex flex-wrap items-center gap-2 mt-2">
-                    {formData.specialties.map(spec => (
-                        <Badge key={spec} variant="outline" className="pl-3 pr-2 py-1 text-sm bg-blue-100 border-blue-200 text-blue-800">
-                           {spec}
-                           <button onClick={() => handleSpecialtyRemove(spec)} className="ml-2 rounded-full hover:bg-black/10 p-0.5">
-                            <X className="h-3 w-3" />
-                           </button>
-                        </Badge>
-                    ))}
-                     <Button variant="ghost" size="sm" className="gap-1 text-primary">
-                        <PlusCircle className="h-4 w-4" />
-                        Add
-                    </Button>
                 </div>
               </div>
               
