@@ -281,8 +281,11 @@ export default function UsersPage() {
   const clinicGroups = clinicGroupsData || [];
 
   useEffect(() => {
-    if(!allUsers) return;
-    let filteredData = allUsers;
+    if(!allUsers) {
+        setFilteredUsers([]);
+        return;
+    };
+    let filteredData = [...allUsers];
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
         filteredData = allUsers.filter(user => 
@@ -362,6 +365,8 @@ export default function UsersPage() {
     return <ArrowDown className="ml-2 h-3 w-3" />;
   };
 
+  const isLoading = isUserLoading || usersLoading;
+
   if (isUserLoading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -422,8 +427,8 @@ export default function UsersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {usersLoading && <TableRow><TableCell colSpan={5} className="text-center py-4">Loading users...</TableCell></TableRow>}
-            {!usersLoading && filteredUsers.map((user) => (
+            {isLoading && <TableRow><TableCell colSpan={5} className="text-center py-4">Loading users...</TableCell></TableRow>}
+            {!isLoading && filteredUsers.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="py-2 text-xs font-medium">{user.name}</TableCell>
                 <TableCell className="py-2 text-xs text-muted-foreground">{user.email}</TableCell>
@@ -444,7 +449,7 @@ export default function UsersPage() {
                 </TableCell>
               </TableRow>
             ))}
-            {!usersLoading && filteredUsers.length === 0 && (
+            {!isLoading && filteredUsers.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground py-4 text-sm">
                         No users found.
@@ -472,5 +477,3 @@ export default function UsersPage() {
     </>
   )
 }
-
-    

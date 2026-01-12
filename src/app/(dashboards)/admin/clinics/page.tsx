@@ -38,7 +38,7 @@ import { Label } from '@/components/ui/label';
 import { Edit, Trash2, ArrowUp, ArrowDown, Search, Loader } from 'lucide-react';
 import type { Clinic } from '@/lib/types';
 import { collection, addDoc, updateDoc, deleteDoc, doc, query, where, getDocs } from 'firebase/firestore';
-import { useFirestore, useUser } from '@/firebase';
+import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 
@@ -145,8 +145,12 @@ export default function ClinicsPage() {
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   
-  const [allClinics, setAllClinics] = useState<Clinic[]>([]);
-  const [clinicsLoading, setClinicsLoading] = useState(true);
+  const clinicsQuery = useMemoFirebase(() => {
+      if (!user) return null;
+      return query(collection(firestore, 'groups'), where('type', '==', 'Clinic'));
+  }, [firestore, user]);
+  
+  const { data: allClinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
 
   const [filteredClinics, setFilteredClinics] = useState<Clinic[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -154,49 +158,23 @@ export default function ClinicsPage() {
   const [clinicToDelete, setClinicToDelete] = useState<Clinic | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: keyof Clinic; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc'});
   const [searchQuery, setSearchQuery] = useState('');
+  
+  const [hasSeeded, setHasSeeded] = useState(false);
 
   useEffect(() => {
-    if (isUserLoading) {
-      setClinicsLoading(true);
-      return;
-    }
-    if (!user) {
-      setAllClinics([]);
-      setClinicsLoading(false);
-      return;
-    }
-
-    const fetchAndSeedClinics = async () => {
-      setClinicsLoading(true);
-      const clinicsQuery = query(collection(firestore, 'groups'), where('type', '==', 'Clinic'));
-      const querySnapshot = await getDocs(clinicsQuery);
+    if (!clinicsLoading && allClinics && allClinics.length === 0 && !hasSeeded) {
+      console.log("No clinics found, seeding database...");
+      setHasSeeded(true); // Prevent re-seeding
+      const sampleClinics: Omit<Clinic, 'id'>[] = [
+        { name: 'City Care Clinic', location: 'Maharashtra, Mumbai', type: 'Clinic' },
+        { name: 'Health Plus Clinic', location: 'Maharashtra, Pune', type: 'Clinic' },
+      ];
       
-      let clinicsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Clinic));
-
-      if (clinicsData.length === 0) {
-        console.log("No clinics found, seeding database...");
-        // If no clinics exist, seed them
-        const sampleClinics: Omit<Clinic, 'id'>[] = [
-          { name: 'City Care Clinic', location: 'Maharashtra, Mumbai', type: 'Clinic' },
-          { name: 'Health Plus Clinic', location: 'Maharashtra, Pune', type: 'Clinic' },
-        ];
-        
-        for (const clinicData of sampleClinics) {
-            await addDoc(collection(firestore, "groups"), clinicData);
-        }
-        
-        // Re-fetch after seeding
-        const seededSnapshot = await getDocs(clinicsQuery);
-        clinicsData = seededSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Clinic));
+      for (const clinicData of sampleClinics) {
+          addDocumentNonBlocking(collection(firestore, "groups"), clinicData);
       }
-
-      setAllClinics(clinicsData);
-      setClinicsLoading(false);
-    };
-
-    fetchAndSeedClinics();
-
-  }, [user, isUserLoading, firestore]);
+    }
+  }, [allClinics, clinicsLoading, hasSeeded, firestore]);
 
 
   useEffect(() => {
@@ -205,7 +183,7 @@ export default function ClinicsPage() {
       return;
     };
     
-    let filteredData = allClinics;
+    let filteredData = [...allClinics];
 
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
@@ -257,7 +235,6 @@ export default function ClinicsPage() {
     if (clinicToDelete) {
       const docRef = doc(firestore, 'groups', clinicToDelete.id);
       deleteDocumentNonBlocking(docRef);
-      setAllClinics(prev => prev.filter(c => c.id !== clinicToDelete.id));
       closeDeleteDialog();
     }
   }
@@ -266,14 +243,8 @@ export default function ClinicsPage() {
     if (clinicToEdit) {
       const docRef = doc(firestore, 'groups', clinicToEdit.id);
       setDocumentNonBlocking(docRef, formData, { merge: true });
-      setAllClinics(prev => prev.map(c => c.id === clinicToEdit.id ? { ...c, ...formData } : c));
     } else {
-      addDocumentNonBlocking(collection(firestore, 'groups'), { ...formData, type: 'Clinic' }).then(docRef => {
-        if(docRef) {
-          const newClinic = { ...formData, id: docRef.id };
-          setAllClinics(prev => [newClinic, ...prev]);
-        }
-      });
+      addDocumentNonBlocking(collection(firestore, 'groups'), { ...formData, type: 'Clinic' });
     }
     closeModal();
   };
@@ -291,6 +262,8 @@ export default function ClinicsPage() {
     if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3" />;
     return <ArrowDown className="ml-2 h-3 w-3" />;
   };
+
+  const isLoading = isUserLoading || clinicsLoading;
 
   if (isUserLoading) {
     return (
@@ -340,8 +313,8 @@ export default function ClinicsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(clinicsLoading) && <TableRow><TableCell colSpan={3} className="text-center">Loading...</TableCell></TableRow>}
-              {!clinicsLoading && filteredClinics.map((clinic) => (
+              {isLoading && <TableRow><TableCell colSpan={3} className="text-center">Loading...</TableCell></TableRow>}
+              {!isLoading && filteredClinics.map((clinic) => (
                 <TableRow key={clinic.id}>
                   <TableCell className="font-medium py-2 text-xs">{clinic.name}</TableCell>
                   <TableCell className="py-2 text-xs">{clinic.location}</TableCell>
@@ -355,7 +328,7 @@ export default function ClinicsPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {!clinicsLoading && filteredClinics.length === 0 && (
+              {!isLoading && filteredClinics.length === 0 && (
                  <TableRow>
                     <TableCell colSpan={3} className="text-center text-muted-foreground">No clinics found.</TableCell>
                  </TableRow>

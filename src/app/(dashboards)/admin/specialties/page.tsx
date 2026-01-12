@@ -40,7 +40,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc, addDoc } from 'firebase/firestore';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
 
 type Specialty = {
   id: string;
@@ -82,6 +82,7 @@ function SpecialtyForm({
   const handleConfirm = () => {
     if (formData.name) {
         onConfirm(formData);
+        onClose();
     }
   };
 
@@ -165,7 +166,7 @@ export default function SpecialtiesPage() {
         return;
     };
     
-    let filteredData = allSpecialties;
+    let filteredData = [...allSpecialties];
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
         filteredData = allSpecialties.filter(specialty =>
@@ -222,7 +223,7 @@ export default function SpecialtiesPage() {
     if (specialtyToEdit) {
         setDocumentNonBlocking(doc(firestore, 'specialties', specialtyToEdit.id), formData, { merge: true });
     } else {
-        addDoc(collection(firestore, 'specialties'), formData);
+        addDocumentNonBlocking(collection(firestore, 'specialties'), formData);
     }
     closeModal();
   };
@@ -278,8 +279,8 @@ export default function SpecialtiesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={4}>Loading...</TableCell></TableRow>}
-              {!isLoading && filteredSpecialties.map((specialty) => (
+              {isLoading && <TableRow><TableCell colSpan={4} className="text-center">Loading...</TableCell></TableRow>}
+              {!isLoading && filteredSpecialties && filteredSpecialties.map((specialty) => (
                 <TableRow key={specialty.id}>
                   <TableCell className="font-medium py-2 text-xs">{specialty.name}</TableCell>
                   <TableCell className="py-2 text-xs">
@@ -298,6 +299,11 @@ export default function SpecialtiesPage() {
                   </TableCell>
                 </TableRow>
               ))}
+              {!isLoading && (!filteredSpecialties || filteredSpecialties.length === 0) && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground">No specialties found.</TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

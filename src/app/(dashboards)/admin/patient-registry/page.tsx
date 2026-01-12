@@ -50,7 +50,7 @@ import { registerPatient } from '@/lib/actions';
 import { useActionState } from 'react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, User } from 'firebase/firestore';
 
 
 const badgeColors: Record<Patient['status'], string> = {
@@ -72,14 +72,20 @@ function VisitHistoryModal({
   isOpen,
   onClose,
   patient,
+  user,
 }: {
   isOpen: boolean;
   onClose: () => void;
   patient: Patient | null;
+  user: User | null;
 }) {
   const [history, setHistory] = useState<PatientHistoryEntry[]>([]);
   const firestore = useFirestore();
-  const clinicsRef = useMemoFirebase(() => collection(firestore, 'groups'), [firestore]);
+  
+  const clinicsRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return collection(firestore, 'groups');
+  }, [firestore, user]);
   const { data: clinicGroups, isLoading } = useCollection<ClinicGroup>(clinicsRef);
 
   useEffect(() => {
@@ -307,7 +313,7 @@ export default function PatientRegistryPage() {
     if (!user) return null;
     return collection(firestore, 'patients');
   }, [firestore, user]);
-  const { data: allPatients, isLoading: patientsLoading, refetch: fetchPatients } = useCollection<Patient>(patientsRef);
+  const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsRef);
   
   const clinicsRef = useMemoFirebase(() => {
     if (!user) return null;
@@ -333,9 +339,12 @@ export default function PatientRegistryPage() {
   const { toast } = useToast();
   
   useEffect(() => {
-    if (!allPatients) return;
+    if (!allPatients) {
+        setFilteredPatients([]);
+        return;
+    };
 
-    let filteredData = allPatients;
+    let filteredData = [...allPatients];
 
     if (selectedClinic !== 'all') {
       filteredData = filteredData.filter(patient => patient.clinicId === selectedClinic);
@@ -345,9 +354,9 @@ export default function PatientRegistryPage() {
         const lowercasedQuery = searchQuery.toLowerCase();
         filteredData = filteredData.filter(patient => 
             patient.name.toLowerCase().includes(lowercasedQuery) ||
-            patient.tokenNumber.toLowerCase().includes(lowercasedQuery) ||
-            patient.contactNumber?.toLowerCase().includes(lowercasedQuery) ||
-            patient.emailAddress?.toLowerCase().includes(lowercasedQuery)
+            (patient.tokenNumber && patient.tokenNumber.toLowerCase().includes(lowercasedQuery)) ||
+            (patient.contactNumber && patient.contactNumber.toLowerCase().includes(lowercasedQuery)) ||
+            (patient.emailAddress && patient.emailAddress.toLowerCase().includes(lowercasedQuery))
         );
     }
     
@@ -418,6 +427,8 @@ export default function PatientRegistryPage() {
         });
     }
   }
+
+  const isLoading = isUserLoading || patientsLoading || clinicsLoading || groupsLoading;
 
   if (isUserLoading) {
     return (
@@ -543,8 +554,8 @@ export default function PatientRegistryPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(patientsLoading || clinicsLoading) && <TableRow><TableCell colSpan={8} className="text-center">Loading...</TableCell></TableRow>}
-              {!(patientsLoading || clinicsLoading) && filteredPatients.map((patient) => (
+              {isLoading && <TableRow><TableCell colSpan={8} className="text-center">Loading...</TableCell></TableRow>}
+              {!isLoading && filteredPatients.map((patient) => (
                 <TableRow key={patient.id}>
                   <TableCell className="font-medium py-2 text-xs">{patient.name}</TableCell>
                   <TableCell className="py-2 text-xs">
@@ -576,7 +587,7 @@ export default function PatientRegistryPage() {
                   </TableCell>
                 </TableRow>
               ))}
-               {!patientsLoading && !clinicsLoading && filteredPatients.length === 0 && (
+               {!isLoading && filteredPatients.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={8} className="text-center text-muted-foreground py-4 text-sm">
                         No patients found.
@@ -592,6 +603,7 @@ export default function PatientRegistryPage() {
         isOpen={!!selectedPatient}
         onClose={closeHistoryModal}
         patient={selectedPatient}
+        user={user}
       />
        <ManualCheckInModal 
         isOpen={isCheckInModalOpen}
