@@ -70,14 +70,6 @@ function AdminSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
-        </SidebarMenu>
-
-        <div className="flex flex-col px-4 pt-2">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Advertisers
-          </span>
-        </div>
-        <SidebarMenu>
           {advertisersMenuItems.map((item) => (
             <SidebarMenuItem key={item.label}>
               <SidebarMenuButton asChild isActive={item.active} tooltip={item.label}>
