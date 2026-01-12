@@ -23,8 +23,6 @@ import type {
   Cabin,
   User,
 } from './types';
-import { getClinicById, getClinicGroupById, getClinicGroups } from './server-data';
-
 
 // This is a temporary solution. In a real app, you'd have a more robust way to get the db instance.
 const { firestore: db } = initializeFirebase();
@@ -127,12 +125,10 @@ export const getPatientsByGroupId = async (
 };
 
 export const addPatient = async (
-  data: Omit<Patient, 'id' | 'tokenNumber' | 'status' | 'registeredAt'>
+  data: Omit<Patient, 'id' | 'tokenNumber' | 'status' | 'registeredAt'>,
+  clinicGroup: ClinicGroup
 ): Promise<Patient> => {
-  const clinicGroup = await getClinicGroupById(data.groupId);
-  if (!clinicGroup) {
-    throw new Error('Clinic group not found');
-  }
+
   const prefix = clinicGroup.tokenInitial;
 
   const patientsInGroupQuery = query(collection(db, 'patients'), where('groupId', '==', data.groupId));
@@ -172,7 +168,8 @@ export const updatePatientStatus = async (
 };
 
 export const getPatientHistory = async (
-  patientId: string
+  patientId: string,
+  allGroups: ClinicGroup[]
 ): Promise<PatientHistoryEntry[]> => {
   const patientDoc = await getDoc(doc(db, 'patients', patientId));
   if (!patientDoc.exists()) return [];
@@ -180,8 +177,7 @@ export const getPatientHistory = async (
   // For simplicity, we are assuming one patient document means one visit.
   // A real implementation would query a `visits` collection for that patient.
   const visit = patientDoc.data() as Patient;
-  const group = await getClinicGroupById(visit.groupId);
-  const clinic = group ? await getClinicById(group.clinicId) : undefined;
+  const group = allGroups.find(g => g.id === visit.groupId);
   
   const consultationsQuery = query(collection(db, 'consultations'), where('patientId', '==', patientId));
   const consultationsSnapshot = await getDocs(consultationsQuery);
@@ -190,7 +186,7 @@ export const getPatientHistory = async (
 
   const history: PatientHistoryEntry[] = [{
     tokenNumber: visit.tokenNumber,
-    clinicName: clinic?.name || 'Unknown Clinic',
+    clinicName: 'Unknown Clinic', // We don't have clinic info here easily
     groupName: group?.name || 'Unknown Group',
     doctorName: group?.doctors[0]?.name || 'Unknown Doctor',
     issuedAt: (visit.registeredAt as any).toDate().toISOString(),
@@ -205,18 +201,15 @@ export const getPatientHistory = async (
 };
 
 
-export const getQueueInfoByScreenId = async (screenId: string) => {
+export const getQueueInfoByScreenId = async (screenId: string, allGroups: ClinicGroup[], allPatients: Patient[]) => {
     // This function assumes a screen is tied to a single group for simplicity.
-    // A real implementation might have a `screens` collection that maps to groups.
-    const mockScreenGroupMap: Record<string, string> = {
-        'scr_main_hall': 'grp_cardiology_01'
-    }
-    const groupId = mockScreenGroupMap[screenId];
-    if (!groupId) {
+    const groupForScreen = allGroups.find(g => g.screens.some(s => s.id === screenId));
+    
+    if (!groupForScreen) {
         return { waiting: [], inConsultation: [], nowCalling: null };
     }
     
-    const patients = await getPatientsByGroupId(groupId);
+    const patients = allPatients.filter(p => p.groupId === groupForScreen.id);
 
     const queuePatients = patients.filter(p => ['waiting', 'called', 'in-consultation'].includes(p.status));
     
@@ -224,10 +217,9 @@ export const getQueueInfoByScreenId = async (screenId: string) => {
     
     let calledPatientInfo = null;
     if (calledPatient) {
-        const group = await getClinicGroupById(calledPatient.groupId);
         calledPatientInfo = {
             ...calledPatient,
-            cabinName: group?.cabins[0]?.name || 'Consultation Room',
+            cabinName: groupForScreen?.cabins[0]?.name || 'Consultation Room',
         }
 
         // After "calling" a patient, we set them back to 'in-consultation' after a delay so the notification disappears

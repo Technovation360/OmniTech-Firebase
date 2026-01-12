@@ -7,12 +7,14 @@ import {
   getDocs,
   query,
   where,
+  Timestamp
 } from 'firebase/firestore';
 import { initializeServerFirebase } from '@/firebase/server-init';
 
 import type {
   Clinic,
   ClinicGroup,
+  Patient,
 } from './types';
 
 // This is a temporary solution. In a real app, you'd have a more robust way to get the db instance.
@@ -30,8 +32,8 @@ export const getClinics = async (): Promise<Clinic[]> => {
 
   // Mock fallback
   return [
-      { id: 'clinic_01', name: 'City Care Clinic', location: 'Maharashtra, Mumbai' },
-      { id: 'clinic_02', name: 'Health Plus Clinic', location: 'Maharashtra, Pune' },
+      { id: 'clinic_01', name: 'City Care Clinic', location: 'Maharashtra, Mumbai', type: 'Clinic' },
+      { id: 'clinic_02', name: 'Health Plus Clinic', location: 'Maharashtra, Pune', type: 'Clinic' },
   ];
 };
 
@@ -44,13 +46,23 @@ export const getClinicById = async (
     return { id: docSnap.id, ...docSnap.data() } as Clinic;
   }
   // Fallback for mock data - This can be removed once seeding is robust
-  const mockClinics = [
-      { id: 'clinic_01', name: 'City Care Clinic', location: 'Maharashtra, Mumbai' },
-      { id: 'clinic_02', name: 'Health Plus Clinic', location: 'Maharashtra, Pune' },
-  ];
+  const mockClinics = await getClinics();
   return mockClinics.find(c => c.id === id);
 };
 
+export const getPatients = async (): Promise<Patient[]> => {
+  const patientsCol = collection(db, 'patients');
+  const snapshot = await getDocs(patientsCol);
+  const patients = snapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+        ...data,
+        id: doc.id,
+        registeredAt: (data.registeredAt as Timestamp).toDate().toISOString(),
+    } as Patient
+  });
+  return patients;
+};
 
 // Clinic Groups
 export const getClinicGroups = async (
