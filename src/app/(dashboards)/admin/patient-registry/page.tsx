@@ -543,7 +543,7 @@ export default function PatientRegistryPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(patientsLoading || clinicsLoading) && <TableRow><TableCell colSpan={8}>Loading...</TableCell></TableRow>}
+              {(patientsLoading || clinicsLoading) && <TableRow><TableCell colSpan={8} className="text-center">Loading...</TableCell></TableRow>}
               {!(patientsLoading || clinicsLoading) && filteredPatients.map((patient) => (
                 <TableRow key={patient.id}>
                   <TableCell className="font-medium py-2 text-xs">{patient.name}</TableCell>
@@ -602,3 +602,5 @@ export default function PatientRegistryPage() {
     </>
   );
 }
+
+    
