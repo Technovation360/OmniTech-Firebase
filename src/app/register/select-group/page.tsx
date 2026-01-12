@@ -1,4 +1,4 @@
-import { getClinicGroups } from '@/lib/data';
+import { getClinicGroups } from '@/lib/server-data';
 import {
   Card,
   CardContent,

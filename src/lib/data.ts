@@ -24,36 +24,13 @@ import type {
   Cabin,
   User,
 } from './types';
+import { getClinicById, getClinicGroupById, getClinicGroups } from './server-data';
+
 
 // This is a temporary solution. In a real app, you'd have a more robust way to get the db instance.
 const { firestore: db } = initializeFirebase();
 
 // --- API Functions ---
-
-// Clinics
-export const getClinics = async (): Promise<Clinic[]> => {
-  const clinicsCol = collection(db, 'groups'); // Assuming clinics are groups with type 'Clinic'
-  const q = query(clinicsCol, where('type', '==', 'Clinic'));
-  const snapshot = await getDocs(q);
-  const clinics = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Clinic));
-  return clinics;
-};
-
-export const getClinicById = async (
-  id: string
-): Promise<Clinic | undefined> => {
-  const docRef = doc(db, 'groups', id);
-  const docSnap = await getDoc(docRef);
-  if (docSnap.exists() && docSnap.data().type === 'Clinic') {
-    return { id: docSnap.id, ...docSnap.data() } as Clinic;
-  }
-  // Fallback for mock data - This can be removed once seeding is robust
-  const mockClinics = [
-      { id: 'clinic_01', name: 'City Care Clinic', location: 'Maharashtra, Mumbai' },
-      { id: 'clinic_02', name: 'Health Plus Clinic', location: 'Maharashtra, Pune' },
-  ];
-  return mockClinics.find(c => c.id === id);
-};
 
 // Cabins
 export const getCabinsByClinicId = async (
@@ -67,40 +44,25 @@ export const getCabinsByClinicId = async (
   );
   const snapshot = await getDocs(q);
   const cabins = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Cabin));
-  return cabins;
+  
+  if (cabins.length > 0) return cabins;
+
+  // Mock fallback
+  if (clinicId === 'clinic_01') {
+      return [
+        { id: 'cab_01', name: 'Consultation Room 1', clinicId: 'clinic_01' },
+        { id: 'cab_02', name: 'Consultation Room 2', clinicId: 'clinic_01' },
+      ];
+  }
+   if (clinicId === 'clinic_02') {
+      return [
+        { id: 'cab_03', name: 'Wellness Cabin A', clinicId: 'clinic_02' },
+        { id: 'cab_04', name: 'Wellness Cabin B', clinicId: 'clinic_02' },
+      ];
+  }
+  return [];
 };
 
-// Clinic Groups
-export const getClinicGroups = async (
-  clinicId?: string
-): Promise<ClinicGroup[]> => {
-  let q;
-  if (clinicId) {
-    q = query(
-      collection(db, 'groups'),
-      where('clinicId', '==', clinicId),
-      where('type', '==', 'Doctor')
-    );
-  } else {
-    q = query(collection(db, 'groups'), where('type', '==', 'Doctor'));
-  }
-  const snapshot = await getDocs(q);
-  const groups = snapshot.docs.map(
-    doc => ({ id: doc.id, ...doc.data() } as ClinicGroup)
-  );
-  return groups;
-};
-
-export const getClinicGroupById = async (
-  id: string
-): Promise<ClinicGroup | undefined> => {
-  const docRef = doc(db, 'groups', id);
-  const docSnap = await getDoc(docRef);
-  if (docSnap.exists()) {
-    return { id: docSnap.id, ...docSnap.data() } as ClinicGroup;
-  }
-  return undefined;
-};
 
 // Patients
 export const getAllPatients = async (): Promise<Patient[]> => {
@@ -245,18 +207,20 @@ export const getPatientHistory = async (
 
 
 export const getQueueInfoByScreenId = async (screenId: string) => {
-    const groupsQuery = query(collection(db, 'groups'), where('screens', 'array-contains', screenId));
-    const groupsSnapshot = await getDocs(groupsQuery);
-    if (groupsSnapshot.empty) {
+    // This function assumes a screen is tied to a single group for simplicity.
+    // A real implementation might have a `screens` collection that maps to groups.
+    const mockScreenGroupMap: Record<string, string> = {
+        'scr_main_hall': 'grp_cardiology_01'
+    }
+    const groupId = mockScreenGroupMap[screenId];
+    if (!groupId) {
         return { waiting: [], inConsultation: [], nowCalling: null };
     }
-
-    const groupIds = groupsSnapshot.docs.map(d => d.id);
-    const patientsQuery = query(collection(db, 'patients'), where('groupId', 'in', groupIds), where('status', 'in', ['waiting', 'called', 'in-consultation']));
-    const patientsSnapshot = await getDocs(patientsQuery);
     
-    const queuePatients = patientsSnapshot.docs.map(d => ({id: d.id, ...d.data()} as Patient));
+    const patients = await getPatientsByGroupId(groupId);
 
+    const queuePatients = patients.filter(p => ['waiting', 'called', 'in-consultation'].includes(p.status));
+    
     const calledPatient = queuePatients.find(p => p.status === 'called');
     
     let calledPatientInfo = null;
@@ -283,9 +247,16 @@ export const getQueueInfoByScreenId = async (screenId: string) => {
 // Advertisements
 export const getAdvertisements = async (): Promise<Advertisement[]> => {
   const snapshot = await getDocs(collection(db, 'advertisements'));
-  return snapshot.docs.map(
+  const ads = snapshot.docs.map(
     doc => ({ id: doc.id, ...doc.data() } as Advertisement)
   );
+  if (ads.length > 0) return ads;
+
+  // Mock fallback
+  return [
+    { id: 'ad_1', advertiser: 'HealthCare Insurance', campaign: 'Annual Check-up Reminder', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', impressions: 12456 },
+    { id: 'ad_2', advertiser: 'PharmaCure', campaign: 'New Diabetes Medication', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4', impressions: 8423 },
+  ]
 };
 
 // Consultations
@@ -321,6 +292,6 @@ export const mockUsers: User[] = [
     { id: 'user_4', name: 'Dr. Vijay', email: 'doc_vijay@omni.com', role: 'doctor', affiliation: 'Health Plus Clinic', specialty: 'Orthopedics' },
     { id: 'user_5', name: 'Sunita', email: 'asst_sunita@omni.com', role: 'assistant', affiliation: 'City Care Clinic' },
     { id: 'user_6', name: 'Rajesh', email: 'asst_rajesh@omni.com', role: 'assistant', affiliation: 'Health Plus Clinic' },
-    { id: 'user_7', name: 'Display User', email: 'display@omni.com', role: 'display', affiliation: 'City Care Clinic' },
+    { id: 'user_7', name: 'Display User', email: 'display@omni.com', role: 'display', affiliation: 'City Care Clinic', name: 'Main Hall Display' },
     { id: 'user_8', name: 'Advertiser User', email: 'advertiser@omni.com', role: 'advertiser', affiliation: 'HealthCare Insurance' },
 ];
