@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -39,6 +38,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, doc, addDoc } from 'firebase/firestore';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 
 type Specialty = {
   id: string;
@@ -46,16 +48,6 @@ type Specialty = {
   forClinic: boolean;
   forDoctor: boolean;
 };
-
-const initialSpecialties: Specialty[] = [
-  { id: 'spec_1', name: 'General Medicine', forClinic: true, forDoctor: true },
-  { id: 'spec_2', name: 'Cardiology', forClinic: true, forDoctor: true },
-  { id: 'spec_3', name: 'Pediatrics', forClinic: true, forDoctor: true },
-  { id: 'spec_4', name: 'Dermatology', forClinic: true, forDoctor: true },
-  { id: 'spec_5', name: 'Orthopedics', forClinic: true, forDoctor: true },
-  { id: 'spec_6', name: 'Neurology', forClinic: true, forDoctor: true },
-  { id: 'spec_7', name: 'Radiology', forClinic: true, forDoctor: true },
-];
 
 function SpecialtyForm({
   isOpen,
@@ -156,8 +148,11 @@ function DeleteSpecialtyDialog({
   }
 
 export default function SpecialtiesPage() {
-  const [allSpecialties, setAllSpecialties] = useState<Specialty[]>(initialSpecialties);
-  const [filteredSpecialties, setFilteredSpecialties] = useState<Specialty[]>(initialSpecialties);
+  const firestore = useFirestore();
+  const specialtiesRef = useMemoFirebase(() => collection(firestore, 'specialties'), [firestore]);
+  const { data: allSpecialties, isLoading } = useCollection<Specialty>(specialtiesRef);
+  
+  const [filteredSpecialties, setFilteredSpecialties] = useState<Specialty[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [specialtyToEdit, setSpecialtyToEdit] = useState<Specialty | null>(null);
   const [specialtyToDelete, setSpecialtyToDelete] = useState<Specialty | null>(null);
@@ -165,12 +160,11 @@ export default function SpecialtiesPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    // Initial sort
-    handleSort('name');
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
+    if (!allSpecialties) {
+        setFilteredSpecialties([]);
+        return;
+    };
+    
     let filteredData = allSpecialties;
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
@@ -219,20 +213,16 @@ export default function SpecialtiesPage() {
 
   const handleDeleteConfirm = () => {
     if (specialtyToDelete) {
-      setAllSpecialties(allSpecialties.filter(s => s.id !== specialtyToDelete.id));
+      deleteDocumentNonBlocking(doc(firestore, 'specialties', specialtyToDelete.id));
       closeDeleteDialog();
     }
   }
 
   const handleFormConfirm = (formData: Omit<Specialty, 'id'>) => {
     if (specialtyToEdit) {
-        setAllSpecialties(allSpecialties.map(s => s.id === specialtyToEdit.id ? { ...specialtyToEdit, ...formData } : s));
+        setDocumentNonBlocking(doc(firestore, 'specialties', specialtyToEdit.id), formData, { merge: true });
     } else {
-        const newSpecialty: Specialty = {
-            ...formData,
-            id: `spec_${Date.now()}`
-        };
-        setAllSpecialties([newSpecialty, ...allSpecialties]);
+        addDoc(collection(firestore, 'specialties'), formData);
     }
     closeModal();
   };
@@ -243,8 +233,6 @@ export default function SpecialtiesPage() {
       direction = 'desc';
     }
     setSortConfig({ key, direction });
-
-    // The sorting logic is now inside useEffect
   };
 
   const getSortIcon = (key: keyof Specialty) => {
@@ -256,12 +244,10 @@ export default function SpecialtiesPage() {
 
   return (
     <>
+      <h1 className="text-3xl font-bold mb-6">Medical Specialties</h1>
       <Card>
         <CardHeader>
              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                    <CardTitle className="text-lg">Medical Specialties</CardTitle>
-                </div>
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                     <div className="relative w-full sm:w-64">
                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -292,7 +278,8 @@ export default function SpecialtiesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredSpecialties.map((specialty) => (
+              {isLoading && <TableRow><TableCell colSpan={4}>Loading...</TableCell></TableRow>}
+              {!isLoading && filteredSpecialties.map((specialty) => (
                 <TableRow key={specialty.id}>
                   <TableCell className="font-medium py-2 text-xs">{specialty.name}</TableCell>
                   <TableCell className="py-2 text-xs">
@@ -330,7 +317,3 @@ export default function SpecialtiesPage() {
     </>
   );
 }
-
-    
-
-    

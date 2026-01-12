@@ -1,128 +1,313 @@
+'use client';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  addDoc,
+  updateDoc,
+  Timestamp,
+} from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
+import { initializeFirebase } from '@/firebase';
+
+import type {
+  Clinic,
+  ClinicGroup,
+  Patient,
+  Advertisement,
+  Consultation,
+  PatientHistoryEntry,
+  Cabin,
+  User,
+} from './types';
+
+// This is a temporary solution. In a real app, you'd have a more robust way to get the db instance.
+const { firestore: db } = initializeFirebase();
+
+// --- API Functions ---
+
+// Clinics
+export const getClinics = async (): Promise<Clinic[]> => {
+  const clinicsCol = collection(db, 'groups'); // Assuming clinics are groups with type 'Clinic'
+  const q = query(clinicsCol, where('type', '==', 'Clinic'));
+  const snapshot = await getDocs(q);
+  const clinics = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Clinic));
+  return clinics;
+};
+
+export const getClinicById = async (
+  id: string
+): Promise<Clinic | undefined> => {
+  const docRef = doc(db, 'groups', id);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists() && docSnap.data().type === 'Clinic') {
+    return { id: docSnap.id, ...docSnap.data() } as Clinic;
+  }
+  return undefined;
+};
+
+// Cabins
+export const getCabinsByClinicId = async (
+  clinicId: string
+): Promise<Cabin[]> => {
+  const cabinsCol = collection(db, 'groups');
+  const q = query(
+    cabinsCol,
+    where('type', '==', 'Cabin'),
+    where('clinicId', '==', clinicId)
+  );
+  const snapshot = await getDocs(q);
+  const cabins = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Cabin));
+  return cabins;
+};
+
+// Clinic Groups
+export const getClinicGroups = async (
+  clinicId?: string
+): Promise<ClinicGroup[]> => {
+  let q;
+  if (clinicId) {
+    q = query(
+      collection(db, 'groups'),
+      where('clinicId', '==', clinicId),
+      where('type', '==', 'Doctor')
+    );
+  } else {
+    q = query(collection(db, 'groups'), where('type', '==', 'Doctor'));
+  }
+  const snapshot = await getDocs(q);
+  const groups = snapshot.docs.map(
+    doc => ({ id: doc.id, ...doc.data() } as ClinicGroup)
+  );
+  return groups;
+};
+
+export const getClinicGroupById = async (
+  id: string
+): Promise<ClinicGroup | undefined> => {
+  const docRef = doc(db, 'groups', id);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return { id: docSnap.id, ...docSnap.data() } as ClinicGroup;
+  }
+  return undefined;
+};
+
+// Patients
+export const getAllPatients = async (): Promise<Patient[]> => {
+  const patientsCol = collection(db, 'patients');
+  const snapshot = await getDocs(patientsCol);
+  const patients = snapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+        ...data,
+        id: doc.id,
+        registeredAt: (data.registeredAt as Timestamp).toDate().toISOString(),
+    } as Patient
+  });
+  return patients;
+};
+
+export const getPatientByToken = async (
+  token: string
+): Promise<Patient | undefined> => {
+  const q = query(collection(db, 'patients'), where('tokenNumber', '==', token));
+  const snapshot = await getDocs(q);
+  if (snapshot.empty) {
+    return undefined;
+  }
+  const doc = snapshot.docs[0];
+  const data = doc.data();
+  return { ...data, id: doc.id, registeredAt: (data.registeredAt as Timestamp).toDate().toISOString() } as Patient;
+};
+
+export const getPatientsByClinicId = async (
+  clinicId: string
+): Promise<Patient[]> => {
+  const q = query(
+    collection(db, 'patients'),
+    where('clinicId', '==', clinicId)
+  );
+  const snapshot = await getDocs(q);
+  const patients = snapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+        ...data,
+        id: doc.id,
+        registeredAt: (data.registeredAt as Timestamp).toDate().toISOString(),
+    } as Patient
+  });
+  return patients;
+};
+
+export const getPatientsByGroupId = async (
+  groupId: string
+): Promise<Patient[]> => {
+  const q = query(collection(db, 'patients'), where('groupId', '==', groupId));
+  const snapshot = await getDocs(q);
+    const patients = snapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+        ...data,
+        id: doc.id,
+        registeredAt: (data.registeredAt as Timestamp).toDate().toISOString(),
+    } as Patient
+  });
+  return patients;
+};
+
+export const addPatient = async (
+  data: Omit<Patient, 'id' | 'tokenNumber' | 'status' | 'registeredAt'>
+): Promise<Patient> => {
+  const clinicGroup = await getClinicGroupById(data.groupId);
+  if (!clinicGroup) {
+    throw new Error('Clinic group not found');
+  }
+  const prefix = clinicGroup.tokenInitial;
+
+  const patientsInGroupQuery = query(collection(db, 'patients'), where('groupId', '==', data.groupId));
+  const patientsInGroupSnapshot = await getDocs(patientsInGroupQuery);
+  const lastToken = patientsInGroupSnapshot.docs
+    .map(doc => parseInt(doc.data().tokenNumber.replace(prefix, ''), 10))
+    .filter(num => !isNaN(num))
+    .sort((a, b) => b - a)[0] || 100;
+  
+  const newPatientData = {
+    ...data,
+    tokenNumber: `${prefix}${lastToken + 1}`,
+    status: 'waiting',
+    registeredAt: Timestamp.now(),
+  };
+
+  const docRef = await addDoc(collection(db, 'patients'), newPatientData);
+
+  return {
+    ...newPatientData,
+    id: docRef.id,
+    registeredAt: newPatientData.registeredAt.toDate().toISOString(),
+  } as Patient;
+};
 
 
-import type { Clinic, ClinicGroup, Patient, Advertisement, Consultation, PatientHistoryEntry, Cabin } from './types';
+export const updatePatientStatus = async (
+  patientId: string,
+  status: Patient['status']
+): Promise<Patient | undefined> => {
+  const patientRef = doc(db, 'patients', patientId);
+  await updateDoc(patientRef, { status });
+  const updatedDoc = await getDoc(patientRef);
+    if (!updatedDoc.exists()) return undefined;
+  const docData = updatedDoc.data();
+  return { ...docData, id: updatedDoc.id, registeredAt: (docData.registeredAt as Timestamp).toDate().toISOString() } as Patient;
+};
 
-let clinics: Clinic[] = [
-    { id: 'clinic_01', name: 'City Care Clinic', location: 'Maharashtra, Mumbai' },
-    { id: 'clinic_02', name: 'Health Plus Clinic', location: 'Delhi, Delhi' },
-];
+export const getPatientHistory = async (
+  patientId: string
+): Promise<PatientHistoryEntry[]> => {
+  const patientDoc = await getDoc(doc(db, 'patients', patientId));
+  if (!patientDoc.exists()) return [];
 
-let cabins: Cabin[] = [
-    { id: 'cab_101', name: 'Cabin 101', clinicId: 'clinic_01' },
-    { id: 'cab_102', name: 'Cabin 102', clinicId: 'clinic_01' },
-    { id: 'cab_103', name: 'Cabin 103', clinicId: 'clinic_01' },
-    { id: 'cab_104', name: 'Cabin 104', clinicId: 'clinic_01' },
-    { id: 'cab_105', name: 'Cabin 105', clinicId: 'clinic_01' },
-    { id: 'cab_201', name: 'Cabin 201', clinicId: 'clinic_02' },
-    { id: 'cab_202', name: 'Cabin 202', clinicId: 'clinic_02' },
-    { id: 'cab_203', name: 'Cabin 203', clinicId: 'clinic_02' },
-];
+  // For simplicity, we are assuming one patient document means one visit.
+  // A real implementation would query a `visits` collection for that patient.
+  const visit = patientDoc.data() as Patient;
+  const group = await getClinicGroupById(visit.groupId);
+  const clinic = group ? await getClinicById(group.clinicId) : undefined;
+  
+  const consultationsQuery = query(collection(db, 'consultations'), where('patientId', '==', patientId));
+  const consultationsSnapshot = await getDocs(consultationsQuery);
+  const patientConsultations = consultationsSnapshot.docs.map(doc => doc.data() as Consultation);
 
 
-let clinicGroups: ClinicGroup[] = [
-  {
-    id: 'grp_cardiology_01',
-    clinicId: 'clinic_01',
-    name: 'Cardiology',
-    tokenInitial: 'CR',
-    location: 'Maharashtra, Mumbai',
-    specialties: ['Cardiology', 'General Medicine'],
-    contact: 'contact@citycare.com',
-    doctors: [{ id: 'user_3', name: 'Dr. Ashish' }],
-    assistants: [{ id: 'user_5', name: 'Sunita' }],
-    cabins: [{ id: 'cab_101', name: 'Cabin 101', clinicId: 'clinic_01' }],
-    screens: [{ id: 'user_7', name: 'Display User' }],
-  },
-  {
-    id: 'grp_gen_med_01',
-    clinicId: 'clinic_01',
-    name: 'General Medicine',
-    tokenInitial: 'GM',
-    location: 'Maharashtra, Mumbai',
-    specialties: ['General Medicine'],
-    contact: 'contact@citycare.com',
-    doctors: [{ id: 'doc_mehta', name: 'Dr. Mehta' }],
-    assistants: [{ id: 'asst_ravi', name: 'Ravi' }],
-    cabins: [{ id: 'cab_103', name: 'Cabin 103', clinicId: 'clinic_01' }],
-    screens: [{ id: 'scr_main_hall', name: 'Main Hall Display' }],
-  },
-  {
-    id: 'grp_derma_01',
-    clinicId: 'clinic_01',
-    name: 'Dermatology',
-    tokenInitial: 'DR',
-    location: 'Maharashtra, Mumbai',
-    specialties: ['Dermatology'],
-    contact: 'contact@citycare.com',
-    doctors: [{ id: 'doc_gupta', name: 'Dr. Gupta' }],
-    assistants: [{ id: 'asst_leela', name: 'Leela' }],
-    cabins: [{ id: 'cab_105', name: 'Cabin 105', clinicId: 'clinic_01' }],
-    screens: [{ id: 'scr_main_hall', name: 'Main Hall Display' }],
-  },
-  {
-    id: 'grp_ortho_01',
-    clinicId: 'clinic_02',
-    name: 'Orthopedics',
-    tokenInitial: 'OR',
-    location: 'Delhi, Delhi',
-    specialties: ['Orthopedics'],
-    contact: 'contact@healthplus.com',
-    doctors: [{ id: 'user_4', name: 'Dr. Vijay' }],
-    assistants: [{ id: 'user_6', name: 'Rajesh' }],
-    cabins: [{ id: 'cab_201', name: 'Cabin 201', clinicId: 'clinic_02' }],
-    screens: [{ id: 'scr_main_hall_hp', name: 'Main Hall Display HP' }],
-  },
-    {
-    id: 'grp_pediatrics_01',
-    clinicId: 'clinic_02',
-    name: 'Pediatrics',
-    tokenInitial: 'PD',
-    location: 'Delhi, Delhi',
-    specialties: ['Pediatrics'],
-    contact: 'contact@healthplus.com',
-    doctors: [{ id: 'doc_singh', name: 'Dr. Singh' }],
-    assistants: [{ id: 'asst_kumar', name: 'Kumar' }],
-    cabins: [{ id: 'cab_202', name: 'Cabin 202', clinicId: 'clinic_02' }],
-    screens: [{ id: 'scr_main_hall_hp', name: 'Main Hall Display HP' }],
-  },
-   {
-    id: 'grp_neurology_01',
-    clinicId: 'clinic_02',
-    name: 'Neurology',
-    tokenInitial: 'NR',
-    location: 'Delhi, Delhi',
-    specialties: ['Neurology'],
-    contact: 'contact@healthplus.com',
-    doctors: [{ id: 'doc_joshi', name: 'Dr. Joshi' }],
-    assistants: [{ id: 'asst_priya', name: 'Priya' }],
-    cabins: [{ id: 'cab_203', name: 'Cabin 203', clinicId: 'clinic_02' }],
-    screens: [{ id: 'scr_main_hall_hp', name: 'Main Hall Display HP' }],
-  },
-];
+  const history: PatientHistoryEntry[] = [{
+    tokenNumber: visit.tokenNumber,
+    clinicName: clinic?.name || 'Unknown Clinic',
+    groupName: group?.name || 'Unknown Group',
+    doctorName: group?.doctors[0]?.name || 'Unknown Doctor',
+    issuedAt: (visit.registeredAt as any).toDate().toISOString(),
+    startTime: patientConsultations[0] ? new Date(new Date(patientConsultations[0].date).getTime() - 10 * 60000).toISOString() : undefined,
+    endTime: patientConsultations[0]?.date,
+    status: visit.status,
+  }];
 
-let patients: Patient[] = [
-  { id: 'pat_001', name: 'Rohan Sharma', age: 34, gender: 'male', contactNumber: '+91 9876543210', emailAddress: 'rohan.sharma@example.com', tokenNumber: 'CR101', status: 'waiting', groupId: 'grp_cardiology_01', clinicId: 'clinic_01', registeredAt: new Date().toISOString() },
-  { id: 'pat_002', name: 'Priya Patel', age: 28, gender: 'female', contactNumber: '+91 9876543211', emailAddress: 'priya.patel@example.com', tokenNumber: 'OR205', status: 'waiting', groupId: 'grp_ortho_01', clinicId: 'clinic_02', registeredAt: new Date().toISOString() },
-  { id: 'pat_003', name: 'Amit Singh', age: 45, gender: 'male', contactNumber: '+91 9876543212', emailAddress: 'amit.singh@example.com', tokenNumber: 'CR102', status: 'waiting', groupId: 'grp_cardiology_01', clinicId: 'clinic_01', registeredAt: new Date().toISOString() },
-];
+  return history.sort(
+    (a, b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime()
+  );
+};
 
-let consultations: Consultation[] = [
-    {
-      id: 'cons_001',
-      patientId: 'pat_001',
-      doctorId: 'doc_ashish',
-      date: '2023-10-26T10:00:00.000Z',
-      notes: 'Patient reported chest pain and shortness of breath. ECG showed minor abnormalities. Recommended a stress test.',
-      summary: 'Patient presented with chest pain; ECG had minor issues, stress test advised.',
-    },
-];
 
-let advertisements: Advertisement[] = [
-  { id: 'ad_01', advertiser: 'HealthCare Insurance', campaign: 'Winter Shield 2024', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', impressions: 12534 },
-  { id: 'ad_02', advertiser: 'PharmaCure', campaign: 'New Pain Reliever Launch', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4', impressions: 8345 },
-];
+export const getQueueInfoByScreenId = async (screenId: string) => {
+    const groupsQuery = query(collection(db, 'groups'), where('screens', 'array-contains', screenId));
+    const groupsSnapshot = await getDocs(groupsQuery);
+    if (groupsSnapshot.empty) {
+        return { waiting: [], inConsultation: [], nowCalling: null };
+    }
 
-export const mockUsers = [
+    const groupIds = groupsSnapshot.docs.map(d => d.id);
+    const patientsQuery = query(collection(db, 'patients'), where('groupId', 'in', groupIds), where('status', 'in', ['waiting', 'called', 'in-consultation']));
+    const patientsSnapshot = await getDocs(patientsQuery);
+    
+    const queuePatients = patientsSnapshot.docs.map(d => ({id: d.id, ...d.data()} as Patient));
+
+    const calledPatient = queuePatients.find(p => p.status === 'called');
+    
+    let calledPatientInfo = null;
+    if (calledPatient) {
+        const group = await getClinicGroupById(calledPatient.groupId);
+        calledPatientInfo = {
+            ...calledPatient,
+            cabinName: group?.cabins[0]?.name || 'Consultation Room',
+        }
+
+        // After "calling" a patient, we set them back to 'in-consultation' after a delay so the notification disappears
+        setTimeout(() => {
+            updatePatientStatus(calledPatient.id, 'in-consultation');
+        }, 15000); // 15 seconds to show notification
+    }
+
+    return {
+        waiting: queuePatients.filter(p => p.status === 'waiting').sort((a, b) => a.tokenNumber.localeCompare(b.tokenNumber)),
+        inConsultation: queuePatients.filter(p => p.status === 'in-consultation').sort((a, b) => a.tokenNumber.localeCompare(b.tokenNumber)),
+        nowCalling: calledPatientInfo
+    };
+};
+
+// Advertisements
+export const getAdvertisements = async (): Promise<Advertisement[]> => {
+  const snapshot = await getDocs(collection(db, 'advertisements'));
+  return snapshot.docs.map(
+    doc => ({ id: doc.id, ...doc.data() } as Advertisement)
+  );
+};
+
+// Consultations
+export const getConsultationsByPatientId = async (
+  patientId: string
+): Promise<Consultation[]> => {
+  const q = query(
+    collection(db, 'consultations'),
+    where('patientId', '==', patientId)
+  );
+  const snapshot = await getDocs(q);
+  const consultations = snapshot.docs.map(
+    doc => ({ id: doc.id, ...doc.data() } as Consultation)
+  );
+  return consultations.sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+};
+
+export const addConsultation = async (
+  data: Omit<Consultation, 'id'>
+): Promise<Consultation> => {
+  const docRef = await addDoc(collection(db, 'consultations'), data);
+  return { id: docRef.id, ...data } as Consultation;
+};
+
+// Users - This would typically be more complex, fetching from a 'users' collection
+export const mockUsers: User[] = [
     { id: 'user_1', name: 'Admin', email: 'admin@omni.com', role: 'central-admin', affiliation: 'Omni Platform'},
     { id: 'user_2', name: 'Priya Sharma', email: 'clinic-admin-city@omni.com', role: 'clinic-admin', affiliation: 'City Care Clinic'},
     { id: 'user_9', name: 'Rahul Verma', email: 'clinic-admin-health@omni.com', role: 'clinic-admin', affiliation: 'Health Plus Clinic'},
@@ -133,154 +318,3 @@ export const mockUsers = [
     { id: 'user_7', name: 'Display User', email: 'display@omni.com', role: 'display', affiliation: 'City Care Clinic' },
     { id: 'user_8', name: 'Advertiser User', email: 'advertiser@omni.com', role: 'advertiser', affiliation: 'HealthCare Insurance' },
 ];
-
-
-// --- API Functions ---
-
-// Clinics
-export const getClinics = async (): Promise<Clinic[]> => {
-    return Promise.resolve(clinics);
-}
-
-export const getClinicById = async (id: string): Promise<Clinic | undefined> => {
-    return Promise.resolve(clinics.find(c => c.id === id));
-}
-
-// Cabins
-export const getCabinsByClinicId = async (clinicId: string): Promise<Cabin[]> => {
-    return Promise.resolve(cabins.filter(c => c.clinicId === clinicId));
-}
-
-
-// Clinic Groups
-export const getClinicGroups = async (clinicId?: string): Promise<ClinicGroup[]> => {
-  if (clinicId) {
-    return Promise.resolve(clinicGroups.filter(cg => cg.clinicId === clinicId));
-  }
-  return Promise.resolve(clinicGroups);
-};
-
-export const getClinicGroupById = async (id: string): Promise<ClinicGroup | undefined> => {
-  return Promise.resolve(clinicGroups.find(cg => cg.id === id));
-};
-
-// Patients
-export const getAllPatients = async (): Promise<Patient[]> => {
-    return Promise.resolve(patients);
-}
-
-export const getPatientByToken = async (token: string): Promise<Patient | undefined> => {
-  return Promise.resolve(patients.find(p => p.tokenNumber === token));
-};
-
-export const getPatientsByClinicId = async (clinicId: string): Promise<Patient[]> => {
-  const filtered = patients.filter(p => p.clinicId === clinicId);
-  return Promise.resolve(filtered);
-};
-
-export const getPatientsByGroupId = async (groupId: string): Promise<Patient[]> => {
-  const filtered = patients.filter(p => p.groupId === groupId);
-  return Promise.resolve(filtered);
-};
-
-
-export const addPatient = async (data: Omit<Patient, 'id' | 'tokenNumber' | 'status' | 'registeredAt' | 'clinicId'> & { groupId: string }): Promise<Patient> => {
-    const clinicGroup = await getClinicGroupById(data.groupId);
-    if (!clinicGroup) {
-      throw new Error('Clinic group not found');
-    }
-    const prefix = clinicGroup.tokenInitial;
-    const lastToken = patients
-        .filter(p => p.groupId === data.groupId)
-        .map(p => parseInt(p.tokenNumber.replace(prefix, ''), 10))
-        .sort((a,b) => b-a)[0] || 100;
-
-    const newPatient: Patient = {
-        ...data,
-        id: `pat_${Date.now()}`,
-        tokenNumber: `${prefix}${lastToken + 1}`,
-        status: 'waiting',
-        clinicId: clinicGroup.clinicId,
-        registeredAt: new Date().toISOString()
-    };
-    patients.push(newPatient);
-    return Promise.resolve(newPatient);
-}
-
-export const updatePatientStatus = async (patientId: string, status: Patient['status']): Promise<Patient | undefined> => {
-    const patientIndex = patients.findIndex(p => p.id === patientId);
-    if(patientIndex === -1) return undefined;
-
-    patients[patientIndex].status = status;
-    return Promise.resolve(patients[patientIndex]);
-}
-
-export const getPatientHistory = async (patientId: string): Promise<PatientHistoryEntry[]> => {
-    const patientVisits = patients.filter(p => p.id === patientId);
-    const history = patientVisits.map(visit => {
-        const clinic = clinicGroups.find(cg => cg.id === visit.groupId);
-        const consultation = consultations.find(c => c.patientId === visit.id);
-        const startTime = consultation ? new Date(new Date(consultation.date).getTime() - 10 * 60000).toISOString() : undefined; // apx 10 mins before end time
-        const endTime = consultation ? consultation.date : undefined;
-        return {
-            tokenNumber: visit.tokenNumber,
-            clinicName: clinics.find(c => c.id === clinic?.clinicId)?.name || 'Unknown Clinic',
-            groupName: clinic?.name || 'Unknown Group',
-            doctorName: clinic?.doctors[0].name || 'Unknown Doctor',
-            issuedAt: visit.registeredAt,
-            startTime,
-            endTime,
-            status: visit.status,
-        };
-    });
-    return Promise.resolve(history.sort((a,b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime()));
-}
-
-
-// Queue Info (for display screen)
-export const getQueueInfoByScreenId = async (screenId: string) => {
-    const relevantClinics = clinicGroups.filter(cg => cg.screens.some(s => s.id === screenId));
-    const groupIds = relevantClinics.map(rc => rc.id);
-    const queuePatients = patients.filter(p => groupIds.includes(p.groupId) && (p.status === 'waiting' || p.status === 'called' || p.status === 'in-consultation'));
-
-    const calledPatient = queuePatients.find(p => p.status === 'called');
-    
-    // Find the clinic, cabin for the called patient
-    const calledPatientInfo = calledPatient ? {
-        ...calledPatient,
-        cabinName: clinicGroups.find(cg => cg.id === calledPatient.groupId)?.cabins[0].name || '',
-    } : null;
-
-    // After "calling" a patient, we set them back to 'in-consultation' after a delay so the notification disappears
-    if (calledPatient) {
-        setTimeout(() => {
-            updatePatientStatus(calledPatient.id, 'in-consultation');
-        }, 15000); // 15 seconds to show notification
-    }
-
-    return Promise.resolve({
-        waiting: queuePatients.filter(p => p.status === 'waiting').sort((a, b) => a.tokenNumber.localeCompare(b.tokenNumber)),
-        inConsultation: queuePatients.filter(p => p.status === 'in-consultation').sort((a, b) => a.tokenNumber.localeCompare(b.tokenNumber)),
-        nowCalling: calledPatientInfo
-    });
-};
-
-
-// Advertisements
-export const getAdvertisements = async (): Promise<Advertisement[]> => {
-    return Promise.resolve(advertisements);
-}
-
-// Consultations
-export const getConsultationsByPatientId = async (patientId: string): Promise<Consultation[]> => {
-    return Promise.resolve(consultations.filter(c => c.patientId === patientId).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-}
-
-export const addConsultation = async (data: Omit<Consultation, 'id'>): Promise<Consultation> => {
-    const newConsultation: Consultation = {
-        ...data,
-        id: `cons_${Date.now()}`
-    };
-    consultations.push(newConsultation);
-    return Promise.resolve(newConsultation);
-}

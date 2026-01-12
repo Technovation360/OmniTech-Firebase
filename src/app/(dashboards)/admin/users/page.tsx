@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -47,31 +46,11 @@ import {
 import { Edit, Trash2, KeyRound, ArrowUp, ArrowDown, Search } from 'lucide-react';
 import type { UserRole } from '@/lib/roles';
 import { cn } from '@/lib/utils';
-import { getClinicGroups, getClinics } from '@/lib/data';
-import type { Clinic, ClinicGroup } from '@/lib/types';
+import type { Clinic, ClinicGroup, User } from '@/lib/types';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, doc, addDoc } from 'firebase/firestore';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 
-
-type User = {
-    id: string;
-    name: string;
-    email: string;
-    role: UserRole;
-    affiliation: string;
-    phone?: string;
-    specialty?: string;
-};
-
-const mockUsers: User[] = [
-    { id: 'user_1', name: 'Admin', email: 'admin@omni.com', role: 'central-admin', affiliation: 'Omni Platform'},
-    { id: 'user_2', name: 'Priya Sharma', email: 'clinic-admin-city@omni.com', role: 'clinic-admin', affiliation: 'City Care Clinic'},
-    { id: 'user_9', name: 'Rahul Verma', email: 'clinic-admin-health@omni.com', role: 'clinic-admin', affiliation: 'Health Plus Clinic'},
-    { id: 'user_3', name: 'Dr. Ashish', email: 'doc_ashish@omni.com', role: 'doctor', affiliation: 'City Care Clinic', specialty: 'Cardiology' },
-    { id: 'user_4', name: 'Dr. Vijay', email: 'doc_vijay@omni.com', role: 'doctor', affiliation: 'Health Plus Clinic', specialty: 'Orthopedics' },
-    { id: 'user_5', name: 'Sunita', email: 'asst_sunita@omni.com', role: 'assistant', affiliation: 'City Care Clinic' },
-    { id: 'user_6', name: 'Rajesh', email: 'asst_rajesh@omni.com', role: 'assistant', affiliation: 'Health Plus Clinic' },
-    { id: 'user_7', name: 'Display User', email: 'display@omni.com', role: 'display', affiliation: 'City Care Clinic' },
-    { id: 'user_8', name: 'Advertiser User', email: 'advertiser@omni.com', role: 'advertiser', affiliation: 'HealthCare Insurance' },
-];
 
 const roleLabels: Record<UserRole, string> = {
   'central-admin': 'Central Admin',
@@ -106,15 +85,17 @@ function UserForm({
   onClose,
   user,
   onConfirm,
+  clinics,
+  clinicGroups,
 }: {
   isOpen: boolean;
   onClose: () => void;
   user: User | null;
   onConfirm: (formData: Omit<User, 'id'>) => void;
+  clinics: Clinic[];
+  clinicGroups: ClinicGroup[];
 }) {
   const isEditMode = !!user;
-  const [clinics, setClinics] = useState<Clinic[]>([]);
-  const [clinicGroups, setClinicGroups] = useState<ClinicGroup[]>([]);
   const [formData, setFormData] = useState<Omit<User, 'id'>>({
       name: '',
       email: '',
@@ -126,8 +107,6 @@ function UserForm({
 
   useEffect(() => {
     if (isOpen) {
-      getClinics().then(setClinics);
-      getClinicGroups().then(setClinicGroups);
       if(user) {
         setFormData({
             name: user.name,
@@ -269,21 +248,26 @@ function DeleteUserDialog({
 
 
 export default function UsersPage() {
-  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const firestore = useFirestore();
+  const usersRef = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
+  const { data: allUsers, isLoading } = useCollection<User>(usersRef);
+  const clinicsRef = useMemoFirebase(() => collection(firestore, 'groups'), [firestore]);
+  const { data: clinicsData } = useCollection<Clinic>(clinicsRef);
+  const clinicGroupsRef = useMemoFirebase(() => collection(firestore, 'groups'), [firestore]);
+  const { data: clinicGroupsData } = useCollection<ClinicGroup>(clinicGroupsRef);
+  
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: keyof User; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc' });
   const [searchQuery, setSearchQuery] = useState('');
+  
+  const clinics = clinicsData?.filter(c => c.type === 'Clinic') || [];
+  const clinicGroups = clinicGroupsData?.filter(g => g.type === 'Doctor') || [];
 
   useEffect(() => {
-    // In a real app, this would fetch user data from an API
-    setAllUsers(mockUsers);
-    setFilteredUsers(mockUsers);
-  }, []);
-  
-  useEffect(() => {
+    if(!allUsers) return;
     let filteredData = allUsers;
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
@@ -334,20 +318,18 @@ export default function UsersPage() {
 
   const handleDeleteConfirm = () => {
     if (userToDelete) {
-      setAllUsers(allUsers.filter(u => u.id !== userToDelete.id));
+      const docRef = doc(firestore, 'users', userToDelete.id);
+      deleteDocumentNonBlocking(docRef);
       closeDeleteDialog();
     }
   }
 
   const handleFormConfirm = (formData: Omit<User, 'id'>) => {
     if (userToEdit) {
-      setAllUsers(allUsers.map(u => u.id === userToEdit.id ? { ...userToEdit, ...formData } : u));
+      const docRef = doc(firestore, 'users', userToEdit.id);
+      setDocumentNonBlocking(docRef, formData, { merge: true });
     } else {
-      const newUser: User = {
-        ...formData,
-        id: `user_${Date.now()}`
-      };
-      setAllUsers([newUser, ...allUsers]);
+      addDoc(collection(firestore, 'users'), formData);
     }
     closeModal();
   };
@@ -368,12 +350,10 @@ export default function UsersPage() {
 
   return (
     <>
+     <h1 className="text-3xl font-bold mb-6">Platform Users</h1>
      <Card>
       <CardHeader>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-                <CardTitle className="text-lg">Platform Users</CardTitle>
-            </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
                 <div className="relative w-full sm:w-64">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -420,7 +400,8 @@ export default function UsersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUsers.map((user) => (
+            {isLoading && <TableRow><TableCell colSpan={5}>Loading...</TableCell></TableRow>}
+            {!isLoading && filteredUsers.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="py-2 text-xs font-medium">{user.name}</TableCell>
                 <TableCell className="py-2 text-xs text-muted-foreground">{user.email}</TableCell>
@@ -450,6 +431,8 @@ export default function UsersPage() {
         onClose={closeModal}
         user={userToEdit}
         onConfirm={handleFormConfirm}
+        clinics={clinics}
+        clinicGroups={clinicGroups}
     />
     <DeleteUserDialog 
         isOpen={!!userToDelete}

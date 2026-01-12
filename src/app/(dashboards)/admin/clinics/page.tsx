@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -17,7 +16,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -37,11 +35,12 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Edit, Trash2, ArrowUp, ArrowDown, Search } from 'lucide-react';
-import { getClinics } from '@/lib/data';
 import type { Clinic } from '@/lib/types';
-import { cn } from '@/lib/utils';
+import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+
 
 function OnboardClinicForm({
   isOpen,
@@ -143,7 +142,10 @@ function DeleteClinicDialog({
 }
 
 export default function ClinicsPage() {
-  const [allClinics, setAllClinics] = useState<Clinic[]>([]);
+  const firestore = useFirestore();
+  const clinicsRef = useMemoFirebase(() => collection(firestore, 'groups'), [firestore]);
+  const { data: allClinics, isLoading } = useCollection<Clinic>(clinicsRef);
+  
   const [filteredClinics, setFilteredClinics] = useState<Clinic[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [clinicToEdit, setClinicToEdit] = useState<Clinic | null>(null);
@@ -153,16 +155,12 @@ export default function ClinicsPage() {
 
 
   useEffect(() => {
-    getClinics().then(data => {
-        setAllClinics(data);
-    });
-  }, []);
+    if (!allClinics) return;
+    let filteredData = allClinics.filter(c => c.type === 'Clinic');
 
-  useEffect(() => {
-    let filteredData = allClinics;
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
-        filteredData = allClinics.filter(clinic => 
+        filteredData = filteredData.filter(clinic => 
             clinic.name.toLowerCase().includes(lowercasedQuery) ||
             clinic.location.toLowerCase().includes(lowercasedQuery)
         );
@@ -170,8 +168,8 @@ export default function ClinicsPage() {
     
     if (sortConfig) {
       const sorted = [...filteredData].sort((a, b) => {
-        const valA = a[sortConfig.key].toLowerCase();
-        const valB = b[sortConfig.key].toLowerCase();
+        const valA = a[sortConfig.key]?.toLowerCase() || '';
+        const valB = b[sortConfig.key]?.toLowerCase() || '';
 
         if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
         if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
@@ -208,22 +206,18 @@ export default function ClinicsPage() {
 
   const handleDeleteConfirm = () => {
     if (clinicToDelete) {
-      setAllClinics(allClinics.filter(c => c.id !== clinicToDelete.id));
+      const docRef = doc(firestore, 'groups', clinicToDelete.id);
+      deleteDocumentNonBlocking(docRef);
       closeDeleteDialog();
     }
   }
 
   const handleFormConfirm = (formData: Omit<Clinic, 'id'>) => {
     if (clinicToEdit) {
-      // Update existing clinic
-      setAllClinics(allClinics.map(c => c.id === clinicToEdit.id ? { ...clinicToEdit, ...formData } : c));
+      const docRef = doc(firestore, 'groups', clinicToEdit.id);
+      setDocumentNonBlocking(docRef, formData, { merge: true });
     } else {
-      // Add new clinic
-      const newClinic: Clinic = {
-        ...formData,
-        id: `clinic_${Date.now()}`,
-      };
-      setAllClinics([newClinic, ...allClinics]);
+      addDoc(collection(firestore, 'groups'), { ...formData, type: 'Clinic' });
     }
     closeModal();
   };
@@ -244,12 +238,10 @@ export default function ClinicsPage() {
 
   return (
     <>
+      <h1 className="text-3xl font-bold mb-6">Clinics Management</h1>
       <Card>
         <CardHeader>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                    <CardTitle className="text-lg">Clinics Management</CardTitle>
-                </div>
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                     <div className="relative w-full sm:w-64">
                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -284,7 +276,8 @@ export default function ClinicsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredClinics.map((clinic) => (
+              {isLoading && <TableRow><TableCell colSpan={3} className="text-center">Loading...</TableCell></TableRow>}
+              {!isLoading && filteredClinics.map((clinic) => (
                 <TableRow key={clinic.id}>
                   <TableCell className="font-medium py-2 text-xs">{clinic.name}</TableCell>
                   <TableCell className="py-2 text-xs">{clinic.location}</TableCell>
