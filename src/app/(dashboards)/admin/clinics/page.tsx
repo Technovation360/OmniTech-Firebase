@@ -40,7 +40,6 @@ import type { Clinic } from '@/lib/types';
 import { collection, addDoc, updateDoc, deleteDoc, doc, query, where, getDocs } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { getClinics } from '@/lib/data';
 
 
 function OnboardClinicForm({
