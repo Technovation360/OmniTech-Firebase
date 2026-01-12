@@ -38,8 +38,9 @@ import { Label } from '@/components/ui/label';
 import { Edit, Trash2, ArrowUp, ArrowDown, Search, Loader } from 'lucide-react';
 import type { Clinic } from '@/lib/types';
 import { collection, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useFirestore, useUser } from '@/firebase';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { getClinics } from '@/lib/data';
 
 
 function OnboardClinicForm({
@@ -144,20 +145,26 @@ function DeleteClinicDialog({
 export default function ClinicsPage() {
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
-
-  const clinicsRef = useMemoFirebase(() => {
-    if (!user) return null;
-    return query(collection(firestore, 'groups'), where('type', '==', 'Clinic'));
-  }, [firestore, user]);
-
-  const { data: allClinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsRef);
   
+  const [allClinics, setAllClinics] = useState<Clinic[]>([]);
+  const [clinicsLoading, setClinicsLoading] = useState(true);
+
   const [filteredClinics, setFilteredClinics] = useState<Clinic[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [clinicToEdit, setClinicToEdit] = useState<Clinic | null>(null);
   const [clinicToDelete, setClinicToDelete] = useState<Clinic | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: keyof Clinic; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc'});
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    if(user) {
+      setClinicsLoading(true);
+      getClinics().then(data => {
+        setAllClinics(data);
+        setClinicsLoading(false);
+      });
+    }
+  }, [user]);
 
 
   useEffect(() => {
@@ -218,6 +225,7 @@ export default function ClinicsPage() {
     if (clinicToDelete) {
       const docRef = doc(firestore, 'groups', clinicToDelete.id);
       deleteDocumentNonBlocking(docRef);
+      setAllClinics(prev => prev.filter(c => c.id !== clinicToDelete.id));
       closeDeleteDialog();
     }
   }
@@ -226,8 +234,14 @@ export default function ClinicsPage() {
     if (clinicToEdit) {
       const docRef = doc(firestore, 'groups', clinicToEdit.id);
       setDocumentNonBlocking(docRef, formData, { merge: true });
+      setAllClinics(prev => prev.map(c => c.id === clinicToEdit.id ? { ...c, ...formData } : c));
     } else {
-      addDocumentNonBlocking(collection(firestore, 'groups'), { ...formData, type: 'Clinic' });
+      addDocumentNonBlocking(collection(firestore, 'groups'), { ...formData, type: 'Clinic' }).then(docRef => {
+        if(docRef) {
+          const newClinic = { ...formData, id: docRef.id };
+          setAllClinics(prev => [newClinic, ...prev]);
+        }
+      });
     }
     closeModal();
   };
@@ -309,6 +323,11 @@ export default function ClinicsPage() {
                   </TableCell>
                 </TableRow>
               ))}
+              {!clinicsLoading && filteredClinics.length === 0 && (
+                 <TableRow>
+                    <TableCell colSpan={3} className="text-center text-muted-foreground">No clinics found.</TableCell>
+                 </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
