@@ -44,31 +44,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Edit, Trash2, KeyRound, ArrowUp, ArrowDown, Search, PlusCircle } from 'lucide-react';
+import { Edit, Trash2, KeyRound, ArrowUp, ArrowDown, Search, PlusCircle, Loader } from 'lucide-react';
 import type { UserRole } from '@/lib/roles';
 import { cn } from '@/lib/utils';
-import { getClinicById } from '@/lib/data';
-import type { Clinic } from '@/lib/types';
-
-
-type User = {
-    id: string;
-    name: string;
-    email: string;
-    role: UserRole;
-    affiliation: string;
-    phone?: string;
-    specialty?: string;
-};
-
-// This is mock data. In a real app, you'd fetch this from your backend based on clinicId
-const mockUsers: User[] = [
-    { id: 'user_3', name: 'Dr. Ashish', email: 'doc_ashish@omni.com', role: 'doctor', affiliation: 'City Care Clinic', specialty: 'Cardiology' },
-    { id: 'user_5', name: 'Sunita', email: 'asst_sunita@omni.com', role: 'assistant', affiliation: 'City Care Clinic' },
-    { id: 'user_7', name: 'Display User', email: 'display@omni.com', role: 'display', affiliation: 'City Care Clinic' },
-    { id: 'user_4', name: 'Dr. Vijay', email: 'doc_vijay@omni.com', role: 'doctor', affiliation: 'Health Plus Clinic', specialty: 'Orthopedics' },
-    { id: 'user_6', name: 'Rajesh', email: 'asst_rajesh@omni.com', role: 'assistant', affiliation: 'Health Plus Clinic' },
-];
+import type { Clinic, User } from '@/lib/types';
+import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { collection, query, where, doc } from 'firebase/firestore';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 const roleLabels: Record<UserRole, string> = {
   'central-admin': 'Central Admin',
@@ -249,8 +231,20 @@ function DeleteUserDialog({
 
 export default function UsersPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: clinicId } = use(params);
-  const [clinic, setClinic] = useState<Clinic | null>(null);
-  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const firestore = useFirestore();
+  const { user: authUser, isUserLoading } = useUser();
+
+  const clinicRef = useMemoFirebase(() => {
+    return doc(firestore, 'groups', clinicId);
+  }, [firestore, clinicId]);
+  const { data: clinic, isLoading: clinicLoading } = useDoc<Clinic>(clinicRef);
+
+  const usersQuery = useMemoFirebase(() => {
+    if (!authUser || !clinic) return null;
+    return query(collection(firestore, 'users'), where('affiliation', '==', clinic.name));
+  }, [firestore, authUser, clinic]);
+  const { data: allUsers, isLoading: usersLoading } = useCollection<User>(usersQuery);
+
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
@@ -258,20 +252,12 @@ export default function UsersPage({ params }: { params: Promise<{ id: string }> 
   const [sortConfig, setSortConfig] = useState<{ key: keyof User; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc' });
   const [searchQuery, setSearchQuery] = useState('');
 
-  
   useEffect(() => {
-    getClinicById(clinicId).then(clinicData => {
-        setClinic(clinicData || null);
-        if (clinicData) {
-            // Filter mock users by clinic affiliation
-            const clinicUsers = mockUsers.filter(u => u.affiliation === clinicData.name);
-            setAllUsers(clinicUsers);
-        }
-    })
-  }, [clinicId]);
-
-  useEffect(() => {
-    let filteredData = allUsers;
+    if (!allUsers) {
+        setFilteredUsers([]);
+        return;
+    }
+    let filteredData = [...allUsers];
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
         filteredData = allUsers.filter(user => 
@@ -321,20 +307,16 @@ export default function UsersPage({ params }: { params: Promise<{ id: string }> 
 
   const handleDeleteConfirm = () => {
     if (userToDelete) {
-      setAllUsers(allUsers.filter(u => u.id !== userToDelete.id));
+      deleteDocumentNonBlocking(doc(firestore, 'users', userToDelete.id));
       closeDeleteDialog();
     }
   }
 
   const handleFormConfirm = (formData: Omit<User, 'id'>) => {
     if (userToEdit) {
-      setAllUsers(allUsers.map(u => u.id === userToEdit.id ? { ...userToEdit, ...formData } : u));
+      setDocumentNonBlocking(doc(firestore, 'users', userToEdit.id), formData, { merge: true });
     } else {
-      const newUser: User = {
-        ...formData,
-        id: `user_${Date.now()}`
-      };
-      setAllUsers([newUser, ...allUsers]);
+      addDocumentNonBlocking(collection(firestore, 'users'), formData);
     }
     closeModal();
   };
@@ -352,6 +334,8 @@ export default function UsersPage({ params }: { params: Promise<{ id: string }> 
     if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3" />;
     return <ArrowDown className="ml-2 h-3 w-3" />;
   };
+
+  const isLoading = isUserLoading || clinicLoading || usersLoading;
 
   return (
     <div className="space-y-6">
@@ -419,7 +403,8 @@ export default function UsersPage({ params }: { params: Promise<{ id: string }> 
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUsers.map((user) => (
+            {isLoading && <TableRow><TableCell colSpan={5} className="text-center py-4"><Loader className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>}
+            {!isLoading && filteredUsers.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="py-2 text-xs font-medium">{user.name}</TableCell>
                 <TableCell className="py-2 text-xs text-muted-foreground">{user.email}</TableCell>
@@ -440,10 +425,10 @@ export default function UsersPage({ params }: { params: Promise<{ id: string }> 
                 </TableCell>
               </TableRow>
             ))}
-            {filteredUsers.length === 0 && (
+            {!isLoading && filteredUsers.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground py-4 text-sm">
-                        No users found.
+                        No users found for this clinic.
                     </TableCell>
                 </TableRow>
              )}

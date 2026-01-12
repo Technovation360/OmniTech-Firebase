@@ -18,11 +18,11 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { getPatientsByClinicId, getClinicGroups, getClinicById } from '@/lib/data';
+import { getPatientsByClinicId, getClinicById } from '@/lib/data';
 import type { Patient, ClinicGroup, Clinic } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { ArrowUp, ArrowDown, Search } from 'lucide-react';
+import { ArrowUp, ArrowDown, Search, Loader } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -32,6 +32,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
 
 const badgeColors: Record<Patient['status'], string> = {
     'waiting': "bg-blue-100 text-blue-800",
@@ -44,36 +46,41 @@ const badgeColors: Record<Patient['status'], string> = {
 
 export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: string }>}) {
   const { id: clinicId } = use(params);
-  const [allPatients, setAllPatients] = useState<Patient[]>([]);
+
+  const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
+
+  const patientsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(firestore, 'patients'), where('clinicId', '==', clinicId), where('status', 'in', ['waiting', 'called', 'in-consultation']));
+  }, [firestore, user, clinicId]);
+  const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
+
+  const groupsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(firestore, 'groups'), where('clinicId', '==', clinicId), where('type', '==', 'Doctor'));
+  }, [firestore, user, clinicId]);
+  const { data: clinicGroups, isLoading: groupsLoading } = useCollection<ClinicGroup>(groupsQuery);
+
+
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
-  const [clinic, setClinic] = useState<Clinic | null>(null);
-  const [clinicGroups, setClinicGroups] = useState<ClinicGroup[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'tokenNumber', direction: 'asc' });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
-
-  useEffect(() => {
-    getClinicById(clinicId).then(setClinic);
-    getClinicGroups(clinicId).then(groups => {
-        setClinicGroups(groups);
-        getPatientsByClinicId(clinicId).then(allClinicPatients => {
-            const activePatients = allClinicPatients
-                .filter(p => p.status === 'waiting' || p.status === 'called' || p.status === 'in-consultation')
-                .sort((a,b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime());
-            setAllPatients(activePatients);
-        });
-    });
-  }, [clinicId]);
   
   const getGroupName = useCallback((groupId: string) => {
-    return clinicGroups.find(g => g.id === groupId)?.name || 'Unknown';
+    return clinicGroups?.find(g => g.id === groupId)?.name || 'Unknown';
   }, [clinicGroups]);
 
   const getDoctorName = useCallback((groupId: string) => {
-    return clinicGroups.find(g => g.id === groupId)?.doctors[0].name || 'Unknown';
+    return clinicGroups?.find(g => g.id === groupId)?.doctors[0].name || 'Unknown';
   }, [clinicGroups]);
 
   useEffect(() => {
+    if (!allPatients) {
+        setFilteredPatients([]);
+        return;
+    }
     let filteredData = allPatients;
 
     if (selectedGroup !== 'all') {
@@ -115,7 +122,8 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
       });
       setFilteredPatients(sorted);
     } else {
-        setFilteredPatients(filteredData);
+       const sorted = [...filteredData].sort((a,b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime());
+       setFilteredPatients(sorted);
     }
 
   }, [searchQuery, allPatients, sortConfig, clinicGroups, selectedGroup, getGroupName, getDoctorName]);
@@ -134,6 +142,8 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
     return <ArrowDown className="ml-2 h-3 w-3 inline-block" />;
   };
 
+  const isLoading = isUserLoading || patientsLoading || groupsLoading;
+
   return (
     <div className="space-y-6">
       <Card>
@@ -143,12 +153,12 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
               <div className="space-y-2 w-full sm:w-auto">
                   <Label htmlFor="groupFilter" className="text-xs font-semibold text-muted-foreground">FILTER BY GROUP</Label>
                   <Select value={selectedGroup} onValueChange={setSelectedGroup}>
-                    <SelectTrigger id="groupFilter" className="h-6 w-full sm:w-48 text-sm">
+                    <SelectTrigger id="groupFilter" className="h-10 w-full sm:w-48 text-sm">
                         <SelectValue placeholder="All Groups" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all" className="text-sm">All Groups</SelectItem>
-                        {clinicGroups.map(group => (
+                        {clinicGroups?.map(group => (
                             <SelectItem key={group.id} value={group.id} className="text-sm">{group.name}</SelectItem>
                         ))}
                     </SelectContent>
@@ -161,7 +171,7 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
                       <Input 
                           id="search"
                           placeholder="Name, token..." 
-                          className="pl-9 h-6 w-full sm:w-64" 
+                          className="pl-9 h-10 w-full sm:w-64" 
                           value={searchQuery}
                           onChange={e => setSearchQuery(e.target.value)}
                       />
@@ -208,7 +218,8 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredPatients.map((patient) => (
+              {isLoading && <TableRow><TableCell colSpan={6} className="text-center py-4">Loading...</TableCell></TableRow>}
+              {!isLoading && filteredPatients.map((patient) => (
                 <TableRow key={patient.id}>
                   <TableCell className="font-bold py-2 px-4 text-xs">{patient.tokenNumber}</TableCell>
                   <TableCell className="py-2 px-4 text-xs">{patient.name}</TableCell>
@@ -222,7 +233,7 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
                   </TableCell>
                 </TableRow>
               ))}
-              {filteredPatients.length === 0 && (
+              {!isLoading && filteredPatients.length === 0 && (
                   <TableRow>
                       <TableCell colSpan={6} className="text-center text-muted-foreground py-2 text-xs">
                           No active patients in the queue.

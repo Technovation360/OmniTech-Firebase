@@ -35,18 +35,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowUp, ArrowDown, Search, History, PlusCircle } from 'lucide-react';
-import {
-  getPatientHistory,
-  getPatientsByClinicId,
-  getClinicGroups,
-} from '@/lib/data';
+import { ArrowUp, ArrowDown, Search, History, PlusCircle, Loader } from 'lucide-react';
+import { getPatientHistory } from '@/lib/data';
 import type { Patient, ClinicGroup, PatientHistoryEntry } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { registerPatient } from '@/lib/actions';
 import { useActionState } from 'react';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
 
 
 const badgeColors: Record<Patient['status'], string> = {
@@ -79,7 +77,8 @@ function VisitHistoryModal({
   useEffect(() => {
     if (patient) {
       getPatientHistory(patient.id).then(setHistory);
-      getClinicGroups(patient.clinicId).then(setClinicGroups);
+      // getClinicGroups is not specific enough, but we'll leave it for now
+      // A better implementation would fetch groups based on history entries
     } else {
       setHistory([]);
       setClinicGroups([]);
@@ -254,9 +253,23 @@ function ManualCheckInModal({
 
 export default function PatientRegistryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: clinicId } = use(params);
-  const [allPatients, setAllPatients] = useState<Patient[]>([]);
+  const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
+
+  const patientsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(firestore, 'patients'), where('clinicId', '==', clinicId));
+  }, [firestore, user, clinicId]);
+  const { data: allPatients, isLoading: patientsLoading, refetch } = useCollection<Patient>(patientsQuery);
+  
+  const groupsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(firestore, 'groups'), where('clinicId', '==', clinicId), where('type', '==', 'Doctor'));
+  }, [firestore, user, clinicId]);
+  const { data: clinicGroups, isLoading: groupsLoading } = useCollection<ClinicGroup>(groupsQuery);
+
+
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
-  const [clinicGroups, setClinicGroups] = useState<ClinicGroup[]>([]);
   const [sortConfig, setSortConfig] = useState<{
     key: keyof Patient;
     direction: 'asc' | 'desc';
@@ -266,19 +279,13 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
   const [isCheckInModalOpen, setCheckInModalOpen] = useState(false);
   const { toast } = useToast();
 
-  const fetchPatients = () => {
-    getPatientsByClinicId(clinicId).then((data) => {
-        setAllPatients(data);
-    });
-  }
+  useEffect(() => {
+    if (!allPatients) {
+        setFilteredPatients([]);
+        return;
+    }
 
-  useEffect(() => {
-    getClinicGroups(clinicId).then(setClinicGroups);
-    getPatientsByClinicId(clinicId).then(setAllPatients);
-  }, [clinicId]);
-  
-  useEffect(() => {
-    let filteredData = allPatients;
+    let filteredData = [...allPatients];
 
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
@@ -328,9 +335,6 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
   };
 
   const handleGenerateToken = async (patient: Patient) => {
-    // This function needs to be more robust. A patient can't just generate a token for any group.
-    // For now, let's assume they re-register for their last group.
-    
     if (!patient.groupId) {
          toast({
             title: "Error",
@@ -352,7 +356,7 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
             title: "Token Generated",
             description: `New token ${result.tokenNumber} generated for ${patient.name}.`
         });
-        fetchPatients(); // Re-fetch patients to show the new token status
+        refetch();
     } else {
          toast({
             variant: "destructive",
@@ -362,9 +366,7 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
     }
   }
 
-  if (clinicGroups.length === 0) {
-    return <div>Loading...</div>
-  }
+  const isLoading = isUserLoading || patientsLoading || groupsLoading;
 
   return (
     <div className="space-y-6">
@@ -453,12 +455,23 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
                     {getSortIcon('emailAddress')}
                   </Button>
                 </TableHead>
+                <TableHead>
+                   <Button
+                    variant="ghost"
+                    className="text-xs p-0 hover:bg-transparent"
+                    onClick={() => handleSort('registeredAt')}
+                  >
+                    Last Token Generated
+                    {getSortIcon('registeredAt')}
+                  </Button>
+                </TableHead>
                 <TableHead className="text-center">Token</TableHead>
                 <TableHead className="text-center">History</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredPatients.map((patient) => (
+              {isLoading && <TableRow><TableCell colSpan={8} className="text-center py-4"><Loader className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>}
+              {!isLoading && filteredPatients.map((patient) => (
                 <TableRow key={patient.id}>
                   <TableCell className="font-medium py-2 text-xs">{patient.name}</TableCell>
                   <TableCell className="py-2 text-xs text-center">{patient.age}</TableCell>
@@ -469,6 +482,9 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
                   </TableCell>
                   <TableCell className="py-2 text-xs">{patient.contactNumber}</TableCell>
                   <TableCell className="py-2 text-xs">{patient.emailAddress || '-'}</TableCell>
+                  <TableCell className="py-2 text-xs">
+                     {format(new Date(patient.registeredAt), 'P, pp')}
+                  </TableCell>
                   <TableCell className="py-2 text-xs text-center">
                      <Button size="xs" onClick={() => handleGenerateToken(patient)}>GENERATE</Button>
                   </TableCell>
@@ -485,10 +501,10 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
                   </TableCell>
                 </TableRow>
               ))}
-               {filteredPatients.length === 0 && (
+               {!isLoading && filteredPatients.length === 0 && (
                 <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-4 text-sm">
-                        No patients found.
+                    <TableCell colSpan={8} className="text-center text-muted-foreground py-4 text-sm">
+                        No patients found for this clinic.
                     </TableCell>
                 </TableRow>
              )}
@@ -505,8 +521,8 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
       <ManualCheckInModal 
         isOpen={isCheckInModalOpen}
         onClose={() => setCheckInModalOpen(false)}
-        clinicGroups={clinicGroups}
-        onPatientRegistered={fetchPatients}
+        clinicGroups={clinicGroups || []}
+        onPatientRegistered={refetch}
       />
     </div>
   );
