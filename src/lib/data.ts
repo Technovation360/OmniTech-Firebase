@@ -35,6 +35,13 @@ export const getClinics = async (): Promise<Clinic[]> => {
   const q = query(clinicsCol, where('type', '==', 'Clinic'));
   const snapshot = await getDocs(q);
   const clinics = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Clinic));
+  
+  if (clinics.length === 0) {
+    return [
+      { id: 'clinic_01', name: 'City Care Clinic', location: 'Maharashtra, Mumbai' },
+      { id: 'clinic_02', name: 'Health Plus Clinic', location: 'Maharashtra, Pune' },
+    ]
+  }
   return clinics;
 };
 
@@ -46,7 +53,12 @@ export const getClinicById = async (
   if (docSnap.exists() && docSnap.data().type === 'Clinic') {
     return { id: docSnap.id, ...docSnap.data() } as Clinic;
   }
-  return undefined;
+  // Fallback for mock data
+  const mockClinics = [
+      { id: 'clinic_01', name: 'City Care Clinic', location: 'Maharashtra, Mumbai' },
+      { id: 'clinic_02', name: 'Health Plus Clinic', location: 'Maharashtra, Pune' },
+  ];
+  return mockClinics.find(c => c.id === id);
 };
 
 // Cabins
