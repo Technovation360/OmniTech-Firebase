@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -43,13 +43,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Edit, Trash2, KeyRound, ArrowUp, ArrowDown, Search } from 'lucide-react';
+import { Edit, Trash2, KeyRound, ArrowUp, ArrowDown, Search, Loader } from 'lucide-react';
 import type { UserRole } from '@/lib/roles';
 import { cn } from '@/lib/utils';
 import type { Clinic, ClinicGroup, User } from '@/lib/types';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc, addDoc } from 'firebase/firestore';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { collection, doc, query, where } from 'firebase/firestore';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 
 const roleLabels: Record<UserRole, string> = {
@@ -249,12 +249,26 @@ function DeleteUserDialog({
 
 export default function UsersPage() {
   const firestore = useFirestore();
-  const usersRef = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
-  const { data: allUsers, isLoading } = useCollection<User>(usersRef);
-  const clinicsRef = useMemoFirebase(() => collection(firestore, 'groups'), [firestore]);
-  const { data: clinicsData } = useCollection<Clinic>(clinicsRef);
-  const clinicGroupsRef = useMemoFirebase(() => collection(firestore, 'groups'), [firestore]);
-  const { data: clinicGroupsData } = useCollection<ClinicGroup>(clinicGroupsRef);
+  const { user, isUserLoading } = useUser();
+
+  const usersRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return collection(firestore, 'users');
+  }, [firestore, user]);
+
+  const { data: allUsers, isLoading: usersLoading } = useCollection<User>(usersRef);
+
+  const clinicsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(firestore, 'groups'), where('type', '==', 'Clinic'))
+  }, [firestore, user]);
+  const { data: clinicsData } = useCollection<Clinic>(clinicsQuery);
+  
+  const clinicGroupsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(firestore, 'groups'), where('type', '==', 'Doctor'))
+  }, [firestore, user]);
+  const { data: clinicGroupsData } = useCollection<ClinicGroup>(clinicGroupsQuery);
   
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -263,8 +277,8 @@ export default function UsersPage() {
   const [sortConfig, setSortConfig] = useState<{ key: keyof User; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc' });
   const [searchQuery, setSearchQuery] = useState('');
   
-  const clinics = clinicsData?.filter(c => c.type === 'Clinic') || [];
-  const clinicGroups = clinicGroupsData?.filter(g => g.type === 'Doctor') || [];
+  const clinics = clinicsData || [];
+  const clinicGroups = clinicGroupsData || [];
 
   useEffect(() => {
     if(!allUsers) return;
@@ -329,7 +343,7 @@ export default function UsersPage() {
       const docRef = doc(firestore, 'users', userToEdit.id);
       setDocumentNonBlocking(docRef, formData, { merge: true });
     } else {
-      addDoc(collection(firestore, 'users'), formData);
+      addDocumentNonBlocking(collection(firestore, 'users'), formData);
     }
     closeModal();
   };
@@ -347,6 +361,14 @@ export default function UsersPage() {
     if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3" />;
     return <ArrowDown className="ml-2 h-3 w-3" />;
   };
+
+  if (isUserLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -400,8 +422,8 @@ export default function UsersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading && <TableRow><TableCell colSpan={5}>Loading...</TableCell></TableRow>}
-            {!isLoading && filteredUsers.map((user) => (
+            {usersLoading && <TableRow><TableCell colSpan={5} className="text-center py-4">Loading users...</TableCell></TableRow>}
+            {!usersLoading && filteredUsers.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="py-2 text-xs font-medium">{user.name}</TableCell>
                 <TableCell className="py-2 text-xs text-muted-foreground">{user.email}</TableCell>
@@ -422,6 +444,13 @@ export default function UsersPage() {
                 </TableCell>
               </TableRow>
             ))}
+            {!usersLoading && filteredUsers.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-4 text-sm">
+                        No users found.
+                    </TableCell>
+                </TableRow>
+            )}
           </TableBody>
         </Table>
       </CardContent>
@@ -443,3 +472,5 @@ export default function UsersPage() {
     </>
   )
 }
+
+    
