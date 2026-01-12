@@ -157,14 +157,21 @@ export default function ClinicsPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
+    if (isUserLoading) {
+        setClinicsLoading(true);
+        return;
+    }
     if(user) {
       setClinicsLoading(true);
       getClinics().then(data => {
         setAllClinics(data);
         setClinicsLoading(false);
       });
+    } else {
+        setAllClinics([]);
+        setClinicsLoading(false);
     }
-  }, [user]);
+  }, [user, isUserLoading]);
 
 
   useEffect(() => {
@@ -347,5 +354,3 @@ export default function ClinicsPage() {
     </>
   )
 }
-
-    
