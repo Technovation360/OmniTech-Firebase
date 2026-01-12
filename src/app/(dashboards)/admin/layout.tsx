@@ -80,11 +80,6 @@ function AdminSidebar() {
           ))}
         </SidebarMenu>
         
-        <div className="flex flex-col px-4 pt-2">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Clinical
-          </span>
-        </div>
         <SidebarMenu>
           {clinicalMenuItems.map((item) => (
             <SidebarMenuItem key={item.label}>
