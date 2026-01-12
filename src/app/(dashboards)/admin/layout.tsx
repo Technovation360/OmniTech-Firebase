@@ -39,12 +39,9 @@ function AdminSidebar() {
   const pathname = usePathname();
   const basePath = '/admin';
 
-  const adminMenuItems = [
+  const menuItems = [
     { href: `${basePath}`, icon: LayoutDashboard, label: 'Dashboard', active: pathname === `${basePath}` },
     { href: `${basePath}/users`, icon: Users, label: 'Users', active: pathname === `${basePath}/users` },
-  ]
-
-  const clinicalMenuItems = [
     { href: `${basePath}/live-queue`, icon: Monitor, label: 'Live Queue', active: pathname === `${basePath}/live-queue` },
     { href: `${basePath}/patient-registry`, icon: ClipboardList, label: 'Patient Registry', active: pathname === `${basePath}/patient-registry` },
     { href: `${basePath}/clinics`, icon: Building, label: 'Clinics', active: pathname === `${basePath}/clinics` },
@@ -62,26 +59,8 @@ function AdminSidebar() {
         <Logo variant="enterprise" />
       </SidebarHeader>
       <SidebarContent>
-        <div className="flex flex-col px-4 pt-2">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Administration
-          </span>
-        </div>
         <SidebarMenu>
-          {adminMenuItems.map((item) => (
-            <SidebarMenuItem key={item.label}>
-              <SidebarMenuButton asChild isActive={item.active} tooltip={item.label}>
-                <Link href={item.href}>
-                  <item.icon />
-                  {item.label}
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-        
-        <SidebarMenu>
-          {clinicalMenuItems.map((item) => (
+          {menuItems.map((item) => (
             <SidebarMenuItem key={item.label}>
               <SidebarMenuButton asChild isActive={item.active} tooltip={item.label}>
                 <Link href={item.href}>
