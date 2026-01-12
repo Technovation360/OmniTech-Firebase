@@ -37,7 +37,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Edit, Trash2, ArrowUp, ArrowDown, Search, Loader } from 'lucide-react';
 import type { Clinic } from '@/lib/types';
-import { collection, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, query, where, getDocs } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { getClinics } from '@/lib/data';
@@ -158,20 +158,46 @@ export default function ClinicsPage() {
 
   useEffect(() => {
     if (isUserLoading) {
-        setClinicsLoading(true);
-        return;
-    }
-    if(user) {
       setClinicsLoading(true);
-      getClinics().then(data => {
-        setAllClinics(data);
-        setClinicsLoading(false);
-      });
-    } else {
-        setAllClinics([]);
-        setClinicsLoading(false);
+      return;
     }
-  }, [user, isUserLoading]);
+    if (!user) {
+      setAllClinics([]);
+      setClinicsLoading(false);
+      return;
+    }
+
+    const fetchAndSeedClinics = async () => {
+      setClinicsLoading(true);
+      const clinicsQuery = query(collection(firestore, 'groups'), where('type', '==', 'Clinic'));
+      const querySnapshot = await getDocs(clinicsQuery);
+      
+      let clinicsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Clinic));
+
+      if (clinicsData.length === 0) {
+        console.log("No clinics found, seeding database...");
+        // If no clinics exist, seed them
+        const sampleClinics: Omit<Clinic, 'id'>[] = [
+          { name: 'City Care Clinic', location: 'Maharashtra, Mumbai', type: 'Clinic' },
+          { name: 'Health Plus Clinic', location: 'Maharashtra, Pune', type: 'Clinic' },
+        ];
+        
+        for (const clinicData of sampleClinics) {
+            await addDoc(collection(firestore, "groups"), clinicData);
+        }
+        
+        // Re-fetch after seeding
+        const seededSnapshot = await getDocs(clinicsQuery);
+        clinicsData = seededSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Clinic));
+      }
+
+      setAllClinics(clinicsData);
+      setClinicsLoading(false);
+    };
+
+    fetchAndSeedClinics();
+
+  }, [user, isUserLoading, firestore]);
 
 
   useEffect(() => {
@@ -192,8 +218,8 @@ export default function ClinicsPage() {
     
     if (sortConfig) {
       const sorted = [...filteredData].sort((a, b) => {
-        const valA = a[sortConfig.key]?.toLowerCase() || '';
-        const valB = b[sortConfig.key]?.toLowerCase() || '';
+        const valA = (a as any)[sortConfig.key]?.toLowerCase() || '';
+        const valB = (b as any)[sortConfig.key]?.toLowerCase() || '';
 
         if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
         if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
