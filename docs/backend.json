@@ -1,0 +1,527 @@
+{
+  "entities": {
+    "Patient": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Patient",
+      "type": "object",
+      "description": "Represents a patient registered in the clinic system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Patient entity."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "Patient's first name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Patient's last name."
+        },
+        "dateOfBirth": {
+          "type": "string",
+          "description": "Patient's date of birth.",
+          "format": "date-time"
+        },
+        "gender": {
+          "type": "string",
+          "description": "Patient's gender."
+        },
+        "contactNumber": {
+          "type": "string",
+          "description": "Patient's contact phone number."
+        },
+        "email": {
+          "type": "string",
+          "description": "Patient's email address.",
+          "format": "email"
+        },
+        "registrationDate": {
+          "type": "string",
+          "description": "Date and time when the patient registered.",
+          "format": "date-time"
+        },
+        "groupId": {
+          "type": "string",
+          "description": "Reference to Group. (Relationship: Group 1:N Patient)"
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "dateOfBirth",
+        "gender",
+        "contactNumber",
+        "registrationDate",
+        "groupId"
+      ]
+    },
+    "Token": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Token",
+      "type": "object",
+      "description": "Represents a token assigned to a patient for their visit.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Token entity."
+        },
+        "tokenNumber": {
+          "type": "string",
+          "description": "The unique token number."
+        },
+        "patientId": {
+          "type": "string",
+          "description": "Reference to Patient. (Relationship: Patient 1:N Token)"
+        },
+        "generationTime": {
+          "type": "string",
+          "description": "Date and time when the token was generated.",
+          "format": "date-time"
+        },
+        "consultationId": {
+          "type": "string",
+          "description": "Reference to Consultation. (Relationship: Consultation 1:1 Token)"
+        },
+        "assistantId": {
+          "type": "string",
+          "description": "Reference to Assistant. (Relationship: Assistant 1:N Token). Nullable because token may be created by patient"
+        }
+      },
+      "required": [
+        "id",
+        "tokenNumber",
+        "patientId",
+        "generationTime"
+      ]
+    },
+    "Consultation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Consultation",
+      "type": "object",
+      "description": "Represents a consultation between a doctor and a patient.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Consultation entity."
+        },
+        "doctorId": {
+          "type": "string",
+          "description": "Reference to Doctor. (Relationship: Doctor 1:N Consultation)"
+        },
+        "startTime": {
+          "type": "string",
+          "description": "Date and time when the consultation started.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "Date and time when the consultation ended. Nullable if the consultation is ongoing.",
+          "format": "date-time"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Notes taken during the consultation."
+        },
+        "summary": {
+          "type": "string",
+          "description": "AI-generated summary of the consultation."
+        },
+        "noShow": {
+          "type": "boolean",
+          "description": "Indicates whether the patient was a no-show for the consultation."
+        }
+      },
+      "required": [
+        "id",
+        "doctorId",
+        "startTime"
+      ]
+    },
+    "Group": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Group",
+      "type": "object",
+      "description": "Represents a group within the clinic (e.g., Screen, Cabin, Doctor, Assistants).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Group entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the group."
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of the group (e.g., Screen, Cabin, Doctor, Assistant)."
+        },
+        "qrCode": {
+          "type": "string",
+          "description": "QR code associated with the group."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "type"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the system (e.g., Doctor, Assistant, Admin, Advertiser).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "User's first name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "User's last name."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "role": {
+          "type": "string",
+          "description": "User's role (e.g., Doctor, Assistant, Admin, Advertiser)."
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "email",
+        "role"
+      ]
+    },
+    "Screen": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Screen",
+      "type": "object",
+      "description": "Represents a display screen in the clinic.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Screen entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the screen."
+        },
+        "groupId": {
+          "type": "string",
+          "description": "Reference to Group. (Relationship: Group 1:N Screen)"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "groupId"
+      ]
+    },
+    "Advertisement": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Advertisement",
+      "type": "object",
+      "description": "Represents an advertisement video.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Advertisement entity."
+        },
+        "advertiserId": {
+          "type": "string",
+          "description": "Reference to User (Advertiser). (Relationship: User 1:N Advertisement)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the advertisement."
+        },
+        "videoUrl": {
+          "type": "string",
+          "description": "URL of the advertisement video.",
+          "format": "uri"
+        },
+        "startDate": {
+          "type": "string",
+          "description": "Date when the advertisement starts running.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "Date when the advertisement stops running.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "advertiserId",
+        "title",
+        "videoUrl",
+        "startDate",
+        "endDate"
+      ]
+    },
+    "Campaign": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Campaign",
+      "type": "object",
+      "description": "Represents an advertising campaign.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Campaign entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the campaign."
+        },
+        "advertisementIds": {
+          "type": "array",
+          "description": "References to Advertisements. (Relationship: Campaign N:N Advertisement)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "groupIds": {
+          "type": "array",
+          "description": "References to Groups. (Relationship: Campaign N:N Group)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "advertisementIds",
+        "groupIds"
+      ]
+    },
+    "Impression": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Impression",
+      "type": "object",
+      "description": "Represents an impression count for an advertisement.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Impression entity."
+        },
+        "advertisementId": {
+          "type": "string",
+          "description": "Reference to Advertisement. (Relationship: Advertisement 1:N Impression)"
+        },
+        "screenId": {
+          "type": "string",
+          "description": "Reference to Screen. (Relationship: Screen 1:N Impression)"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of the impression.",
+          "format": "date-time"
+        },
+        "patientCount": {
+          "type": "number",
+          "description": "Number of patients present when the advertisement was displayed."
+        }
+      },
+      "required": [
+        "id",
+        "advertisementId",
+        "screenId",
+        "timestamp",
+        "patientCount"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. User ID is used for authentication and authorization.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user, matching the Firebase Auth UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "RoleAdmin",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Collection to store admin users. Document ID is the user ID. Existence implies admin role.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the admin user, matching the Firebase Auth UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/groups/{groupId}",
+        "definition": {
+          "entityName": "Group",
+          "schema": {
+            "$ref": "#/backend/entities/Group"
+          },
+          "description": "Stores clinic group information (Screen, Cabin, Doctor, Assistant).",
+          "params": [
+            {
+              "name": "groupId",
+              "description": "The unique ID of the clinic group."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/groups/{groupId}/patients/{patientId}",
+        "definition": {
+          "entityName": "Patient",
+          "schema": {
+            "$ref": "#/backend/entities/Patient"
+          },
+          "description": "Stores patient data registered under a specific clinic group.",
+          "params": [
+            {
+              "name": "groupId",
+              "description": "The unique ID of the clinic group."
+            },
+            {
+              "name": "patientId",
+              "description": "The unique ID of the patient."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/groups/{groupId}/tokens/{tokenId}",
+        "definition": {
+          "entityName": "Token",
+          "schema": {
+            "$ref": "#/backend/entities/Token"
+          },
+          "description": "Stores tokens generated for patients, denormalized with groupId for easier querying. Includes denormalized 'groupId' for authorization independence.",
+          "params": [
+            {
+              "name": "groupId",
+              "description": "The unique ID of the clinic group."
+            },
+            {
+              "name": "tokenId",
+              "description": "The unique ID of the token."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/consultations/{consultationId}",
+        "definition": {
+          "entityName": "Consultation",
+          "schema": {
+            "$ref": "#/backend/entities/Consultation"
+          },
+          "description": "Stores consultation data between a doctor and a patient.",
+          "params": [
+            {
+              "name": "consultationId",
+              "description": "The unique ID of the consultation."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/screens/{screenId}",
+        "definition": {
+          "entityName": "Screen",
+          "schema": {
+            "$ref": "#/backend/entities/Screen"
+          },
+          "description": "Stores screen details.",
+          "params": [
+            {
+              "name": "screenId",
+              "description": "The unique ID of the screen."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/advertisements/{advertisementId}",
+        "definition": {
+          "entityName": "Advertisement",
+          "schema": {
+            "$ref": "#/backend/entities/Advertisement"
+          },
+          "description": "Stores advertisement videos uploaded by advertisers.",
+          "params": [
+            {
+              "name": "advertisementId",
+              "description": "The unique ID of the advertisement."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/campaigns/{campaignId}",
+        "definition": {
+          "entityName": "Campaign",
+          "schema": {
+            "$ref": "#/backend/entities/Campaign"
+          },
+          "description": "Stores advertising campaigns.",
+          "params": [
+            {
+              "name": "campaignId",
+              "description": "The unique ID of the campaign."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/impressions/{impressionId}",
+        "definition": {
+          "entityName": "Impression",
+          "schema": {
+            "$ref": "#/backend/entities/Impression"
+          },
+          "description": "Stores impression counts for advertisements.",
+          "params": [
+            {
+              "name": "impressionId",
+              "description": "The unique ID of the impression."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure security, scalability, and ease of debugging, following the principles of Authorization Independence, Clarity of Intent, DBAC (Database-Based Access Control), and QAPs (Rules are not Filters). Authorization Independence is achieved through denormalization, where necessary authorization data is duplicated within documents to avoid relying on `get()` calls in security rules. Structural Segregation ensures that each collection has a homogeneous security posture.\n\nThe structure uses path-based ownership for user-related data (e.g., `/users/{userId}/...`) and membership maps for collaborative data. Global roles are managed through dedicated collections (e.g., `/roles_admin/{uid}`).  The design incorporates explicit state modeling using a `status` field and enforces radical consistency with semantic naming conventions.\n\nTo support the core features, the following approach is considered:\n\n*   **QR Code Patient Registration & Token Generation:** Patients are registered under a specific `Group` after scanning a QR code. A `Token` is generated and linked to the patient and group. The group ID is denormalized into the `Token` document to allow filtering by screens.\n*   **Queue Display & Doctor Call Notification:** The queue display uses a combination of patients and group information. The `groupId` on the `Patient` and `Token` records are used to filter displayed tokens per each `Screen`.\n*   **Consultation Management:** Consultations are linked to doctors and patients. AI summaries are stored in the consultation document.\n*   **Assistant Token Creation:** Assistants can create tokens under a specific group on behalf of patients.\n*   **Clinic Group Management:** Groups are created to represent screens, cabins, doctors, and assistants.  These groups and its id are crucial for queue management and display.\n*   **Advertising Management:** Advertisements are managed through an admin portal and associated with campaigns and groups. Impressions are tracked to measure advertisement performance.\n\nThis design supports the required QAPs by using structural segregation and membership models, ensuring that list operations can be securely performed based on user roles and group memberships."
+  }
+}

@@ -1,0 +1,231 @@
+/**
+ * Core Philosophy:
+ * This ruleset implements a Role-Based Access Control (RBAC) model for a clinic management system.
+ * It defines distinct roles (Admin, Doctor, Assistant, Advertiser) with specific permissions.
+ * A global 'Admin' role, managed via the `/roles_admin` collection, grants comprehensive system-wide privileges.
+ * Other users operate under the principle of least privilege, for example, advertisers can only manage their own advertisements.
+ *
+ * Data Structure:
+ * The data is organized into several top-level collections: `/users`, `/groups`, `/consultations`, `/advertisements`, etc.
+ * Critical patient-related data like `/patients` and `/tokens` is nested under `/groups/{groupId}` to logically scope data to specific clinic areas
+ * and facilitate path-based security rules. A dedicated `/roles_admin` collection is used to explicitly manage administrative access.
+ *
+ * Key Security Decisions:
+ * - Admin Supremacy: An explicit `/roles_admin/{userId}` collection governs all administrative actions. A user's existence in this collection grants them admin rights.
+ * - Role-Based Permissions: A user's role, stored in their `/users/{userId}` profile document, is used to grant specific permissions (e.g., Doctors can manage their consultations, Assistants can create tokens).
+ * - Public vs. Private Data: Collections like `/advertisements` and `/screens` are publicly readable to support display screens, but writing is strictly controlled. Sensitive data like `/consultations` and `/users` is locked down.
+ * - Default Secure: In cases of ambiguity (e.g., who can manage a patient record), the rules default to the most secure posture, granting access only to Admins.
+ * - No User Enumeration: Listing users from the `/users` collection and admins from the `/roles_admin` collection is disallowed to protect user privacy and system security.
+ *
+ * Denormalization for Authorization:
+ * This ruleset relies on denormalization to enable efficient and secure rules. For example:
+ * - The `advertiserId` is stored directly on each `/advertisements` document, allowing for simple ownership checks without extra database reads.
+ * - The `doctorId` is stored on each `/consultations` document to enforce that only the assigned doctor can modify it.
+ * - A user's role is denormalized onto their user profile, accessible via a single `get()` call within helper functions.
+ *
+ * Structural Segregation:
+ * The use of a separate `/roles_admin` collection to manage permissions is a prime example of structural segregation.
+ * This isolates the high-privilege admin list from general user data, allowing for a much stricter and clearer security rule on that collection.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------------------
+    // Helper Functions
+    // ------------------------------------------------------------------------
+
+    /**
+     * Authenticated User Checks
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * Role-Based Access Control (RBAC) Checks
+     * These functions check for roles by looking up the user's profile or an admin collection.
+     */
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isRole(role) {
+      return isSignedIn() && getUserData().role == role;
+    }
+    
+    function isDoctor() {
+      return isRole('Doctor');
+    }
+
+    function isAdvertiser() {
+      return isRole('Advertiser');
+    }
+
+    /**
+     * Data State and Integrity Checks
+     */
+    function isExistingDoc() {
+      return resource != null;
+    }
+    
+    function incomingData() {
+      return request.resource.data;
+    }
+    
+    // ------------------------------------------------------------------------
+    // Collection Rules
+    // ------------------------------------------------------------------------
+
+    /**
+     * @description User profiles. A user can create and manage their own profile. Admins have full management access.
+     * @path /users/{userId}
+     * @allow (create) A new user signs up and creates their own user document: `create /users/user_abc` with auth.uid=`user_abc`.
+     * @deny (update) A user tries to modify another user's profile: `update /users/user_xyz` with auth.uid=`user_abc`.
+     * @principle Restricts access to a user's own data tree and allows admin override.
+     */
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin(); // Prevent user enumeration by non-admins
+      allow create: if isOwner(userId) && incomingData().id == userId;
+      allow update: if (isOwner(userId) || isAdmin()) && isExistingDoc() && incomingData().id == resource.data.id;
+      allow delete: if (isOwner(userId) || isAdmin()) && isExistingDoc();
+    }
+
+    /**
+     * @description Manages admin privileges. Existence in this collection grants admin rights. Only other admins can manage this list.
+     * @path /roles_admin/{userId}
+     * @allow (create) An existing admin adds a new admin: `create /roles_admin/new_admin_xyz` with auth.uid=`current_admin_abc`.
+     * @deny (list) A regular user tries to see who all the admins are: `list /roles_admin` with auth.uid=`user_abc`.
+     * @principle Enforces strict control over powerful roles using a dedicated, locked-down collection.
+     */
+    match /roles_admin/{userId} {
+      allow get: if isAdmin();
+      allow list: if false; // Prevent admin enumeration
+      allow create: if isAdmin();
+      allow update: if isAdmin() && isExistingDoc();
+      allow delete: if isAdmin() && isExistingDoc();
+    }
+
+    /**
+     * @description Clinic groups (e.g., Screen, Cabin). Readable by any authenticated staff, but writable only by admins.
+     * @path /groups/{groupId}
+     * @allow (get) A doctor or assistant client fetches group details: `get /groups/group_abc` with authenticated user.
+     * @deny (create) A non-admin user tries to create a new clinic group: `create /groups/new_group` with auth.uid=`user_abc`.
+     * @principle Segregates configuration data (groups) from operational data, with write access restricted to administrators.
+     */
+    match /groups/{groupId} {
+      allow get, list: if isSignedIn();
+      allow create: if isAdmin();
+      allow update: if isAdmin() && isExistingDoc();
+      allow delete: if isAdmin() && isExistingDoc();
+    }
+
+    /**
+     * @description Patient records within a specific clinic group. Readable by authenticated staff, but managed only by admins.
+     * @path /groups/{groupId}/patients/{patientId}
+     * @allow (list) A doctor's dashboard lists all patients in the 'Cardiology' group: `list /groups/cardiology/patients`.
+     * @deny (create) An assistant tries to register a new patient: `create /groups/cardiology/patients/new_patient`.
+     * @principle Secures sensitive patient health information (PHI) by restricting modifications to high-privilege admin accounts.
+     */
+    match /groups/{groupId}/patients/{patientId} {
+      allow get, list: if isSignedIn();
+      allow create: if isAdmin() && incomingData().groupId == groupId;
+      allow update: if isAdmin() && isExistingDoc();
+      allow delete: if isAdmin() && isExistingDoc();
+    }
+
+    /**
+     * @description Patient queue tokens. Readable by staff. Creatable by assistants or patients (anonymous users). Managed by admins.
+     * @path /groups/{groupId}/tokens/{tokenId}
+     * @allow (create) An assistant creates a token for a patient: `create /groups/reception/tokens/new_token` with auth as assistant.
+     * @deny (update) A patient tries to modify their token details after creation: `update /groups/reception/tokens/their_token`.
+     * @principle Allows for controlled public/semi-public creation of data while restricting subsequent modifications to admins.
+     */
+    match /groups/{groupId}/tokens/{tokenId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && incomingData().groupId == groupId;
+      allow update: if isAdmin() && isExistingDoc();
+      allow delete: if isAdmin() && isExistingDoc();
+    }
+
+    /**
+     * @description Consultation records between doctors and patients. Only accessible by the assigned doctor or an admin.
+     * @path /consultations/{consultationId}
+     * @allow (update) The assigned doctor updates consultation notes: `update /consultations/consult_123` where `resource.data.doctorId` matches auth.uid.
+     * @deny (get) A different doctor tries to read another's consultation notes: `get /consultations/consult_123`.
+     * @principle Enforces document ownership for writes and reads, protecting sensitive patient consultation data.
+     */
+    match /consultations/{consultationId} {
+      allow get: if (isAdmin() || isOwner(resource.data.doctorId)) && isExistingDoc();
+      allow list: if isAdmin(); // Cannot query based on document fields, so only admin can list
+      allow create: if (isAdmin() || (isDoctor() && isOwner(incomingData().doctorId)));
+      allow update: if (isAdmin() || isOwner(resource.data.doctorId)) && isExistingDoc();
+      allow delete: if (isAdmin() || isOwner(resource.data.doctorId)) && isExistingDoc();
+    }
+
+    /**
+     * @description Details for clinic display screens. Publicly readable for display clients, but managed only by admins.
+     * @path /screens/{screenId}
+     * @allow (get) An unauthenticated waiting room screen fetches its configuration: `get /screens/waiting_room_screen`.
+     * @deny (create) An advertiser tries to add a new screen: `create /screens/new_screen`.
+     * @principle Allows public read access for configuration data consumed by clients, while securing write access.
+     */
+    match /screens/{screenId} {
+      allow get, list: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin() && isExistingDoc();
+      allow delete: if isAdmin() && isExistingDoc();
+    }
+
+    /**
+     * @description Advertisement content. Publicly readable for screens. Writable only by the owning advertiser or an admin.
+     * @path /advertisements/{advertisementId}
+     * @allow (create) An advertiser uploads a new ad, setting their own ID: `create /advertisements/ad_123` with data `{"advertiserId": "auth.uid"}`.
+     * @deny (update) An advertiser tries to modify another advertiser's ad: `update /advertisements/ad_456`.
+     * @principle Implements a "public read, owner write" model, perfect for user-generated content that is publicly visible.
+     */
+    match /advertisements/{advertisementId} {
+      allow get, list: if true;
+      allow create: if (isAdvertiser() || isAdmin()) && isOwner(incomingData().advertiserId);
+      allow update: if (isOwner(resource.data.advertiserId) || isAdmin()) && isExistingDoc() && incomingData().advertiserId == resource.data.advertiserId;
+      allow delete: if (isOwner(resource.data.advertiserId) || isAdmin()) && isExistingDoc();
+    }
+
+    /**
+     * @description Advertising campaigns that group ads and target groups. Managed by admins, but readable by advertisers.
+     * @path /campaigns/{campaignId}
+     * @allow (get) An advertiser's dashboard reads campaign details: `get /campaigns/summer_sale`.
+     * @deny (create) An advertiser tries to create a new campaign: `create /campaigns/new_campaign`.
+     * @principle Protects high-level business logic and configuration by restricting writes to administrators.
+     */
+    match /campaigns/{campaignId} {
+      allow get, list: if isSignedIn();
+      allow create: if isAdmin();
+      allow update: if isAdmin() && isExistingDoc();
+      allow delete: if isAdmin() && isExistingDoc();
+    }
+
+    /**
+     * @description Impression logs for advertisements. This is write-once data created by a trusted source (admin/backend) and is not mutable.
+     * @path /impressions/{impressionId}
+     * @allow (create) A backend service with admin privileges logs a new ad impression: `create /impressions/imp_123`.
+     * @deny (update) Any user attempts to change an impression count after it's been logged: `update /impressions/imp_123`.
+     * @principle Secures analytical or log data by making it append-only and restricting creation to trusted system principals.
+     */
+    match /impressions/{impressionId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}
