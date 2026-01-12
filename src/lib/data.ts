@@ -24,10 +24,64 @@ import type {
   User,
 } from './types';
 
-// This is a temporary solution. In a real app, you'd have a more robust way to get the db instance.
 const { firestore: db } = initializeFirebase();
 
-// --- API Functions ---
+// This file is for CLIENT-SIDE data fetching.
+// For server-side, use lib/server-data.ts
+
+// Clinic Groups
+export const getClinicGroups = async (
+  clinicId?: string
+): Promise<ClinicGroup[]> => {
+  let q;
+  if (clinicId) {
+    q = query(
+      collection(db, 'groups'),
+      where('clinicId', '==', clinicId),
+      where('type', '==', 'Doctor')
+    );
+  } else {
+    q = query(collection(db, 'groups'), where('type', '==', 'Doctor'));
+  }
+  const snapshot = await getDocs(q);
+  const groups = snapshot.docs.map(
+    doc => ({ id: doc.id, ...doc.data() } as ClinicGroup)
+  );
+  return groups;
+};
+
+export const getClinicGroupById = async (
+  id: string
+): Promise<ClinicGroup | undefined> => {
+  const docRef = doc(db, 'groups', id);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists() && docSnap.data().type === 'Doctor') {
+    return { id: docSnap.id, ...docSnap.data() } as ClinicGroup;
+  }
+  return undefined;
+};
+
+
+// Clinics
+export const getClinics = async (): Promise<Clinic[]> => {
+  const clinicsCol = collection(db, 'groups');
+  const q = query(clinicsCol, where('type', '==', 'Clinic'));
+  const snapshot = await getDocs(q);
+  const clinics = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Clinic));
+  return clinics;
+};
+
+export const getClinicById = async (
+  id: string
+): Promise<Clinic | undefined> => {
+  const docRef = doc(db, 'groups', id);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists() && docSnap.data().type === 'Clinic') {
+    return { id: docSnap.id, ...docSnap.data() } as Clinic;
+  }
+  return undefined;
+};
+
 
 // Cabins
 export const getCabinsByClinicId = async (
@@ -41,23 +95,7 @@ export const getCabinsByClinicId = async (
   );
   const snapshot = await getDocs(q);
   const cabins = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Cabin));
-  
-  if (cabins.length > 0) return cabins;
-
-  // Mock fallback
-  if (clinicId === 'clinic_01') {
-      return [
-        { id: 'cab_01', name: 'Consultation Room 1', clinicId: 'clinic_01' },
-        { id: 'cab_02', name: 'Consultation Room 2', clinicId: 'clinic_01' },
-      ];
-  }
-   if (clinicId === 'clinic_02') {
-      return [
-        { id: 'cab_03', name: 'Wellness Cabin A', clinicId: 'clinic_02' },
-        { id: 'cab_04', name: 'Wellness Cabin B', clinicId: 'clinic_02' },
-      ];
-  }
-  return [];
+  return cabins;
 };
 
 
@@ -168,32 +206,38 @@ export const updatePatientStatus = async (
 };
 
 export const getPatientHistory = async (
-  patientId: string,
-  allGroups: ClinicGroup[]
+  patientId: string
 ): Promise<PatientHistoryEntry[]> => {
-  const patientDoc = await getDoc(doc(db, 'patients', patientId));
-  if (!patientDoc.exists()) return [];
-
-  // For simplicity, we are assuming one patient document means one visit.
-  // A real implementation would query a `visits` collection for that patient.
-  const visit = patientDoc.data() as Patient;
-  const group = allGroups.find(g => g.id === visit.groupId);
   
   const consultationsQuery = query(collection(db, 'consultations'), where('patientId', '==', patientId));
   const consultationsSnapshot = await getDocs(consultationsQuery);
   const patientConsultations = consultationsSnapshot.docs.map(doc => doc.data() as Consultation);
 
+  const tokensQuery = query(collection(db, 'groups'), where('type', '==', 'Token'), where('patientId', '==', patientId));
+  const tokensSnapshot = await getDocs(tokensQuery);
+  
+  const historyPromises = tokensSnapshot.docs.map(async (tokenDoc) => {
+    const tokenData = tokenDoc.data();
+    const groupDoc = await getDoc(doc(db, 'groups', tokenData.groupId));
+    const groupData = groupDoc.data() as ClinicGroup;
+    const clinicDoc = await getDoc(doc(db, 'groups', groupData.clinicId));
+    const clinicData = clinicDoc.data() as Clinic;
 
-  const history: PatientHistoryEntry[] = [{
-    tokenNumber: visit.tokenNumber,
-    clinicName: 'Unknown Clinic', // We don't have clinic info here easily
-    groupName: group?.name || 'Unknown Group',
-    doctorName: group?.doctors[0]?.name || 'Unknown Doctor',
-    issuedAt: (visit.registeredAt as any).toDate().toISOString(),
-    startTime: patientConsultations[0] ? new Date(new Date(patientConsultations[0].date).getTime() - 10 * 60000).toISOString() : undefined,
-    endTime: patientConsultations[0]?.date,
-    status: visit.status,
-  }];
+    const consultation = patientConsultations.find(c => c.id === tokenData.consultationId);
+
+    return {
+      tokenNumber: tokenData.tokenNumber,
+      clinicName: clinicData.name,
+      groupName: groupData.name,
+      doctorName: groupData.doctors[0]?.name || 'N/A',
+      issuedAt: (tokenData.generationTime as Timestamp).toDate().toISOString(),
+      startTime: consultation ? new Date(new Date(consultation.date).getTime() - 10 * 60000).toISOString() : undefined,
+      endTime: consultation?.date,
+      status: 'consultation-done', // This is a simplification
+    }
+  });
+
+  const history = await Promise.all(historyPromises);
 
   return history.sort(
     (a, b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime()
@@ -202,7 +246,6 @@ export const getPatientHistory = async (
 
 
 export const getQueueInfoByScreenId = async (screenId: string, allGroups: ClinicGroup[], allPatients: Patient[]) => {
-    // This function assumes a screen is tied to a single group for simplicity.
     const groupForScreen = allGroups.find(g => g.screens.some(s => s.id === screenId));
     
     if (!groupForScreen) {
@@ -222,10 +265,9 @@ export const getQueueInfoByScreenId = async (screenId: string, allGroups: Clinic
             cabinName: groupForScreen?.cabins[0]?.name || 'Consultation Room',
         }
 
-        // After "calling" a patient, we set them back to 'in-consultation' after a delay so the notification disappears
         setTimeout(() => {
             updatePatientStatus(calledPatient.id, 'in-consultation');
-        }, 15000); // 15 seconds to show notification
+        }, 15000); 
     }
 
     return {

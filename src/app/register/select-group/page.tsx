@@ -1,4 +1,6 @@
-import { getClinicGroups } from '@/lib/server-data';
+
+'use client'
+
 import {
   Card,
   CardContent,
@@ -8,11 +10,23 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ChevronRight, Stethoscope } from 'lucide-react';
+import { ChevronRight, Stethoscope, Loader } from 'lucide-react';
 import { Logo } from '@/components/logo';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { ClinicGroup } from '@/lib/types';
+import { collection, query, where } from 'firebase/firestore';
 
-export default async function SelectGroupPage() {
-  const clinicGroups = await getClinicGroups();
+
+export default function SelectGroupPage() {
+  const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
+  
+  const clinicGroupsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(firestore, 'groups'), where('type', '==', 'Doctor'))
+  }, [firestore, user]);
+
+  const { data: clinicGroups, isLoading } = useCollection<ClinicGroup>(clinicGroupsQuery);
 
   return (
     <div className="min-h-screen bg-muted flex flex-col items-center justify-center p-4">
@@ -28,7 +42,8 @@ export default async function SelectGroupPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {clinicGroups.map((group) => (
+            {(isLoading || isUserLoading) && <div className="flex justify-center py-4"><Loader className="animate-spin" /></div>}
+            {!isLoading && !isUserLoading && clinicGroups?.map((group) => (
               <Button asChild key={group.id} variant="outline" className="w-full justify-between h-16 text-left">
                 <Link href={`/register/${group.id}`}>
                     <div className="flex items-center gap-4">
@@ -42,6 +57,9 @@ export default async function SelectGroupPage() {
                 </Link>
               </Button>
             ))}
+             {!isLoading && !isUserLoading && clinicGroups?.length === 0 && (
+                <p className="text-center text-muted-foreground">No departments available.</p>
+             )}
           </CardContent>
         </Card>
       </div>

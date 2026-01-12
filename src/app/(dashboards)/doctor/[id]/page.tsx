@@ -2,10 +2,6 @@
 'use client';
 
 import { use, useState, useEffect } from 'react';
-import {
-  getPatientsByGroupId,
-  getClinicGroupById,
-} from '@/lib/data';
 import type { Patient, ClinicGroup, Doctor } from '@/lib/types';
 import {
   Card,
@@ -24,31 +20,42 @@ import {
   Stethoscope,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { collection, doc, query, where } from 'firebase/firestore';
+
 
 type DoctorPageProps = {
   params: { id: string };
 };
 
-type FetchedData = {
-  clinicGroup: ClinicGroup | undefined;
-  patients: Patient[];
-};
 
 export default function DoctorPageLoader({ params }: DoctorPageProps) {
   const { id } = use(params);
-  const [data, setData] = useState<FetchedData | null>(null);
+  const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
 
-  useEffect(() => {
-    const groupId = id === 'doc_ashish' ? 'grp_cardiology_01' : 'grp_ortho_01';
-    Promise.all([
-      getClinicGroupById(groupId),
-      getPatientsByGroupId(groupId),
-    ]).then(([clinicGroup, patients]) => {
-      setData({ clinicGroup, patients });
-    });
-  }, [id]);
+  const doctorGroupIdQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(firestore, "groups"), where("doctors", "array-contains", { id: id, name: "Dr. Ashish" }));
+  }, [firestore, user, id]);
 
-  if (!data || !data.clinicGroup) {
+  const {data: doctorGroups, isLoading: groupsLoading} = useCollection<ClinicGroup>(doctorGroupIdQuery);
+  const groupId = doctorGroups?.[0]?.id;
+
+  const patientsQuery = useMemoFirebase(() => {
+    if (!groupId) return null;
+    return query(collection(firestore, 'patients'), where('groupId', '==', groupId));
+  }, [firestore, groupId]);
+  const { data: initialPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
+  
+  const clinicGroupQuery = useMemoFirebase(() => {
+    if (!groupId) return null;
+    return doc(firestore, 'groups', groupId);
+  }, [firestore, groupId]);
+  const { data: clinicGroup, isLoading: clinicGroupLoading } = useDoc<ClinicGroup>(clinicGroupQuery);
+
+
+  if (isUserLoading || groupsLoading || patientsLoading || clinicGroupLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader className="h-8 w-8 animate-spin" />
@@ -56,10 +63,18 @@ export default function DoctorPageLoader({ params }: DoctorPageProps) {
     );
   }
 
+  if (!clinicGroup || !initialPatients) {
+       return (
+         <div className="flex items-center justify-center h-full">
+            <p>Could not load doctor's dashboard.</p>
+        </div>
+       )
+  }
+
   return (
     <DoctorDashboard
-      clinicGroup={data.clinicGroup}
-      initialPatients={data.patients}
+      clinicGroup={clinicGroup}
+      initialPatients={initialPatients}
     />
   );
 }

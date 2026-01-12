@@ -17,24 +17,18 @@ import type {
   Patient,
 } from './types';
 
-// This is a temporary solution. In a real app, you'd have a more robust way to get the db instance.
 const { firestore: db } = initializeServerFirebase();
 
+// This file is for SERVER-SIDE data fetching.
+// For client-side, use lib/data.ts
 
 // Clinics
 export const getClinics = async (): Promise<Clinic[]> => {
-  const clinicsCol = collection(db, 'groups'); // Assuming clinics are groups with type 'Clinic'
+  const clinicsCol = collection(db, 'groups');
   const q = query(clinicsCol, where('type', '==', 'Clinic'));
   const snapshot = await getDocs(q);
   const clinics = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Clinic));
-  
-  if (clinics.length > 0) return clinics;
-
-  // Mock fallback
-  return [
-      { id: 'clinic_01', name: 'City Care Clinic', location: 'Maharashtra, Mumbai', type: 'Clinic' },
-      { id: 'clinic_02', name: 'Health Plus Clinic', location: 'Maharashtra, Pune', type: 'Clinic' },
-  ];
+  return clinics;
 };
 
 export const getClinicById = async (
@@ -45,9 +39,7 @@ export const getClinicById = async (
   if (docSnap.exists() && docSnap.data().type === 'Clinic') {
     return { id: docSnap.id, ...docSnap.data() } as Clinic;
   }
-  // Fallback for mock data - This can be removed once seeding is robust
-  const mockClinics = await getClinics();
-  return mockClinics.find(c => c.id === id);
+  return undefined;
 };
 
 export const getPatients = async (): Promise<Patient[]> => {
@@ -82,38 +74,7 @@ export const getClinicGroups = async (
   const groups = snapshot.docs.map(
     doc => ({ id: doc.id, ...doc.data() } as ClinicGroup)
   );
-
-  if (groups.length > 0) return groups;
-
-  // Mock fallback
-  return [
-    {
-      id: 'grp_cardiology_01',
-      clinicId: 'clinic_01',
-      name: 'Cardiology',
-      tokenInitial: 'CARD',
-      location: 'Wing A, Floor 2',
-      specialties: ['Cardiology'],
-      contact: '555-0101',
-      doctors: [{ id: 'doc_ashish', name: 'Dr. Ashish' }],
-      assistants: [{ id: 'asst_sunita', name: 'Sunita' }],
-      cabins: [{ id: 'cab_01', name: 'Consultation Room 1', clinicId: 'clinic_01' }],
-      screens: [{ id: 'scr_main_hall', name: 'Main Hall Display' }],
-    },
-    {
-      id: 'grp_ortho_01',
-      clinicId: 'clinic_02',
-      name: 'Orthopedics',
-      tokenInitial: 'ORTH',
-      location: 'Building B, Floor 1',
-      specialties: ['Orthopedics', 'Sports Medicine'],
-      contact: '555-0102',
-      doctors: [{ id: 'doc_vijay', name: 'Dr. Vijay' }],
-      assistants: [{ id: 'asst_rajesh', name: 'Rajesh' }],
-      cabins: [{ id: 'cab_03', name: 'Wellness Cabin A', clinicId: 'clinic_02' }],
-      screens: [{ id: 'scr_ortho_wait', name: 'Ortho Waiting Area' }],
-    },
-  ];
+  return groups;
 };
 
 export const getClinicGroupById = async (
@@ -124,7 +85,5 @@ export const getClinicGroupById = async (
   if (docSnap.exists()) {
     return { id: docSnap.id, ...docSnap.data() } as ClinicGroup;
   }
-  // Mock fallback
-  const groups = await getClinicGroups();
-  return groups.find(g => g.id === id);
+  return undefined;
 };

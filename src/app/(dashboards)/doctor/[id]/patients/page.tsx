@@ -2,11 +2,7 @@
 'use client';
 
 import { use, useState, useEffect } from 'react';
-import {
-  getPatientsByGroupId,
-  getClinicGroups,
-  getPatientHistory,
-} from '@/lib/data';
+import { getPatientHistory } from '@/lib/data';
 import type { Patient, ClinicGroup, PatientHistoryEntry } from '@/lib/types';
 import {
   Card,
@@ -47,9 +43,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowUp, ArrowDown, Search, History } from 'lucide-react';
+import { ArrowUp, ArrowDown, Search, History, Loader } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
+
 
 const badgeColors: Record<Patient['status'], string> = {
   waiting: 'bg-blue-100 text-blue-800',
@@ -76,25 +75,24 @@ function VisitHistoryModal({
   patient: Patient | null;
 }) {
   const [history, setHistory] = useState<PatientHistoryEntry[]>([]);
-  const [clinics, setClinics] = useState<ClinicGroup[]>([]);
+  
+  const firestore = useFirestore();
+  const clinicsQuery = useMemoFirebase(() => query(collection(firestore, 'groups'), where('type', '==', 'Clinic')), [firestore]);
+  const { data: clinics } = useCollection<ClinicGroup>(clinicsQuery);
+
 
   useEffect(() => {
-    if (patient) {
-      getPatientHistory(patient.id).then(setHistory);
+    if (patient && clinics) {
+      getPatientHistory(patient.id, clinics).then(setHistory);
     } else {
       setHistory([]);
     }
-
-    if (isOpen) {
-        getClinicGroups().then(setClinics);
-    }
-
-  }, [patient, isOpen]);
+  }, [patient, clinics, isOpen]);
 
   if (!patient) return null;
   
   const getClinicName = (clinicId: string) => {
-    return clinics.find(c => c.id === clinicId)?.name || 'Unknown Clinic';
+    return clinics?.find(c => c.id === clinicId)?.name || 'Unknown Clinic';
   };
 
   return (
@@ -123,7 +121,7 @@ function VisitHistoryModal({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All</SelectItem>
-                         {clinics.map(clinic => (
+                         {clinics?.map(clinic => (
                           <SelectItem key={clinic.id} value={clinic.id} className="text-xs">{clinic.name}</SelectItem>
                         ))}
                       </SelectContent>
@@ -202,7 +200,6 @@ function VisitHistoryModal({
 
 export default function DoctorPatientsPage({ params }: { params: { id: string } }) {
   const { id: doctorId } = use(params);
-  const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [sortConfig, setSortConfig] = useState<{
     key: keyof Patient;
@@ -211,23 +208,39 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
-  useEffect(() => {
-    const groupId = doctorId === 'doc_ashish' ? 'grp_cardiology_01' : 'grp_ortho_01';
-    getPatientsByGroupId(groupId).then((data) => {
-      setAllPatients(data);
-    });
-  }, [doctorId]);
+  const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
+
+  const doctorGroupIdQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    // This is not ideal, we should query by doctorId, not hardcoded name
+    return query(collection(firestore, "groups"), where("doctors", "array-contains", { id: doctorId, name: "Dr. Ashish" }));
+  }, [firestore, user, doctorId]);
+
+  const {data: doctorGroups, isLoading: groupsLoading} = useCollection<ClinicGroup>(doctorGroupIdQuery);
+  const groupId = doctorGroups?.[0]?.id;
+
+  const patientsQuery = useMemoFirebase(() => {
+    if (!groupId) return null;
+    return query(collection(firestore, 'patients'), where('groupId', '==', groupId));
+  }, [firestore, groupId]);
+
+  const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
   
   useEffect(() => {
+    if (!allPatients) {
+        setFilteredPatients([]);
+        return;
+    }
     let filteredData = allPatients;
 
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
         filteredData = filteredData.filter(patient => 
             patient.name.toLowerCase().includes(lowercasedQuery) ||
-            patient.tokenNumber.toLowerCase().includes(lowercasedQuery) ||
-            patient.contactNumber.toLowerCase().includes(lowercasedQuery) ||
-            patient.emailAddress.toLowerCase().includes(lowercasedQuery)
+            (patient.tokenNumber && patient.tokenNumber.toLowerCase().includes(lowercasedQuery)) ||
+            (patient.contactNumber && patient.contactNumber.toLowerCase().includes(lowercasedQuery)) ||
+            (patient.emailAddress && patient.emailAddress.toLowerCase().includes(lowercasedQuery))
         );
     }
     
@@ -267,6 +280,8 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
   const closeHistoryModal = () => {
     setSelectedPatient(null);
   };
+
+  const isLoading = isUserLoading || groupsLoading || patientsLoading;
 
   return (
     <>
@@ -360,7 +375,8 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredPatients.map((patient) => (
+              {isLoading && <TableRow><TableCell colSpan={7} className="text-center py-4"><Loader className="animate-spin mx-auto h-6 w-6" /></TableCell></TableRow>}
+              {!isLoading && filteredPatients.map((patient) => (
                 <TableRow key={patient.id}>
                   <TableCell className="font-medium py-2 text-xs">{patient.name}</TableCell>
                   <TableCell className="py-2 px-2 text-xs">{patient.age}</TableCell>
@@ -387,7 +403,7 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
                   </TableCell>
                 </TableRow>
               ))}
-               {filteredPatients.length === 0 && (
+               {!isLoading && filteredPatients.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={7} className="text-center text-muted-foreground py-4 text-sm">
                         No patients found.

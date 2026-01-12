@@ -2,7 +2,7 @@
 'use client';
 
 import { useActionState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -23,25 +23,34 @@ import {
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { registerPatient } from '@/lib/actions';
-import { getClinicGroups } from '@/lib/data';
 import type { ClinicGroup } from '@/lib/types';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
+import { Loader } from 'lucide-react';
+
 
 function SubmitButton() {
-  // `pending` is not available in useActionState, so we cannot use it here.
-  // A loading state can be managed with `useTransition` if needed.
   return <Button type="submit" className="w-full">Register Patient</Button>;
 }
 
 export default function AssistantPage() {
   const router = useRouter();
+  const params = useParams();
+  const id = params.id as string;
   const { toast } = useToast();
-  const [clinicGroups, setClinicGroups] = useState<ClinicGroup[]>([]);
+
+  const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
+  
+  const groupsQuery = useMemoFirebase(() => {
+      if (!user) return null;
+      return query(collection(firestore, "groups"), where("assistants", "array-contains", { id: id, name: "Sunita" }));
+  }, [firestore, user, id]);
+
+  const { data: clinicGroups, isLoading: groupsLoading } = useCollection<ClinicGroup>(groupsQuery);
   const [state, formAction] = useActionState(registerPatient, null);
 
-  useEffect(() => {
-    getClinicGroups().then(setClinicGroups);
-  }, []);
 
   useEffect(() => {
     if (state?.success && state.tokenNumber) {
@@ -49,8 +58,6 @@ export default function AssistantPage() {
         title: 'Patient Registered',
         description: `Token number ${state.tokenNumber} has been assigned.`,
       });
-      // A full page reload might not be what you want.
-      // Consider clearing the form instead.
       router.refresh(); 
     } else if (state?.message && !state.success) {
       toast({
@@ -60,6 +67,14 @@ export default function AssistantPage() {
       });
     }
   }, [state, toast, router]);
+
+  if (isUserLoading || groupsLoading) {
+      return (
+          <div className="flex h-full w-full items-center justify-center">
+              <Loader className="h-8 w-8 animate-spin" />
+          </div>
+      )
+  }
 
   return (
     <div className="space-y-8">
@@ -82,9 +97,9 @@ export default function AssistantPage() {
                     <SelectValue placeholder="Select a department" />
                   </SelectTrigger>
                   <SelectContent>
-                    {clinicGroups.map((group) => (
+                    {clinicGroups?.map((group) => (
                       <SelectItem key={group.id} value={group.id}>
-                        {group.name} (Dr. {group.doctor.name})
+                        {group.name} (Dr. {group.doctors.map(d => d.name).join(', ')})
                       </SelectItem>
                     ))}
                   </SelectContent>

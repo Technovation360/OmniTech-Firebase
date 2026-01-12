@@ -2,7 +2,6 @@
 'use client';
 
 import { use, useState, useEffect } from 'react';
-import { getPatientsByGroupId, getClinicGroupById } from '@/lib/data';
 import type { Patient, ClinicGroup } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -13,6 +12,9 @@ import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { collection, doc, query, where } from 'firebase/firestore';
+
 
 const badgeColors: Record<Patient['status'], string> = {
     'waiting': "bg-blue-100 text-blue-800",
@@ -24,29 +26,42 @@ const badgeColors: Record<Patient['status'], string> = {
 
 export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: string }> }) {
   const { id: doctorId } = use(params);
-  const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
-  const [clinic, setClinic] = useState<ClinicGroup | null>(null);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'tokenNumber', direction: 'asc' });
 
-  useEffect(() => {
-    const groupId = doctorId === 'doc_ashish' ? 'grp_cardiology_01' : 'grp_ortho_01';
-    Promise.all([
-        getClinicGroupById(groupId),
-        getPatientsByGroupId(groupId)
-    ]).then(([clinicData, patientData]) => {
-      setClinic(clinicData || null);
-      setAllPatients(patientData.filter(p => ['waiting', 'called', 'in-consultation'].includes(p.status)));
-      setLoading(false);
-    });
-  }, [doctorId]);
+  const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
+
+  const doctorGroupIdQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(firestore, "groups"), where("doctors", "array-contains", { id: doctorId, name: "Dr. Ashish" }));
+  }, [firestore, user, doctorId]);
+
+  const {data: doctorGroups, isLoading: groupsLoading} = useCollection<ClinicGroup>(doctorGroupIdQuery);
+  const groupId = doctorGroups?.[0]?.id;
+
+  const patientsQuery = useMemoFirebase(() => {
+    if (!groupId) return null;
+    return query(collection(firestore, 'patients'), where('groupId', '==', groupId), where('status', 'in', ['waiting', 'called', 'in-consultation']));
+  }, [firestore, groupId]);
+
+  const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
+
+  const clinicGroupQuery = useMemoFirebase(() => {
+      if (!groupId) return null;
+      return doc(firestore, 'groups', groupId);
+  }, [firestore, groupId]);
+  const { data: clinic, isLoading: clinicLoading } = useDoc<ClinicGroup>(clinicGroupQuery);
 
   const getGroupName = () => clinic?.name || 'Unknown';
   const getDoctorName = () => clinic?.doctors[0]?.name || 'Unknown';
 
   useEffect(() => {
+    if (!allPatients) {
+        setFilteredPatients([]);
+        return;
+    }
     let filteredData = allPatients;
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
@@ -98,7 +113,7 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
     return <ArrowDown className="ml-2 h-3 w-3" />;
   };
 
-  if (loading) {
+  if (isUserLoading || groupsLoading || patientsLoading || clinicLoading) {
     return <div className="flex justify-center items-center h-full"><Loader className="animate-spin" /></div>;
   }
 

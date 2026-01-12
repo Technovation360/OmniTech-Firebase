@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
-import { getPatientsByGroupId, getClinicGroupById, updatePatientStatus } from '@/lib/data';
+import { updatePatientStatus } from '@/lib/data';
 import type { Patient, ClinicGroup, Doctor } from '@/lib/types';
 import {
   Card,
@@ -26,14 +26,11 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { handlePatientAction } from '@/lib/actions';
+import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { collection, doc, query, where } from 'firebase/firestore';
 
 type DoctorPageProps = {
   params: { id: string };
-};
-
-type FetchedData = {
-  clinicGroup: ClinicGroup | undefined;
-  patients: Patient[];
 };
 
 type RoomStatus = {
@@ -43,27 +40,30 @@ type RoomStatus = {
 
 export default function DoctorConsultationPageLoader({ params }: DoctorPageProps) {
   const { id } = use(params);
-  const [data, setData] = useState<FetchedData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
+  
+  const doctorGroupIdQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(firestore, "groups"), where("doctors", "array-contains", { id: id, name: "Dr. Ashish" }));
+  }, [firestore, user, id]);
 
-  useEffect(() => {
-    const groupId = id === 'doc_ashish' ? 'grp_cardiology_01' : 'grp_ortho_01';
-    const fetchData = () => {
-        setLoading(true);
-        Promise.all([
-        getClinicGroupById(groupId),
-        getPatientsByGroupId(groupId),
-        ]).then(([clinicGroup, patients]) => {
-        setData({ clinicGroup, patients });
-        setLoading(false);
-        });
-    }
-    fetchData();
-    const interval = setInterval(fetchData, 5000); // Refresh every 5 seconds
-    return () => clearInterval(interval);
-  }, [id]);
+  const {data: doctorGroups, isLoading: groupsLoading} = useCollection<ClinicGroup>(doctorGroupIdQuery);
+  const groupId = doctorGroups?.[0]?.id;
 
-  if (loading || !data || !data.clinicGroup) {
+  const patientsQuery = useMemoFirebase(() => {
+    if (!groupId) return null;
+    return query(collection(firestore, 'patients'), where('groupId', '==', groupId));
+  }, [firestore, groupId]);
+  const { data: initialPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
+  
+  const clinicGroupQuery = useMemoFirebase(() => {
+    if (!groupId) return null;
+    return doc(firestore, 'groups', groupId);
+  }, [firestore, groupId]);
+  const { data: clinicGroup, isLoading: clinicGroupLoading } = useDoc<ClinicGroup>(clinicGroupQuery);
+
+  if (isUserLoading || groupsLoading || patientsLoading || clinicGroupLoading || !clinicGroup || !initialPatients) {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader className="h-8 w-8 animate-spin" />
@@ -71,7 +71,7 @@ export default function DoctorConsultationPageLoader({ params }: DoctorPageProps
     );
   }
 
-  return <DoctorConsultationDashboard clinicGroup={data.clinicGroup} initialPatients={data.patients} />;
+  return <DoctorConsultationDashboard clinicGroup={clinicGroup} initialPatients={initialPatients} />;
 }
 
 
