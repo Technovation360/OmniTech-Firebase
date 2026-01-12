@@ -40,7 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowUp, ArrowDown, Search, History, PlusCircle } from 'lucide-react';
+import { ArrowUp, ArrowDown, Search, History, PlusCircle, Loader } from 'lucide-react';
 import { getPatientHistory } from '@/lib/data';
 import type { Patient, ClinicGroup, PatientHistoryEntry, Clinic } from '@/lib/types';
 import { format } from 'date-fns';
@@ -49,7 +49,7 @@ import { useToast } from '@/hooks/use-toast';
 import { registerPatient } from '@/lib/actions';
 import { useActionState } from 'react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 
 
@@ -301,13 +301,24 @@ function ManualCheckInModal({
 
 export default function PatientRegistryPage() {
   const firestore = useFirestore();
-  const patientsRef = useMemoFirebase(() => collection(firestore, 'patients'), [firestore]);
+  const { user, isUserLoading } = useUser();
+
+  const patientsRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return collection(firestore, 'patients');
+  }, [firestore, user]);
   const { data: allPatients, isLoading: patientsLoading, refetch: fetchPatients } = useCollection<Patient>(patientsRef);
   
-  const clinicsRef = useMemoFirebase(() => query(collection(firestore, 'groups'), where('type', '==', 'Clinic')), [firestore]);
+  const clinicsRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(firestore, 'groups'), where('type', '==', 'Clinic'));
+  }, [firestore, user]);
   const { data: clinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsRef);
   
-  const clinicGroupsRef = useMemoFirebase(() => query(collection(firestore, 'groups'), where('type', '==', 'Doctor')), [firestore]);
+  const clinicGroupsRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(firestore, 'groups'), where('type', '==', 'Doctor'));
+  }, [firestore, user]);
   const { data: clinicGroups, isLoading: groupsLoading } = useCollection<ClinicGroup>(clinicGroupsRef);
 
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
@@ -406,6 +417,14 @@ export default function PatientRegistryPage() {
             description: result.message || "An unknown error occurred."
         });
     }
+  }
+
+  if (isUserLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
 
@@ -524,8 +543,8 @@ export default function PatientRegistryPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {patientsLoading && <TableRow><TableCell colSpan={8}>Loading...</TableCell></TableRow>}
-              {!patientsLoading && filteredPatients.map((patient) => (
+              {(patientsLoading || clinicsLoading) && <TableRow><TableCell colSpan={8}>Loading...</TableCell></TableRow>}
+              {!(patientsLoading || clinicsLoading) && filteredPatients.map((patient) => (
                 <TableRow key={patient.id}>
                   <TableCell className="font-medium py-2 text-xs">{patient.name}</TableCell>
                   <TableCell className="py-2 text-xs">
@@ -557,7 +576,7 @@ export default function PatientRegistryPage() {
                   </TableCell>
                 </TableRow>
               ))}
-               {!patientsLoading && filteredPatients.length === 0 && (
+               {!patientsLoading && !clinicsLoading && filteredPatients.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={8} className="text-center text-muted-foreground py-4 text-sm">
                         No patients found.

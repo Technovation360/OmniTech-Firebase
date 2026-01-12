@@ -35,11 +35,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Edit, Trash2, ArrowUp, ArrowDown, Search } from 'lucide-react';
+import { Edit, Trash2, ArrowUp, ArrowDown, Search, Loader } from 'lucide-react';
 import type { Clinic } from '@/lib/types';
-import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { collection, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 
 function OnboardClinicForm({
@@ -143,8 +143,14 @@ function DeleteClinicDialog({
 
 export default function ClinicsPage() {
   const firestore = useFirestore();
-  const clinicsRef = useMemoFirebase(() => collection(firestore, 'groups'), [firestore]);
-  const { data: allClinics, isLoading } = useCollection<Clinic>(clinicsRef);
+  const { user, isUserLoading } = useUser();
+
+  const clinicsRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(firestore, 'groups'), where('type', '==', 'Clinic'));
+  }, [firestore, user]);
+
+  const { data: allClinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsRef);
   
   const [filteredClinics, setFilteredClinics] = useState<Clinic[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -155,8 +161,12 @@ export default function ClinicsPage() {
 
 
   useEffect(() => {
-    if (!allClinics) return;
-    let filteredData = allClinics.filter(c => c.type === 'Clinic');
+    if (!allClinics) {
+      setFilteredClinics([]);
+      return;
+    };
+    
+    let filteredData = allClinics;
 
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
@@ -217,7 +227,7 @@ export default function ClinicsPage() {
       const docRef = doc(firestore, 'groups', clinicToEdit.id);
       setDocumentNonBlocking(docRef, formData, { merge: true });
     } else {
-      addDoc(collection(firestore, 'groups'), { ...formData, type: 'Clinic' });
+      addDocumentNonBlocking(collection(firestore, 'groups'), { ...formData, type: 'Clinic' });
     }
     closeModal();
   };
@@ -235,6 +245,14 @@ export default function ClinicsPage() {
     if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3" />;
     return <ArrowDown className="ml-2 h-3 w-3" />;
   };
+
+  if (isUserLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -276,8 +294,8 @@ export default function ClinicsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={3} className="text-center">Loading...</TableCell></TableRow>}
-              {!isLoading && filteredClinics.map((clinic) => (
+              {(clinicsLoading) && <TableRow><TableCell colSpan={3} className="text-center">Loading...</TableCell></TableRow>}
+              {!clinicsLoading && filteredClinics.map((clinic) => (
                 <TableRow key={clinic.id}>
                   <TableCell className="font-medium py-2 text-xs">{clinic.name}</TableCell>
                   <TableCell className="py-2 text-xs">{clinic.location}</TableCell>
