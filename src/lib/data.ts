@@ -11,7 +11,6 @@ import {
   updateDoc,
   Timestamp,
 } from 'firebase/firestore';
-import { getFirestore } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 
 import type {

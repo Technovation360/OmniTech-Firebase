@@ -8,8 +8,7 @@ import {
   query,
   where,
 } from 'firebase/firestore';
-import { getFirestore } from 'firebase/firestore';
-import { initializeFirebase } from '@/firebase';
+import { initializeServerFirebase } from '@/firebase/server-init';
 
 import type {
   Clinic,
@@ -17,7 +16,7 @@ import type {
 } from './types';
 
 // This is a temporary solution. In a real app, you'd have a more robust way to get the db instance.
-const { firestore: db } = initializeFirebase();
+const { firestore: db } = initializeServerFirebase();
 
 
 // Clinics
