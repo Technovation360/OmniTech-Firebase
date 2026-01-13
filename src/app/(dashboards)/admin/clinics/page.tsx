@@ -360,7 +360,13 @@ export default function ClinicsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={4} className="text-center py-4"><Loader className="animate-spin mx-auto" /></TableCell></TableRow>}
+              {isLoading && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-10">
+                    <Loader className="mx-auto h-6 w-6 animate-spin" />
+                  </TableCell>
+                </TableRow>
+              )}
               {!isLoading && filteredClinics.map((clinic) => (
                 <TableRow key={clinic.id}>
                   <TableCell className="font-medium py-2 text-xs">{clinic.name}</TableCell>
@@ -407,5 +413,3 @@ export default function ClinicsPage() {
     </>
   )
 }
-
-    
