@@ -63,7 +63,6 @@ export default function CampaignsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold font-headline">Campaigns Management</h1>
-          <p className="text-muted-foreground">Oversee advertisers and campaigns.</p>
         </div>
         <Button>New Campaign</Button>
       </div>
