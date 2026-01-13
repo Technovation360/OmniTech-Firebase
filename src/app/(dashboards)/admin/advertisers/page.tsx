@@ -230,23 +230,21 @@ export default function AdvertisersPage() {
 
   return (
     <>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Advertisers</h1>
+        <Button onClick={openCreateModal}>ADD ADVERTISER</Button>
+      </div>
       <Card>
         <CardHeader>
-             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                    <CardTitle className="text-lg">Advertisers</CardTitle>
-                </div>
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <div className="relative w-full sm:w-64">
-                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                       <Input 
-                            placeholder="Search by name..." 
-                            className="pl-9 h-9" 
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                    <Button onClick={openCreateModal} size="sm" className="w-auto sm:w-auto flex-shrink-0">ADD ADVERTISER</Button>
+            <div className="flex items-center">
+                <div className="relative w-full sm:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Search by name..." 
+                        className="pl-9 h-9" 
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                    />
                 </div>
             </div>
         </CardHeader>
