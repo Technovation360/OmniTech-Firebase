@@ -35,7 +35,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Edit, Trash2, ArrowUp, ArrowDown, Search, Loader } from 'lucide-react';
+import { Edit, Trash2, ArrowUp, ArrowDown, Search, Loader, PlusCircle } from 'lucide-react';
 import type { Clinic } from '@/lib/types';
 import { collection, addDoc, updateDoc, deleteDoc, doc, query, where, getDocs } from 'firebase/firestore';
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
@@ -197,16 +197,16 @@ export default function ClinicsPage() {
   const { user, isUserLoading } = useUser();
   
   const clinicsQuery = useMemoFirebase(() => {
-      if (isUserLoading || !user) return null;
+      if (!user) return null;
       return query(collection(firestore, 'groups'), where('type', '==', 'Clinic'));
-  }, [firestore, user, isUserLoading]);
+  }, [firestore, user]);
   
   const { data: allClinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
 
   const specialtiesQuery = useMemoFirebase(() => {
-    if (isUserLoading || !user) return null;
+    if (!user) return null;
     return query(collection(firestore, 'specialties'), where('forClinic', '==', true));
-  }, [firestore, user, isUserLoading]);
+  }, [firestore, user]);
   const { data: specialtiesData, isLoading: specialtiesLoading } = useCollection<{id: string, name: string}>(specialtiesQuery);
 
   const [filteredClinics, setFilteredClinics] = useState<Clinic[]>([]);
@@ -321,7 +321,10 @@ export default function ClinicsPage() {
     <>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Clinics Management</h1>
-        <Button onClick={openCreateModal}>Onboard Clinic</Button>
+        <Button onClick={openCreateModal}>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Onboard Clinic
+        </Button>
       </div>
       <Card>
         <CardHeader>
@@ -373,9 +376,9 @@ export default function ClinicsPage() {
                   <TableCell className="py-2 text-xs">{clinic.pincode || '-'}</TableCell>
                   <TableCell className="py-2 text-xs">
                     <div className="flex flex-wrap gap-1">
-                        {clinic.specialties?.map(spec => (
+                        {(clinic.specialties || []).map(spec => (
                             <Badge key={spec} variant="secondary" className="text-[10px]">{spec}</Badge>
-                        )) || '-'}
+                        ))}
                     </div>
                   </TableCell>
                   <TableCell className="flex gap-2 py-2">
@@ -413,3 +416,5 @@ export default function ClinicsPage() {
     </>
   )
 }
+
+    
