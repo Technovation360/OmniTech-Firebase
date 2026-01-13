@@ -50,6 +50,7 @@ import type { Clinic, ClinicGroup, User } from '@/lib/types';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc, query, where } from 'firebase/firestore';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { mockUsers } from '@/lib/data';
 
 
 const roleLabels: Record<UserRole, string> = {
@@ -279,16 +280,27 @@ export default function UsersPage() {
   
   const clinics = clinicsData || [];
   const clinicGroups = clinicGroupsData || [];
+  const [hasSeeded, setHasSeeded] = useState(false);
 
   useEffect(() => {
-    if(!allUsers) {
-        setFilteredUsers([]);
-        return;
-    };
-    let filteredData = [...allUsers];
+    if (!usersLoading && allUsers && allUsers.length === 0 && !hasSeeded) {
+      console.log("No users found, seeding database...");
+      setHasSeeded(true); // Prevent re-seeding
+      for (const userData of mockUsers) {
+        // We can use setDocumentNonBlocking and provide the ID
+        const userRef = doc(firestore, 'users', userData.id);
+        setDocumentNonBlocking(userRef, userData, { merge: true });
+      }
+    }
+  }, [allUsers, usersLoading, hasSeeded, firestore]);
+
+  useEffect(() => {
+    let sourceUsers = allUsers || [];
+    let filteredData = [...sourceUsers];
+
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
-        filteredData = allUsers.filter(user => 
+        filteredData = filteredData.filter(user => 
             user.name.toLowerCase().includes(lowercasedQuery) ||
             user.email.toLowerCase().includes(lowercasedQuery) ||
             user.affiliation.toLowerCase().includes(lowercasedQuery)
@@ -366,14 +378,6 @@ export default function UsersPage() {
   };
 
   const isLoading = isUserLoading || usersLoading;
-
-  if (isUserLoading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <Loader className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <>
@@ -477,5 +481,3 @@ export default function UsersPage() {
     </>
   )
 }
-
-    
