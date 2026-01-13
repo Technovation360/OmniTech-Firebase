@@ -47,13 +47,6 @@ type Advertiser = {
   status: 'active' | 'inactive';
 };
 
-const initialAdvertisers: Advertiser[] = [
-    { id: 'adv_1', name: 'HealthCare Insurance', campaigns: 1, status: 'active'},
-    { id: 'adv_2', name: 'PharmaCure', campaigns: 1, status: 'active'},
-    { id: 'adv_3', name: 'Wellness Now', campaigns: 0, status: 'inactive'},
-]
-
-
 function AdvertiserForm({
   isOpen,
   onClose,
@@ -136,8 +129,8 @@ function DeleteAdvertiserDialog({
   }
 
 export default function AdvertisersPage() {
-  const [allAdvertisers, setAllAdvertisers] = useState<Advertiser[]>(initialAdvertisers);
-  const [filteredAdvertisers, setFilteredAdvertisers] = useState<Advertiser[]>(initialAdvertisers);
+  const [allAdvertisers, setAllAdvertisers] = useState<Advertiser[]>([]);
+  const [filteredAdvertisers, setFilteredAdvertisers] = useState<Advertiser[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [advertiserToEdit, setAdvertiserToEdit] = useState<Advertiser | null>(null);
   const [advertiserToDelete, setAdvertiserToDelete] = useState<Advertiser | null>(null);

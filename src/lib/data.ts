@@ -294,13 +294,7 @@ export const getAdvertisements = async (): Promise<Advertisement[]> => {
   const ads = snapshot.docs.map(
     doc => ({ id: doc.id, ...doc.data() } as Advertisement)
   );
-  if (ads.length > 0) return ads;
-
-  // Mock fallback
-  return [
-    { id: 'ad_1', advertiser: 'HealthCare Insurance', campaign: 'Annual Check-up Reminder', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', impressions: 12456 },
-    { id: 'ad_2', advertiser: 'PharmaCure', campaign: 'New Diabetes Medication', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4', impressions: 8423 },
-  ]
+  return ads;
 };
 
 // Consultations
@@ -346,5 +340,3 @@ export const seedUsers = (firestore: Firestore) => {
         setDocumentNonBlocking(userRef, userData, { merge: true });
     }
 }
-
-    
