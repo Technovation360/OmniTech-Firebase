@@ -477,7 +477,6 @@ export default function PatientRegistryPage() {
               </div>
             </div>
             <div className="flex items-center gap-4 self-end">
-                <p className="text-xs font-medium text-muted-foreground text-right">{filteredPatients.length} REGISTERED PATIENTS</p>
                 <Button onClick={() => setCheckInModalOpen(true)} size="sm" className="h-8">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     MANUAL CHECK-IN
@@ -614,5 +613,7 @@ export default function PatientRegistryPage() {
     </>
   );
 }
+
+    
 
     
