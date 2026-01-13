@@ -146,6 +146,7 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="space-y-6">
+       <h1 className="text-3xl font-bold">Live Queue</h1>
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -178,15 +179,11 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
                   </div>
               </div>
             </div>
-            <p className="text-sm font-medium text-muted-foreground whitespace-nowrap">{filteredPatients.length} ACTIVE PATIENTS</p>
           </div>
         </CardHeader>
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-xl font-bold">Live Queue</CardTitle>
-        </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
