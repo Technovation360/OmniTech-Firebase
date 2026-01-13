@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2, ArrowUp, ArrowDown, Search } from 'lucide-react';
+import { Edit, Trash2, ArrowUp, ArrowDown, Search, Loader } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -48,6 +48,15 @@ type Specialty = {
   forClinic: boolean;
   forDoctor: boolean;
 };
+
+const seedSpecialties = [
+    { name: 'Cardiology', forClinic: true, forDoctor: true },
+    { name: 'Orthopedics', forClinic: true, forDoctor: true },
+    { name: 'Pediatrics', forClinic: true, forDoctor: true },
+    { name: 'General Medicine', forClinic: true, forDoctor: true },
+    { name: 'Neurology', forClinic: false, forDoctor: true },
+    { name: 'Oncology', forClinic: true, forDoctor: false },
+]
 
 function SpecialtyForm({
   isOpen,
@@ -159,6 +168,17 @@ export default function SpecialtiesPage() {
   const [specialtyToDelete, setSpecialtyToDelete] = useState<Specialty | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: keyof Specialty; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc' });
   const [searchQuery, setSearchQuery] = useState('');
+  const [hasSeeded, setHasSeeded] = useState(false);
+  
+  useEffect(() => {
+    if (!isLoading && allSpecialties && allSpecialties.length === 0 && !hasSeeded) {
+        console.log("No specialties found, seeding...");
+        setHasSeeded(true);
+        for(const specialty of seedSpecialties) {
+            addDocumentNonBlocking(collection(firestore, 'specialties'), specialty);
+        }
+    }
+  }, [allSpecialties, isLoading, hasSeeded, firestore]);
 
   useEffect(() => {
     if (!allSpecialties) {
@@ -279,7 +299,7 @@ export default function SpecialtiesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={4} className="text-center">Loading...</TableCell></TableRow>}
+              {isLoading && <TableRow><TableCell colSpan={4} className="text-center"><Loader className="animate-spin mx-auto" /></TableCell></TableRow>}
               {!isLoading && filteredSpecialties && filteredSpecialties.map((specialty) => (
                 <TableRow key={specialty.id}>
                   <TableCell className="font-medium py-2 text-xs">{specialty.name}</TableCell>
