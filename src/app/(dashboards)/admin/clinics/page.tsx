@@ -222,23 +222,18 @@ export default function ClinicsPage() {
   }, [specialtiesData]);
 
   useEffect(() => {
-    if (!allClinics) {
-      setFilteredClinics([]);
-      return;
-    };
+    let sourceData = allClinics ? [...allClinics] : [];
     
-    let filteredData = [...allClinics];
-
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
-        filteredData = filteredData.filter(clinic => 
+        sourceData = sourceData.filter(clinic => 
             clinic.name.toLowerCase().includes(lowercasedQuery) ||
             clinic.location.toLowerCase().includes(lowercasedQuery)
         );
     }
     
     if (sortConfig) {
-      const sorted = [...filteredData].sort((a, b) => {
+      sourceData.sort((a, b) => {
         const valA = (a as any)[sortConfig.key]?.toLowerCase() || '';
         const valB = (b as any)[sortConfig.key]?.toLowerCase() || '';
 
@@ -246,10 +241,9 @@ export default function ClinicsPage() {
         if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
         return 0;
       });
-      setFilteredClinics(sorted);
-    } else {
-        setFilteredClinics(filteredData);
-    }
+    } 
+    setFilteredClinics(sourceData);
+
   }, [searchQuery, allClinics, sortConfig]);
   
   const openEditModal = (clinic: Clinic) => {
@@ -308,7 +302,7 @@ export default function ClinicsPage() {
   };
 
   const isLoading = isUserLoading || clinicsLoading || specialtiesLoading;
-
+  
   if (isUserLoading) {
     return (
       <div className="flex h-full items-center justify-center">
