@@ -215,28 +215,10 @@ export default function ClinicsPage() {
   const [sortConfig, setSortConfig] = useState<{ key: keyof Clinic; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc'});
   const [searchQuery, setSearchQuery] = useState('');
   
-  const [hasSeeded, setHasSeeded] = useState(false);
-
   const specialtyOptions = useMemo(() => {
     if (!specialtiesData) return [];
     return specialtiesData.map(s => ({ value: s.name, label: s.name }));
   }, [specialtiesData]);
-
-  useEffect(() => {
-    if (!clinicsLoading && allClinics && allClinics.length === 0 && !hasSeeded) {
-      console.log("No clinics found, seeding database...");
-      setHasSeeded(true); // Prevent re-seeding
-      const sampleClinics: Omit<Clinic, 'id'>[] = [
-        { name: 'City Care Clinic', location: 'Maharashtra, Mumbai', type: 'Clinic', phone: '123-456-7890', email: 'contact@citycare.com', address: '123 Health St', city: 'Mumbai', state: 'Maharashtra', pincode: '400001', specialties: ['Cardiology', 'General Medicine'] },
-        { name: 'Health Plus Clinic', location: 'Maharashtra, Pune', type: 'Clinic', phone: '987-654-3210', email: 'contact@healthplus.com', address: '456 Wellness Ave', city: 'Pune', state: 'Maharashtra', pincode: '411001', specialties: ['Orthopedics', 'Pediatrics'] },
-      ];
-      
-      for (const clinicData of sampleClinics) {
-          addDocumentNonBlocking(collection(firestore, "groups"), clinicData);
-      }
-    }
-  }, [allClinics, clinicsLoading, hasSeeded, firestore]);
-
 
   useEffect(() => {
     if (!allClinics) {
@@ -414,5 +396,3 @@ export default function ClinicsPage() {
     </>
   )
 }
-
-    
