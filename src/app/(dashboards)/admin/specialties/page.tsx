@@ -40,7 +40,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc, addDoc } from 'firebase/firestore';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 type Specialty = {
   id: string;
@@ -284,10 +284,10 @@ export default function SpecialtiesPage() {
                 <TableRow key={specialty.id}>
                   <TableCell className="font-medium py-2 text-xs">{specialty.name}</TableCell>
                   <TableCell className="py-2 text-xs">
-                    {specialty.forClinic && <Badge variant="secondary" className="bg-green-100 text-green-800">YES</Badge>}
+                    <Checkbox checked={specialty.forClinic} disabled />
                   </TableCell>
                   <TableCell className="py-2 text-xs">
-                    {specialty.forDoctor && <Badge variant="secondary" className="bg-blue-100 text-blue-800">YES</Badge>}
+                    <Checkbox checked={specialty.forDoctor} disabled />
                   </TableCell>
                   <TableCell className="flex gap-2 py-2">
                     <Button variant="ghost" size="icon-xs" onClick={() => openEditModal(specialty)}>
