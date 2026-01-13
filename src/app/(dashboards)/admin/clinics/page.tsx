@@ -1,5 +1,6 @@
+
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -411,3 +412,5 @@ export default function ClinicsPage() {
     </>
   )
 }
+
+    
