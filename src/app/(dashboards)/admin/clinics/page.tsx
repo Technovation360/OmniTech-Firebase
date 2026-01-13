@@ -42,6 +42,7 @@ import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebas
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/multi-select';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 
 
 function OnboardClinicForm({
@@ -347,20 +348,30 @@ export default function ClinicsPage() {
                     </Button>
                 </TableHead>
                 <TableHead>
-                    <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('location')}>
-                        Location
-                        {getSortIcon('location')}
+                    <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('pincode')}>
+                        Pincode
+                        {getSortIcon('pincode')}
                     </Button>
+                </TableHead>
+                <TableHead>
+                    Specialties
                 </TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={3} className="text-center py-4"><Loader className="animate-spin mx-auto" /></TableCell></TableRow>}
+              {isLoading && <TableRow><TableCell colSpan={4} className="text-center py-4"><Loader className="animate-spin mx-auto" /></TableCell></TableRow>}
               {!isLoading && filteredClinics.map((clinic) => (
                 <TableRow key={clinic.id}>
                   <TableCell className="font-medium py-2 text-xs">{clinic.name}</TableCell>
-                  <TableCell className="py-2 text-xs">{clinic.location}</TableCell>
+                  <TableCell className="py-2 text-xs">{clinic.pincode || '-'}</TableCell>
+                  <TableCell className="py-2 text-xs">
+                    <div className="flex flex-wrap gap-1">
+                        {clinic.specialties?.map(spec => (
+                            <Badge key={spec} variant="secondary" className="text-[10px]">{spec}</Badge>
+                        )) || '-'}
+                    </div>
+                  </TableCell>
                   <TableCell className="flex gap-2 py-2">
                     <Button variant="ghost" size="icon-xs" onClick={() => openEditModal(clinic)}>
                       <Edit className="h-3 w-3" />
@@ -373,7 +384,7 @@ export default function ClinicsPage() {
               ))}
               {!isLoading && filteredClinics.length === 0 && (
                  <TableRow>
-                    <TableCell colSpan={3} className="text-center text-muted-foreground py-4">No clinics found.</TableCell>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground py-4">No clinics found.</TableCell>
                  </TableRow>
               )}
             </TableBody>
@@ -396,3 +407,5 @@ export default function ClinicsPage() {
     </>
   )
 }
+
+    
