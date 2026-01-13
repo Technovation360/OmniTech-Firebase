@@ -4,7 +4,6 @@ import { useState, useEffect, use, useCallback } from 'react';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -17,9 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { getPatientsByClinicId, getClinicById } from '@/lib/data';
-import type { Patient, ClinicGroup, Clinic } from '@/lib/types';
+import type { Patient, ClinicGroup } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ArrowUp, ArrowDown, Search, Loader } from 'lucide-react';
@@ -31,7 +28,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 
@@ -147,43 +143,33 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
   return (
     <div className="space-y-6">
        <h1 className="text-3xl font-bold">Live Queue</h1>
+      
       <Card>
         <CardHeader>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-4 w-full sm:w-auto">
-              <div className="space-y-2 w-full sm:w-auto">
-                  <Label htmlFor="groupFilter" className="text-xs font-semibold text-muted-foreground">FILTER BY GROUP</Label>
-                  <Select value={selectedGroup} onValueChange={setSelectedGroup}>
-                    <SelectTrigger id="groupFilter" className="h-10 w-full sm:w-48 text-sm">
-                        <SelectValue placeholder="All Groups" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all" className="text-sm">All Groups</SelectItem>
-                        {clinicGroups?.map(group => (
-                            <SelectItem key={group.id} value={group.id} className="text-sm">{group.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-              </div>
-              <div className="space-y-2 w-full sm:w-auto">
-                  <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">SEARCH PATIENT</Label>
-                  <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                          id="search"
-                          placeholder="Name, token..." 
-                          className="pl-9 h-10 w-full sm:w-64" 
-                          value={searchQuery}
-                          onChange={e => setSearchQuery(e.target.value)}
-                      />
-                  </div>
+           <div className="flex items-center gap-4">
+              <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+                <SelectTrigger id="groupFilter" className="h-10 w-full sm:w-48 text-sm">
+                    <SelectValue placeholder="All Groups" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all" className="text-sm">All Groups</SelectItem>
+                    {clinicGroups?.map(group => (
+                        <SelectItem key={group.id} value={group.id} className="text-sm">{group.name}</SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                      id="search"
+                      placeholder="Name, token..." 
+                      className="pl-9 h-10 w-full sm:w-64" 
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                  />
               </div>
             </div>
-          </div>
         </CardHeader>
-      </Card>
-
-      <Card>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
