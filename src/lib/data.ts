@@ -10,6 +10,7 @@ import {
   addDoc,
   updateDoc,
   Timestamp,
+  Firestore,
 } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 
@@ -23,6 +24,7 @@ import type {
   Cabin,
   User,
 } from './types';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 const { firestore: db } = initializeFirebase();
 
@@ -206,7 +208,8 @@ export const updatePatientStatus = async (
 };
 
 export const getPatientHistory = async (
-  patientId: string
+  patientId: string,
+  clinics?: Clinic[]
 ): Promise<PatientHistoryEntry[]> => {
   
   const consultationsQuery = query(collection(db, 'consultations'), where('patientId', '==', patientId));
@@ -220,14 +223,22 @@ export const getPatientHistory = async (
     const tokenData = tokenDoc.data();
     const groupDoc = await getDoc(doc(db, 'groups', tokenData.groupId));
     const groupData = groupDoc.data() as ClinicGroup;
-    const clinicDoc = await getDoc(doc(db, 'groups', groupData.clinicId));
-    const clinicData = clinicDoc.data() as Clinic;
+    
+    let clinicName = 'Unknown Clinic';
+    if(clinics) {
+        const clinic = clinics.find(c => c.id === groupData.clinicId);
+        if(clinic) clinicName = clinic.name;
+    } else {
+        const clinicDoc = await getDoc(doc(db, 'groups', groupData.clinicId));
+        if(clinicDoc.exists()) clinicName = (clinicDoc.data() as Clinic).name;
+    }
+
 
     const consultation = patientConsultations.find(c => c.id === tokenData.consultationId);
 
     return {
       tokenNumber: tokenData.tokenNumber,
-      clinicName: clinicData.name,
+      clinicName: clinicName,
       groupName: groupData.name,
       doctorName: groupData.doctors[0]?.name || 'N/A',
       issuedAt: (tokenData.generationTime as Timestamp).toDate().toISOString(),
@@ -325,6 +336,15 @@ export const mockUsers: User[] = [
     { id: 'user_4', name: 'Dr. Vijay', email: 'doc_vijay@omni.com', role: 'doctor', affiliation: 'Health Plus Clinic', specialty: 'Orthopedics' },
     { id: 'user_5', name: 'Sunita', email: 'asst_sunita@omni.com', role: 'assistant', affiliation: 'City Care Clinic' },
     { id: 'user_6', name: 'Rajesh', email: 'asst_rajesh@omni.com', role: 'assistant', affiliation: 'Health Plus Clinic' },
-    { id: 'user_7', name: 'Display User', email: 'display@omni.com', role: 'display', affiliation: 'City Care Clinic', name: 'Main Hall Display' },
+    { id: 'user_7', name: 'Display User', email: 'display@omni.com', role: 'display', name: 'Main Hall Display', affiliation: 'City Care Clinic' },
     { id: 'user_8', name: 'Advertiser User', email: 'advertiser@omni.com', role: 'advertiser', affiliation: 'HealthCare Insurance' },
 ];
+
+export const seedUsers = (firestore: Firestore) => {
+    for (const userData of mockUsers) {
+        const userRef = doc(firestore, 'users', userData.id);
+        setDocumentNonBlocking(userRef, userData, { merge: true });
+    }
+}
+
+    

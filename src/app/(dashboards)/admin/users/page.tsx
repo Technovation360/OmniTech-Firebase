@@ -50,7 +50,7 @@ import type { Clinic, ClinicGroup, User } from '@/lib/types';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc, query, where } from 'firebase/firestore';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { mockUsers } from '@/lib/data';
+import { seedUsers } from '@/lib/data';
 
 
 const roleLabels: Record<UserRole, string> = {
@@ -263,13 +263,13 @@ export default function UsersPage() {
     if (!user) return null;
     return query(collection(firestore, 'groups'), where('type', '==', 'Clinic'))
   }, [firestore, user]);
-  const { data: clinicsData } = useCollection<Clinic>(clinicsQuery);
+  const { data: clinicsData, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
   
   const clinicGroupsQuery = useMemoFirebase(() => {
     if (!user) return null;
     return query(collection(firestore, 'groups'), where('type', '==', 'Doctor'))
   }, [firestore, user]);
-  const { data: clinicGroupsData } = useCollection<ClinicGroup>(clinicGroupsQuery);
+  const { data: clinicGroupsData, isLoading: groupsLoading } = useCollection<ClinicGroup>(clinicGroupsQuery);
   
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -286,11 +286,7 @@ export default function UsersPage() {
     if (!usersLoading && allUsers && allUsers.length === 0 && !hasSeeded) {
       console.log("No users found, seeding database...");
       setHasSeeded(true); // Prevent re-seeding
-      for (const userData of mockUsers) {
-        // We can use setDocumentNonBlocking and provide the ID
-        const userRef = doc(firestore, 'users', userData.id);
-        setDocumentNonBlocking(userRef, userData, { merge: true });
-      }
+      seedUsers(firestore);
     }
   }, [allUsers, usersLoading, hasSeeded, firestore]);
 
@@ -377,7 +373,7 @@ export default function UsersPage() {
     return <ArrowDown className="ml-2 h-3 w-3" />;
   };
 
-  const isLoading = isUserLoading || usersLoading;
+  const isLoading = isUserLoading || usersLoading || clinicsLoading || groupsLoading;
 
   return (
     <>
@@ -481,3 +477,5 @@ export default function UsersPage() {
     </>
   )
 }
+
+    
