@@ -265,7 +265,10 @@ export default function SpecialtiesPage() {
 
   return (
     <>
-      <h1 className="text-3xl font-bold mb-6">Medical Specialties</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Medical Specialties</h1>
+        <Button onClick={openCreateModal}>ADD SPECIALTY</Button>
+      </div>
       <Card>
         <CardHeader>
              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -279,7 +282,6 @@ export default function SpecialtiesPage() {
                             onChange={e => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    <Button onClick={openCreateModal} size="sm" className="w-auto sm:w-auto flex-shrink-0">ADD SPECIALTY</Button>
                 </div>
             </div>
         </CardHeader>
