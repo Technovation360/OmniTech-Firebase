@@ -321,22 +321,4 @@ export const addConsultation = async (
   return { id: docRef.id, ...data } as Consultation;
 };
 
-// Users - This would typically be more complex, fetching from a 'users' collection
-export const mockUsers: User[] = [
-    { id: 'user_1', name: 'Admin', email: 'admin@omni.com', role: 'central-admin', affiliation: 'Omni Platform'},
-    { id: 'user_2', name: 'Priya Sharma', email: 'clinic-admin-city@omni.com', role: 'clinic-admin', affiliation: 'City Care Clinic'},
-    { id: 'user_9', name: 'Rahul Verma', email: 'clinic-admin-health@omni.com', role: 'clinic-admin', affiliation: 'Health Plus Clinic'},
-    { id: 'user_3', name: 'Dr. Ashish', email: 'doc_ashish@omni.com', role: 'doctor', affiliation: 'City Care Clinic', specialty: 'Cardiology' },
-    { id: 'user_4', name: 'Dr. Vijay', email: 'doc_vijay@omni.com', role: 'doctor', affiliation: 'Health Plus Clinic', specialty: 'Orthopedics' },
-    { id: 'user_5', name: 'Sunita', email: 'asst_sunita@omni.com', role: 'assistant', affiliation: 'City Care Clinic' },
-    { id: 'user_6', name: 'Rajesh', email: 'asst_rajesh@omni.com', role: 'assistant', affiliation: 'Health Plus Clinic' },
-    { id: 'user_7', name: 'Display User', email: 'display@omni.com', role: 'display', name: 'Main Hall Display', affiliation: 'City Care Clinic' },
-    { id: 'user_8', name: 'Advertiser User', email: 'advertiser@omni.com', role: 'advertiser', affiliation: 'HealthCare Insurance' },
-];
-
-export const seedUsers = (firestore: Firestore) => {
-    for (const userData of mockUsers) {
-        const userRef = doc(firestore, 'users', userData.id);
-        setDocumentNonBlocking(userRef, userData, { merge: true });
-    }
-}
+    

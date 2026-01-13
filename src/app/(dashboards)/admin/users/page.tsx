@@ -43,14 +43,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Edit, Trash2, KeyRound, ArrowUp, ArrowDown, Search, Loader } from 'lucide-react';
+import { Edit, Trash2, KeyRound, ArrowUp, ArrowDown, Search, Loader, PlusCircle } from 'lucide-react';
 import type { UserRole } from '@/lib/roles';
 import { cn } from '@/lib/utils';
 import type { Clinic, ClinicGroup, User } from '@/lib/types';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc, query, where } from 'firebase/firestore';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { seedUsers } from '@/lib/data';
 
 
 const roleLabels: Record<UserRole, string> = {
@@ -280,15 +279,6 @@ export default function UsersPage() {
   
   const clinics = clinicsData || [];
   const clinicGroups = clinicGroupsData || [];
-  const [hasSeeded, setHasSeeded] = useState(false);
-
-  useEffect(() => {
-    if (!usersLoading && allUsers && allUsers.length === 0 && !hasSeeded) {
-      console.log("No users found, seeding database...");
-      setHasSeeded(true); // Prevent re-seeding
-      seedUsers(firestore);
-    }
-  }, [allUsers, usersLoading, hasSeeded, firestore]);
 
   useEffect(() => {
     let sourceUsers = allUsers || [];
@@ -377,7 +367,13 @@ export default function UsersPage() {
 
   return (
     <>
-     <h1 className="text-3xl font-bold mb-6">Platform Users</h1>
+     <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Platform Users</h1>
+        <Button onClick={openCreateModal}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Register User
+        </Button>
+      </div>
      <Card>
       <CardHeader>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -391,7 +387,6 @@ export default function UsersPage() {
                         onChange={e => setSearchQuery(e.target.value)}
                     />
                 </div>
-                <Button onClick={openCreateModal} size="sm" className="w-auto sm:w-auto flex-shrink-0">Register User</Button>
             </div>
         </div>
       </CardHeader>
