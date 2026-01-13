@@ -95,21 +95,21 @@ function OnboardClinicForm({
   const handleConfirm = () => {
     // A more complete version would have validation here
     if (formData.name && formData.state && formData.city) {
-        onConfirm({...formData, location: `${formData.state}, ${formData.city}`});
+        onConfirm({...formData, location: `${formData.city}, ${formData.state}`});
         onClose();
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader className="p-4 pb-2">
           <DialogTitle className="text-base font-bold tracking-normal">
             {isEditMode ? 'EDIT CLINIC' : 'ONBOARD CLINIC'}
           </DialogTitle>
         </DialogHeader>
-        <div className="px-4 pb-4 grid grid-cols-2 gap-4">
-          <div className="col-span-2 space-y-1">
+        <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+          <div className="md:col-span-2 space-y-1">
             <Label htmlFor="clinicName" className="text-[10px] font-semibold text-gray-600">CLINIC NAME</Label>
             <Input id="clinicName" className="h-8 text-sm" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} />
           </div>
@@ -121,21 +121,23 @@ function OnboardClinicForm({
             <Label htmlFor="email" className="text-[10px] font-semibold text-gray-600">EMAIL</Label>
             <Input id="email" type="email" className="h-8 text-sm" value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} />
           </div>
-          <div className="col-span-2 space-y-1">
+          <div className="md:col-span-2 space-y-1">
             <Label htmlFor="address" className="text-[10px] font-semibold text-gray-600">ADDRESS</Label>
             <Textarea id="address" className="text-sm" value={formData.address} onChange={(e) => handleInputChange('address', e.target.value)} />
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="city" className="text-[10px] font-semibold text-gray-600">CITY</Label>
-            <Input id="city" className="h-8 text-sm" value={formData.city} onChange={(e) => handleInputChange('city', e.target.value)} />
-          </div>
-           <div className="space-y-1">
-            <Label htmlFor="state" className="text-[10px] font-semibold text-gray-600">STATE</Label>
-            <Input id="state" className="h-8 text-sm" value={formData.state} onChange={(e) => handleInputChange('state', e.target.value)} />
-          </div>
-           <div className="space-y-1">
-            <Label htmlFor="pincode" className="text-[10px] font-semibold text-gray-600">PINCODE</Label>
-            <Input id="pincode" className="h-8 text-sm" value={formData.pincode} onChange={(e) => handleInputChange('pincode', e.target.value)} />
+          <div className="grid grid-cols-3 gap-x-4">
+             <div className="space-y-1">
+                <Label htmlFor="city" className="text-[10px] font-semibold text-gray-600">CITY</Label>
+                <Input id="city" className="h-8 text-sm" value={formData.city} onChange={(e) => handleInputChange('city', e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="state" className="text-[10px] font-semibold text-gray-600">STATE</Label>
+                <Input id="state" className="h-8 text-sm" value={formData.state} onChange={(e) => handleInputChange('state', e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="pincode" className="text-[10px] font-semibold text-gray-600">PINCODE</Label>
+                <Input id="pincode" className="h-8 text-sm" value={formData.pincode} onChange={(e) => handleInputChange('pincode', e.target.value)} />
+              </div>
           </div>
            <div className="space-y-1">
             <Label htmlFor="specialties" className="text-[10px] font-semibold text-gray-600">SPECIALTIES</Label>
