@@ -34,9 +34,8 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
   const { user, isUserLoading } = useUser();
 
   const doctorGroupIdQuery = useMemoFirebase(() => {
-    if (!user) return null;
     return query(collection(firestore, "groups"), where("doctors", "array-contains", { id: doctorId, name: "Dr. Ashish" }));
-  }, [firestore, user, doctorId]);
+  }, [firestore, doctorId]);
 
   const {data: doctorGroups, isLoading: groupsLoading} = useCollection<ClinicGroup>(doctorGroupIdQuery);
   const groupId = doctorGroups?.[0]?.id;

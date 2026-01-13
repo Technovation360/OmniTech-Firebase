@@ -44,9 +44,8 @@ export default function AssistantPage() {
   const { user, isUserLoading } = useUser();
   
   const groupsQuery = useMemoFirebase(() => {
-      if (!user) return null;
       return query(collection(firestore, "groups"), where("assistants", "array-contains", { id: id, name: "Sunita" }));
-  }, [firestore, user, id]);
+  }, [firestore, id]);
 
   const { data: clinicGroups, isLoading: groupsLoading } = useCollection<ClinicGroup>(groupsQuery);
   const [state, formAction] = useActionState(registerPatient, null);

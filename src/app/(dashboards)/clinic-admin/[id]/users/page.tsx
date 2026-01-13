@@ -240,9 +240,9 @@ export default function UsersPage({ params }: { params: Promise<{ id: string }> 
   const { data: clinic, isLoading: clinicLoading } = useDoc<Clinic>(clinicRef);
 
   const usersQuery = useMemoFirebase(() => {
-    if (!authUser || !clinic) return null;
+    if (!clinic) return null;
     return query(collection(firestore, 'users'), where('affiliation', '==', clinic.name));
-  }, [firestore, authUser, clinic]);
+  }, [firestore, clinic]);
   const { data: allUsers, isLoading: usersLoading } = useCollection<User>(usersQuery);
 
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);

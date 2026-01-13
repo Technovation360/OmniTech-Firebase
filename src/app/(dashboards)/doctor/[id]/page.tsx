@@ -35,9 +35,8 @@ export default function DoctorPageLoader({ params }: DoctorPageProps) {
   const { user, isUserLoading } = useUser();
 
   const doctorGroupIdQuery = useMemoFirebase(() => {
-    if (!user) return null;
     return query(collection(firestore, "groups"), where("doctors", "array-contains", { id: id, name: "Dr. Ashish" }));
-  }, [firestore, user, id]);
+  }, [firestore, id]);
 
   const {data: doctorGroups, isLoading: groupsLoading} = useCollection<ClinicGroup>(doctorGroupIdQuery);
   const groupId = doctorGroups?.[0]?.id;

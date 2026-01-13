@@ -45,21 +45,18 @@ export default function LiveQueuePage() {
   const { user, isUserLoading } = useUser();
 
   const patientsQuery = useMemoFirebase(() => {
-    if (!user) return null;
     return query(collection(firestore, 'patients'), where('status', 'in', ['waiting', 'called', 'in-consultation']));
-  }, [firestore, user]);
+  }, [firestore]);
   const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
 
   const clinicsQuery = useMemoFirebase(() => {
-    if (!user) return null;
     return query(collection(firestore, 'groups'), where('type', '==', 'Clinic'));
-  }, [firestore, user]);
+  }, [firestore]);
   const { data: clinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
 
   const groupsQuery = useMemoFirebase(() => {
-    if (!user) return null;
     return query(collection(firestore, 'groups'), where('type', '==', 'Doctor'));
-  }, [firestore, user]);
+  }, [firestore]);
   const { data: clinicGroups, isLoading: groupsLoading } = useCollection<ClinicGroup>(groupsQuery);
 
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
@@ -134,7 +131,7 @@ export default function LiveQueuePage() {
 
   const isLoading = isUserLoading || patientsLoading || clinicsLoading || groupsLoading;
 
-  if (isUserLoading) {
+  if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
         <Loader className="h-8 w-8 animate-spin" />

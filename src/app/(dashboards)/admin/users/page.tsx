@@ -252,22 +252,19 @@ export default function UsersPage() {
   const { user, isUserLoading } = useUser();
 
   const usersRef = useMemoFirebase(() => {
-    if (!user) return null;
     return collection(firestore, 'users');
-  }, [firestore, user]);
+  }, [firestore]);
 
   const { data: allUsers, isLoading: usersLoading } = useCollection<User>(usersRef);
 
   const clinicsQuery = useMemoFirebase(() => {
-    if (!user) return null;
     return query(collection(firestore, 'groups'), where('type', '==', 'Clinic'))
-  }, [firestore, user]);
+  }, [firestore]);
   const { data: clinicsData, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
   
   const clinicGroupsQuery = useMemoFirebase(() => {
-    if (!user) return null;
     return query(collection(firestore, 'groups'), where('type', '==', 'Doctor'))
-  }, [firestore, user]);
+  }, [firestore]);
   const { data: clinicGroupsData, isLoading: groupsLoading } = useCollection<ClinicGroup>(clinicGroupsQuery);
   
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);

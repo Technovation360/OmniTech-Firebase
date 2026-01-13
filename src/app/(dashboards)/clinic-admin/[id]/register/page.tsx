@@ -257,15 +257,13 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
   const { user, isUserLoading } = useUser();
 
   const patientsQuery = useMemoFirebase(() => {
-    if (!user) return null;
     return query(collection(firestore, 'patients'), where('clinicId', '==', clinicId));
-  }, [firestore, user, clinicId]);
+  }, [firestore, clinicId]);
   const { data: allPatients, isLoading: patientsLoading, refetch } = useCollection<Patient>(patientsQuery);
   
   const groupsQuery = useMemoFirebase(() => {
-    if (!user) return null;
     return query(collection(firestore, 'groups'), where('clinicId', '==', clinicId), where('type', '==', 'Doctor'));
-  }, [firestore, user, clinicId]);
+  }, [firestore, clinicId]);
   const { data: clinicGroups, isLoading: groupsLoading } = useCollection<ClinicGroup>(groupsQuery);
 
 

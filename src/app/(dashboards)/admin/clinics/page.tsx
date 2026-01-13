@@ -197,16 +197,14 @@ export default function ClinicsPage() {
   const { user, isUserLoading } = useUser();
   
   const clinicsQuery = useMemoFirebase(() => {
-      if (!user) return null;
       return query(collection(firestore, 'groups'), where('type', '==', 'Clinic'));
-  }, [firestore, user]);
+  }, [firestore]);
   
   const { data: allClinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
 
   const specialtiesQuery = useMemoFirebase(() => {
-    if (!user) return null;
     return query(collection(firestore, 'specialties'), where('forClinic', '==', true));
-  }, [firestore, user]);
+  }, [firestore]);
   const { data: specialtiesData, isLoading: specialtiesLoading } = useCollection<{id: string, name: string}>(specialtiesQuery);
 
   const [filteredClinics, setFilteredClinics] = useState<Clinic[]>([]);
@@ -303,7 +301,7 @@ export default function ClinicsPage() {
 
   const isLoading = isUserLoading || clinicsLoading || specialtiesLoading;
   
-  if (isUserLoading) {
+  if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
         <Loader className="h-8 w-8 animate-spin" />

@@ -83,9 +83,8 @@ function VisitHistoryModal({
   const firestore = useFirestore();
   
   const clinicsRef = useMemoFirebase(() => {
-    if (!user) return null;
     return collection(firestore, 'groups');
-  }, [firestore, user]);
+  }, [firestore]);
   const { data: clinicGroups, isLoading } = useCollection<ClinicGroup>(clinicsRef);
 
   useEffect(() => {
@@ -310,21 +309,18 @@ export default function PatientRegistryPage() {
   const { user, isUserLoading } = useUser();
 
   const patientsRef = useMemoFirebase(() => {
-    if (!user) return null;
     return collection(firestore, 'patients');
-  }, [firestore, user]);
+  }, [firestore]);
   const { data: allPatients, isLoading: patientsLoading, refetch: fetchPatients } = useCollection<Patient>(patientsRef);
   
   const clinicsRef = useMemoFirebase(() => {
-    if (!user) return null;
     return query(collection(firestore, 'groups'), where('type', '==', 'Clinic'));
-  }, [firestore, user]);
+  }, [firestore]);
   const { data: clinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsRef);
   
   const clinicGroupsRef = useMemoFirebase(() => {
-    if (!user) return null;
     return query(collection(firestore, 'groups'), where('type', '==', 'Doctor'));
-  }, [firestore, user]);
+  }, [firestore]);
   const { data: clinicGroups, isLoading: groupsLoading } = useCollection<ClinicGroup>(clinicGroupsRef);
 
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
