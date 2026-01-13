@@ -196,16 +196,16 @@ export default function ClinicsPage() {
   const { user, isUserLoading } = useUser();
   
   const clinicsQuery = useMemoFirebase(() => {
-      if (!user) return null;
+      if (isUserLoading || !user) return null;
       return query(collection(firestore, 'groups'), where('type', '==', 'Clinic'));
-  }, [firestore, user]);
+  }, [firestore, user, isUserLoading]);
   
   const { data: allClinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
 
   const specialtiesQuery = useMemoFirebase(() => {
-    if (!user) return null;
+    if (isUserLoading || !user) return null;
     return query(collection(firestore, 'specialties'), where('forClinic', '==', true));
-  }, [firestore, user]);
+  }, [firestore, user, isUserLoading]);
   const { data: specialtiesData, isLoading: specialtiesLoading } = useCollection<{id: string, name: string}>(specialtiesQuery);
 
   const [filteredClinics, setFilteredClinics] = useState<Clinic[]>([]);
@@ -356,7 +356,7 @@ export default function ClinicsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={3} className="text-center">Loading...</TableCell></TableRow>}
+              {isLoading && <TableRow><TableCell colSpan={3} className="text-center py-4"><Loader className="animate-spin mx-auto" /></TableCell></TableRow>}
               {!isLoading && filteredClinics.map((clinic) => (
                 <TableRow key={clinic.id}>
                   <TableCell className="font-medium py-2 text-xs">{clinic.name}</TableCell>
@@ -373,7 +373,7 @@ export default function ClinicsPage() {
               ))}
               {!isLoading && filteredClinics.length === 0 && (
                  <TableRow>
-                    <TableCell colSpan={3} className="text-center text-muted-foreground">No clinics found.</TableCell>
+                    <TableCell colSpan={3} className="text-center text-muted-foreground py-4">No clinics found.</TableCell>
                  </TableRow>
               )}
             </TableBody>
