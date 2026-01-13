@@ -40,6 +40,13 @@ export type Clinic = {
   name: string;
   location: string;
   type?: 'Clinic';
+  phone?: string;
+  email?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  specialties?: string[];
 };
 
 export type ClinicGroup = {

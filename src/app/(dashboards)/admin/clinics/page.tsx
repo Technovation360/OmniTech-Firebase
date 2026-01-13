@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect } from 'react';
 import {
@@ -40,6 +39,8 @@ import type { Clinic } from '@/lib/types';
 import { collection, addDoc, updateDoc, deleteDoc, doc, query, where, getDocs } from 'firebase/firestore';
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { MultiSelect, MultiSelectOption } from '@/components/ui/multi-select';
+import { Textarea } from '@/components/ui/textarea';
 
 
 function OnboardClinicForm({
@@ -47,26 +48,42 @@ function OnboardClinicForm({
   onClose,
   clinic,
   onConfirm,
+  specialties
 }: {
   isOpen: boolean;
   onClose: () => void;
   clinic: Clinic | null;
   onConfirm: (formData: Omit<Clinic, 'id'>) => void;
+  specialties: MultiSelectOption[];
 }) {
   const isEditMode = !!clinic;
   const [formData, setFormData] = useState({
     name: '',
-    location: ''
+    phone: '',
+    email: '',
+    address: '',
+    city: '',
+    state: '',
+    pincode: '',
+    specialties: [] as string[],
+    location: '',
   });
 
   useEffect(() => {
     if (clinic) {
       setFormData({
         name: clinic.name,
+        phone: clinic.phone || '',
+        email: clinic.email || '',
+        address: clinic.address || '',
+        city: clinic.city || '',
+        state: clinic.state || '',
+        pincode: clinic.pincode || '',
+        specialties: clinic.specialties || [],
         location: clinic.location,
       });
     } else {
-        setFormData({ name: '', location: '' });
+        setFormData({ name: '', phone: '', email: '', address: '', city: '', state: '', pincode: '', specialties: [], location: '' });
     }
   }, [clinic]);
 
@@ -76,28 +93,58 @@ function OnboardClinicForm({
 
   const handleConfirm = () => {
     // A more complete version would have validation here
-    if (formData.name && formData.location) {
-        onConfirm(formData);
+    if (formData.name && formData.state && formData.city) {
+        onConfirm({...formData, location: `${formData.state}, ${formData.city}`});
         onClose();
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader className="p-4 pb-2">
           <DialogTitle className="text-base font-bold tracking-normal">
             {isEditMode ? 'EDIT CLINIC' : 'ONBOARD CLINIC'}
           </DialogTitle>
         </DialogHeader>
-        <div className="px-4 pb-4 space-y-4">
-          <div className="space-y-1">
+        <div className="px-4 pb-4 grid grid-cols-2 gap-4">
+          <div className="col-span-2 space-y-1">
             <Label htmlFor="clinicName" className="text-[10px] font-semibold text-gray-600">CLINIC NAME</Label>
-            <Input id="clinicName" className="h-7 text-[11px]" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} />
+            <Input id="clinicName" className="h-8 text-sm" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="location" className="text-[10px] font-semibold text-gray-600">LOCATION</Label>
-            <Input id="location" className="h-7 text-[11px]" value={formData.location} onChange={(e) => handleInputChange('location', e.target.value)} placeholder="e.g. Maharashtra, Mumbai"/>
+            <Label htmlFor="phone" className="text-[10px] font-semibold text-gray-600">PHONE NUMBER</Label>
+            <Input id="phone" type="tel" className="h-8 text-sm" value={formData.phone} onChange={(e) => handleInputChange('phone', e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="email" className="text-[10px] font-semibold text-gray-600">EMAIL</Label>
+            <Input id="email" type="email" className="h-8 text-sm" value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} />
+          </div>
+          <div className="col-span-2 space-y-1">
+            <Label htmlFor="address" className="text-[10px] font-semibold text-gray-600">ADDRESS</Label>
+            <Textarea id="address" className="text-sm" value={formData.address} onChange={(e) => handleInputChange('address', e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="city" className="text-[10px] font-semibold text-gray-600">CITY</Label>
+            <Input id="city" className="h-8 text-sm" value={formData.city} onChange={(e) => handleInputChange('city', e.target.value)} />
+          </div>
+           <div className="space-y-1">
+            <Label htmlFor="state" className="text-[10px] font-semibold text-gray-600">STATE</Label>
+            <Input id="state" className="h-8 text-sm" value={formData.state} onChange={(e) => handleInputChange('state', e.target.value)} />
+          </div>
+           <div className="space-y-1">
+            <Label htmlFor="pincode" className="text-[10px] font-semibold text-gray-600">PINCODE</Label>
+            <Input id="pincode" className="h-8 text-sm" value={formData.pincode} onChange={(e) => handleInputChange('pincode', e.target.value)} />
+          </div>
+           <div className="space-y-1">
+            <Label htmlFor="specialties" className="text-[10px] font-semibold text-gray-600">SPECIALTIES</Label>
+            <MultiSelect
+                options={specialties}
+                selected={formData.specialties}
+                onChange={(selected) => handleInputChange('specialties', selected)}
+                className="text-sm"
+                placeholder="Select specialties..."
+            />
           </div>
         </div>
         <DialogFooter className="bg-gray-50 px-4 py-2 flex justify-end gap-2 rounded-b-lg">
@@ -152,6 +199,12 @@ export default function ClinicsPage() {
   
   const { data: allClinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
 
+  const specialtiesQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(firestore, 'specialties'), where('forClinic', '==', true));
+  }, [firestore, user]);
+  const { data: specialtiesData, isLoading: specialtiesLoading } = useCollection<{id: string, name: string}>(specialtiesQuery);
+
   const [filteredClinics, setFilteredClinics] = useState<Clinic[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [clinicToEdit, setClinicToEdit] = useState<Clinic | null>(null);
@@ -161,13 +214,18 @@ export default function ClinicsPage() {
   
   const [hasSeeded, setHasSeeded] = useState(false);
 
+  const specialtyOptions = useMemo(() => {
+    if (!specialtiesData) return [];
+    return specialtiesData.map(s => ({ value: s.name, label: s.name }));
+  }, [specialtiesData]);
+
   useEffect(() => {
     if (!clinicsLoading && allClinics && allClinics.length === 0 && !hasSeeded) {
       console.log("No clinics found, seeding database...");
       setHasSeeded(true); // Prevent re-seeding
       const sampleClinics: Omit<Clinic, 'id'>[] = [
-        { name: 'City Care Clinic', location: 'Maharashtra, Mumbai', type: 'Clinic' },
-        { name: 'Health Plus Clinic', location: 'Maharashtra, Pune', type: 'Clinic' },
+        { name: 'City Care Clinic', location: 'Maharashtra, Mumbai', type: 'Clinic', phone: '123-456-7890', email: 'contact@citycare.com', address: '123 Health St', city: 'Mumbai', state: 'Maharashtra', pincode: '400001', specialties: ['Cardiology', 'General Medicine'] },
+        { name: 'Health Plus Clinic', location: 'Maharashtra, Pune', type: 'Clinic', phone: '987-654-3210', email: 'contact@healthplus.com', address: '456 Wellness Ave', city: 'Pune', state: 'Maharashtra', pincode: '411001', specialties: ['Orthopedics', 'Pediatrics'] },
       ];
       
       for (const clinicData of sampleClinics) {
@@ -263,7 +321,7 @@ export default function ClinicsPage() {
     return <ArrowDown className="ml-2 h-3 w-3" />;
   };
 
-  const isLoading = isUserLoading || clinicsLoading;
+  const isLoading = isUserLoading || clinicsLoading || specialtiesLoading;
 
   if (isUserLoading) {
     return (
@@ -342,6 +400,7 @@ export default function ClinicsPage() {
         onClose={closeModal}
         clinic={clinicToEdit}
         onConfirm={handleFormConfirm}
+        specialties={specialtyOptions}
       />
       <DeleteClinicDialog 
         isOpen={!!clinicToDelete}
