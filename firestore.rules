@@ -1,3 +1,4 @@
+
 /**
  * Core Philosophy:
  * This ruleset implements a Role-Based Access Control (RBAC) model for a clinic management system.
@@ -130,6 +131,11 @@ service cloud.firestore {
       allow get, list: if isSignedIn();
       allow create, update, delete: if isAdmin();
     }
+    
+    match /specialties/{specialtyId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
 
     /**
      * @description Clinic groups (e.g., Screen, Cabin). Readable by any authenticated staff, but writable only by admins.
@@ -245,4 +251,3 @@ service cloud.firestore {
     }
   }
 }
-    

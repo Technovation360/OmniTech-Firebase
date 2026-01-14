@@ -38,8 +38,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc, addDoc } from 'firebase/firestore';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { collection, doc, addDoc, query } from 'firebase/firestore';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 type Specialty = {
@@ -159,7 +159,11 @@ function DeleteSpecialtyDialog({
 
 export default function SpecialtiesPage() {
   const firestore = useFirestore();
-  const specialtiesRef = useMemoFirebase(() => collection(firestore, 'specialties'), [firestore]);
+  const { user, isUserLoading } = useUser();
+  const specialtiesRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return collection(firestore, 'specialties')
+  }, [firestore, user]);
   const { data: allSpecialties, isLoading } = useCollection<Specialty>(specialtiesRef);
   
   const [filteredSpecialties, setFilteredSpecialties] = useState<Specialty[]>([]);
@@ -174,8 +178,9 @@ export default function SpecialtiesPage() {
     if (!isLoading && allSpecialties && allSpecialties.length === 0 && !hasSeeded) {
         console.log("No specialties found, seeding...");
         setHasSeeded(true);
+        const specialtiesCol = collection(firestore, 'specialties');
         for(const specialty of seedSpecialties) {
-            addDocumentNonBlocking(collection(firestore, 'specialties'), specialty);
+            addDocumentNonBlocking(specialtiesCol, specialty);
         }
     }
   }, [allSpecialties, isLoading, hasSeeded, firestore]);
@@ -262,6 +267,13 @@ export default function SpecialtiesPage() {
     return <ArrowDown className="ml-2 h-3 w-3" />;
   };
 
+  if (isUserLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <>
