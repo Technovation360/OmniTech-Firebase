@@ -145,7 +145,7 @@ service cloud.firestore {
      * @principle Segregates configuration data (groups) from operational data, with write access restricted to administrators.
      */
     match /groups/{groupId} {
-      allow get, list: if isSignedIn();
+      allow get, list: if true;
       allow create: if isAdmin();
       allow update: if isAdmin() && isExistingDoc();
       allow delete: if isAdmin() && isExistingDoc();
