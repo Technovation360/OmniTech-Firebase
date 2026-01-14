@@ -50,7 +50,8 @@ import { registerPatient } from '@/lib/actions';
 import { useActionState } from 'react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where, User } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
+import type { User } from 'firebase/auth';
 
 
 const badgeColors: Record<Patient['status'], string> = {
@@ -83,8 +84,9 @@ function VisitHistoryModal({
   const firestore = useFirestore();
   
   const clinicsRef = useMemoFirebase(() => {
+    if (!user) return null;
     return collection(firestore, 'groups');
-  }, [firestore]);
+  }, [firestore, user]);
   const { data: clinicGroups, isLoading } = useCollection<ClinicGroup>(clinicsRef);
 
   useEffect(() => {
@@ -309,18 +311,21 @@ export default function PatientRegistryPage() {
   const { user, isUserLoading } = useUser();
 
   const patientsRef = useMemoFirebase(() => {
+    if (!user) return null;
     return collection(firestore, 'patients');
-  }, [firestore]);
+  }, [firestore, user]);
   const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsRef);
   
   const clinicsRef = useMemoFirebase(() => {
+    if (!user) return null;
     return query(collection(firestore, 'groups'), where('type', '==', 'Clinic'));
-  }, [firestore]);
+  }, [firestore, user]);
   const { data: clinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsRef);
   
   const clinicGroupsRef = useMemoFirebase(() => {
+    if (!user) return null;
     return query(collection(firestore, 'groups'), where('type', '==', 'Doctor'));
-  }, [firestore]);
+  }, [firestore, user]);
   const { data: clinicGroups, isLoading: groupsLoading } = useCollection<ClinicGroup>(clinicGroupsRef);
 
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
@@ -609,7 +614,3 @@ export default function PatientRegistryPage() {
     </>
   );
 }
-
-    
-
-    
