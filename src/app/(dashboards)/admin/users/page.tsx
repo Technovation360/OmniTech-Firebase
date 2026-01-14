@@ -137,9 +137,6 @@ function UserForm({
       onClose();
   }
 
-  const affiliations = [...clinics.map(c => c.name), ...clinicGroups.map(cg => cg.name), "Omni Platform", "HealthCare Insurance"];
-  const uniqueAffiliations = [...new Set(affiliations)];
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -171,8 +168,8 @@ function UserForm({
                       <SelectValue placeholder="Select Affiliation..."/>
                   </SelectTrigger>
                   <SelectContent>
-                      {uniqueAffiliations.map(aff => (
-                          <SelectItem key={aff} value={aff} className="text-[11px]">{aff}</SelectItem>
+                      {clinics.map(clinic => (
+                          <SelectItem key={clinic.id} value={clinic.name} className="text-[11px]">{clinic.name}</SelectItem>
                       ))}
                   </SelectContent>
                 </Select>
@@ -473,5 +470,3 @@ export default function UsersPage() {
     </>
   )
 }
-
-    
