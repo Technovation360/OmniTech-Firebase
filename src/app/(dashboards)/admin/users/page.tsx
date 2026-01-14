@@ -45,13 +45,14 @@ import {
 } from '@/components/ui/select';
 import { Edit, Trash2, KeyRound, ArrowUp, ArrowDown, Search, Loader, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Clinic, User, Role } from '@/lib/types';
+import type { Clinic, User } from '@/lib/types';
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc, query, where, writeBatch, getDoc, setDoc, deleteDoc, getDocs } from 'firebase/firestore';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { createUserWithEmailAndPassword, updatePassword, reauthenticateWithCredential, EmailAuthProvider, signInWithEmailAndPassword } from 'firebase/auth';
 import type { UserRole } from '@/lib/roles';
+import { setCustomClaim } from '@/ai/flows/set-custom-claims';
 
 
 const badgeColors = [
@@ -448,6 +449,13 @@ export default function UsersPage() {
         const userRef = doc(firestore, 'users', authUserId);
         const { password, ...userData } = formData;
         setDocumentNonBlocking(userRef, userData, { merge: true });
+        
+        // Also update the custom claim if the role has changed.
+        const currentUser = allUsers?.find(u => u.id === authUserId);
+        if (currentUser && currentUser.role !== userData.role) {
+            await setCustomClaim({ uid: authUserId, role: userData.role });
+        }
+        
         toast({ title: "User updated successfully."});
         if (password) {
             toast({ title: "Password change requires re-authentication", description: "This functionality is not yet implemented for security reasons."});
@@ -465,17 +473,16 @@ export default function UsersPage() {
             
             const userDocRef = doc(firestore, "users", newAuthUser.uid);
             
-            const batch = writeBatch(firestore);
-            
             const finalUserData: Partial<User> = { ...userData, uid: newAuthUser.uid };
 
             if(finalUserData.role === 'central-admin' && 'affiliation' in finalUserData) {
               delete finalUserData.affiliation;
             }
-
-            batch.set(userDocRef, finalUserData);
             
-            await batch.commit();
+            // Set Firestore document and custom claim
+            await setDoc(userDocRef, finalUserData);
+            await setCustomClaim({ uid: newAuthUser.uid, role: finalUserData.role as UserRole });
+
 
             toast({ title: "User created successfully."});
 

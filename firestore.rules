@@ -12,17 +12,15 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      // This is the ideal production rule using custom claims.
       return request.auth.token.role == 'central-admin';
     }
 
     function isDoctor() {
-      // Check for either a doctor claim or ownership for individual access
-      return isSignedIn() && (request.auth.token.role == 'doctor' || isOwner(resource.data.doctorId));
+      return request.auth.token.role == 'doctor';
     }
     
     function isAdvertiser() {
-      return isSignedIn() && request.auth.token.role == 'advertiser';
+      return request.auth.token.role == 'advertiser';
     }
 
     function isExistingDoc() {
@@ -36,9 +34,9 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isSignedIn();
       allow list: if isAdmin();
-      allow create: if (isOwner(userId) || isAdmin()) && incomingData().uid == userId;
-      allow update: if (isOwner(userId) || isAdmin()) && isExistingDoc() && incomingData().uid == resource.data.uid;
-      allow delete: if (isOwner(userId) || isAdmin()) && isExistingDoc();
+      allow create: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isOwner(userId) || isAdmin();
     }
     
     match /specialties/{specialtyId} {
