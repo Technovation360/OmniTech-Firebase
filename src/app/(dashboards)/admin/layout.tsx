@@ -126,7 +126,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
               </AvatarFallback>
             </Avatar>
             <Link href="/">
-              <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/20 hover:text-white">
+              <Button variant="ghost" size="icon" className="h-8 w-8 bg-red-500 hover:bg-red-600 text-white">
                 <LogOut className="h-4 w-4" />
               </Button>
             </Link>
