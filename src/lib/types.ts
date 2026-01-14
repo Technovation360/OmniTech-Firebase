@@ -91,14 +91,20 @@ export type PatientHistoryEntry = {
     status: Patient['status'];
 }
 
+export type Role = {
+    id: string;
+    name: 'central-admin' | 'clinic-admin' | 'doctor' | 'assistant' | 'display' | 'advertiser';
+}
+
 export type User = {
     id: string;
     name: string;
     email: string;
-    role: 'central-admin' | 'clinic-admin' | 'doctor' | 'assistant' | 'display' | 'advertiser';
+    roleId: string;
     affiliation: string;
     phone?: string;
     specialty?: string;
 };
 
+    
     

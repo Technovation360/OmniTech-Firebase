@@ -46,22 +46,13 @@ import {
 import { Edit, Trash2, KeyRound, ArrowUp, ArrowDown, Search, Loader, PlusCircle } from 'lucide-react';
 import type { UserRole } from '@/lib/roles';
 import { cn } from '@/lib/utils';
-import type { Clinic, ClinicGroup, User } from '@/lib/types';
+import type { Clinic, ClinicGroup, User, Role } from '@/lib/types';
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc, query, where } from 'firebase/firestore';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 
-
-const roleLabels: Record<UserRole, string> = {
-  'central-admin': 'Central Admin',
-  'clinic-admin': 'Clinic Admin',
-  'doctor': 'Doctor',
-  'assistant': 'Assistant',
-  'display': 'Display',
-  'advertiser': 'Advertiser',
-}
 
 const badgeColors = [
   "bg-blue-100 text-blue-800",
@@ -72,7 +63,7 @@ const badgeColors = [
   "bg-indigo-100 text-indigo-800",
 ];
 
-const roleColorMap: Record<UserRole, string> = {
+const roleColorMap: Record<Role['name'], string> = {
   'central-admin': badgeColors[0],
   'clinic-admin': badgeColors[1],
   'doctor': badgeColors[2],
@@ -88,23 +79,29 @@ function UserForm({
   user,
   onConfirm,
   clinics,
+  roles
 }: {
   isOpen: boolean;
   onClose: () => void;
   user: User | null;
   onConfirm: (formData: Omit<User, 'id'>) => void;
   clinics: Clinic[];
+  roles: Role[];
 }) {
   const { toast } = useToast();
   const isEditMode = !!user;
   const [formData, setFormData] = useState<Omit<User, 'id'>>({
       name: '',
       email: '',
-      role: '' as UserRole,
+      roleId: '',
       affiliation: '',
       phone: '',
       specialty: '',
   });
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const selectedRole = useMemo(() => roles.find(r => r.id === formData.roleId), [roles, formData.roleId]);
 
   useEffect(() => {
     if (isOpen) {
@@ -112,28 +109,40 @@ function UserForm({
         setFormData({
             name: user.name,
             email: user.email,
-            role: user.role,
+            roleId: user.roleId,
             affiliation: user.affiliation,
             phone: user.phone || '',
             specialty: user.specialty || '',
         });
       } else {
         setFormData({
-            name: '', email: '', role: '' as UserRole, affiliation: '', phone: '', specialty: ''
+            name: '', email: '', roleId: '', affiliation: '', phone: '', specialty: ''
         })
       }
+      setNewPassword('');
+      setConfirmPassword('');
     }
   }, [isOpen, user]);
 
   const handleInputChange = (field: keyof typeof formData, value: string) => {
       const newFormData = {...formData, [field]: value};
-      if (field === 'role' && value === 'central-admin') {
+      const role = roles.find(r => r.id === value);
+      if (field === 'roleId' && role?.name === 'central-admin') {
         newFormData.affiliation = 'Omni Platform';
       }
       setFormData(newFormData);
   }
 
   const handleConfirm = () => {
+     if (newPassword && newPassword !== confirmPassword) {
+      toast({
+        variant: "destructive",
+        title: "Password Mismatch",
+        description: "Passwords do not match.",
+      });
+      return;
+    }
+    // TODO: Add password update logic
     onConfirm(formData);
     onClose();
   }
@@ -150,18 +159,18 @@ function UserForm({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
             <div className="space-y-1">
               <Label htmlFor="role" className="text-[10px] font-semibold text-gray-600">ROLE</Label>
-               <Select value={formData.role} onValueChange={(value) => handleInputChange('role', value as UserRole)}>
+               <Select value={formData.roleId} onValueChange={(value) => handleInputChange('roleId', value)}>
                 <SelectTrigger className="h-7 text-[11px]">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(roleLabels).map(([role, label]) => (
-                    <SelectItem key={role} value={role} className="text-[11px]">{label}</SelectItem>
+                  {roles.map((role) => (
+                    <SelectItem key={role.id} value={role.id} className="text-[11px] capitalize">{role.name.replace('-', ' ')}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-             {formData.role !== 'central-admin' && (
+             {selectedRole?.name !== 'central-admin' && (
               <div className="space-y-1">
                 <Label htmlFor="affiliation" className="text-[10px] font-semibold text-gray-600">AFFILIATION</Label>
                 <Select value={formData.affiliation} onValueChange={(value) => handleInputChange('affiliation', value)}>
@@ -188,7 +197,7 @@ function UserForm({
               <Label htmlFor="phone" className="text-[10px] font-semibold text-gray-600">PHONE</Label>
               <Input id="phone" type="tel" className="h-7 text-[11px]" value={formData.phone} onChange={e => handleInputChange('phone', e.target.value)} />
             </div>
-            {formData.role === 'doctor' && (
+            {selectedRole?.name === 'doctor' && (
                <div className="space-y-1">
                 <Label htmlFor="specialties" className="text-[10px] font-semibold text-gray-600">SPECIALTY</Label>
                 <Select value={formData.specialty} onValueChange={(value) => handleInputChange('specialty', value)}>
@@ -205,8 +214,12 @@ function UserForm({
               </div>
             )}
              <div className="space-y-1 md:col-span-2">
-              <Label htmlFor="newPassword" className="text-[10px] font-semibold text-gray-600">PASSWORD</Label>
-              <Input id="newPassword" type="password" className="h-7 text-[11px]" placeholder={isEditMode ? 'Leave blank to keep current password' : 'Set initial password'}/>
+                <Label htmlFor="newPassword" className="text-[10px] font-semibold text-gray-600">New Password</Label>
+                <Input id="newPassword" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="h-7 text-[11px]" placeholder="Leave blank to keep current"/>
+            </div>
+             <div className="space-y-1 md:col-span-2">
+                <Label htmlFor="confirmPassword" className="text-[10px] font-semibold text-gray-600">Confirm Password</Label>
+                <Input id="confirmPassword" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="h-7 text-[11px]" />
             </div>
           </div>
         </div>
@@ -225,10 +238,12 @@ function PasswordResetForm({
   isOpen,
   onClose,
   userName,
+  onConfirm
 }: {
   isOpen: boolean;
   onClose: () => void;
   userName: string;
+  onConfirm: (password: string) => void;
 }) {
   const { toast } = useToast();
   const [newPassword, setNewPassword] = useState('');
@@ -251,12 +266,7 @@ function PasswordResetForm({
       });
       return;
     }
-
-    // In a real app, you would call a server function to update the password securely.
-    toast({
-      title: "Password Updated (Simulated)",
-      description: `Password for ${userName} has been updated.`,
-    });
+    onConfirm(newPassword);
     onClose();
   };
   
@@ -333,15 +343,12 @@ export default function UsersPage() {
   const firestore = useFirestore();
   const auth = useAuth();
   const { toast } = useToast();
-  const usersRef = useMemoFirebase(() => {
-    return collection(firestore, 'users');
-  }, [firestore]);
-
+  const usersRef = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
+  const rolesRef = useMemoFirebase(() => collection(firestore, 'roles'), [firestore]);
   const { data: allUsers, isLoading: usersLoading } = useCollection<User>(usersRef);
+  const { data: allRoles, isLoading: rolesLoading } = useCollection<Role>(rolesRef);
 
-  const clinicsQuery = useMemoFirebase(() => {
-    return query(collection(firestore, 'groups'), where('type', '==', 'Clinic'))
-  }, [firestore]);
+  const clinicsQuery = useMemoFirebase(() => query(collection(firestore, 'groups'), where('type', '==', 'Clinic')), [firestore]);
   const { data: clinicsData, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
   
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
@@ -354,6 +361,11 @@ export default function UsersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   
   const clinics = clinicsData || [];
+  const roles = allRoles || [];
+
+  const getRoleName = (roleId: string) => {
+    return roles.find(r => r.id === roleId)?.name || 'Unknown';
+  }
 
   useEffect(() => {
     let sourceUsers = allUsers || [];
@@ -428,6 +440,17 @@ export default function UsersPage() {
     }
     closeModal();
   };
+
+  const handlePasswordResetConfirm = (password: string) => {
+      if (userToResetPassword) {
+        // This is a simulated action. In a real app, this would be a secure server-side call.
+        console.log(`Resetting password for ${userToResetPassword.email} to ${password}`);
+        toast({
+          title: "Password Updated (Simulated)",
+          description: `Password for ${userToResetPassword.name} has been updated.`,
+        });
+      }
+  }
   
   const handleSort = (key: keyof User) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -443,7 +466,7 @@ export default function UsersPage() {
     return <ArrowDown className="ml-2 h-3 w-3" />;
   };
 
-  const isLoading = usersLoading || clinicsLoading;
+  const isLoading = usersLoading || clinicsLoading || rolesLoading;
 
   return (
     <>
@@ -493,9 +516,9 @@ export default function UsersPage() {
                 </Button>
               </TableHead>
               <TableHead>
-                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('role')}>
+                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('roleId')}>
                     Role
-                    {getSortIcon('role')}
+                    {getSortIcon('roleId')}
                 </Button>
               </TableHead>
               <TableHead>Actions</TableHead>
@@ -509,7 +532,7 @@ export default function UsersPage() {
                 <TableCell className="py-2 text-xs text-muted-foreground">{user.email}</TableCell>
                 <TableCell className="py-2 text-xs">{user.affiliation}</TableCell>
                 <TableCell className="py-2 text-xs">
-                  <Badge variant="secondary" className={cn("text-[10px] border-transparent", roleColorMap[user.role as UserRole])}>{roleLabels[user.role as UserRole] || 'Unknown'}</Badge>
+                  <Badge variant="secondary" className={cn("text-[10px] border-transparent capitalize", roleColorMap[getRoleName(user.roleId) as Role['name']])}>{getRoleName(user.roleId).replace('-', ' ') || 'Unknown'}</Badge>
                 </TableCell>
                 <TableCell className="flex gap-2 py-2">
                   <Button variant="ghost" size="icon-xs" onClick={() => openPasswordResetModal(user)}>
@@ -541,11 +564,13 @@ export default function UsersPage() {
         user={userToEdit}
         onConfirm={handleFormConfirm}
         clinics={clinics}
+        roles={roles}
     />
     <PasswordResetForm 
       isOpen={isPasswordModalOpen}
       onClose={() => setIsPasswordModalOpen(false)}
       userName={userToResetPassword?.name || ''}
+      onConfirm={handlePasswordResetConfirm}
     />
     <DeleteUserDialog 
         isOpen={!!userToDelete}
@@ -556,3 +581,5 @@ export default function UsersPage() {
     </>
   )
 }
+
+    

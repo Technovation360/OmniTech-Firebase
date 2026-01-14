@@ -191,9 +191,9 @@
           "description": "User's email address.",
           "format": "email"
         },
-        "role": {
+        "roleId": {
           "type": "string",
-          "description": "User's role (e.g., Doctor, Assistant, Admin, Advertiser)."
+          "description": "Reference to Role. (Relationship: Role 1:N User)"
         }
       },
       "required": [
@@ -201,7 +201,7 @@
         "firstName",
         "lastName",
         "email",
-        "role"
+        "roleId"
       ]
     },
     "Screen": {
@@ -415,6 +415,26 @@
         "issueDate",
         "dueDate"
       ]
+    },
+    "Role": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Role",
+      "type": "object",
+      "description": "Represents a user role in the system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Role entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the role (e.g., Doctor, Assistant, Admin)."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
     }
   },
   "auth": {
@@ -605,6 +625,22 @@
             {
               "name": "invoiceId",
               "description": "The unique ID of the invoice."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles/{roleId}",
+        "definition": {
+          "entityName": "Role",
+          "schema": {
+            "$ref": "#/backend/entities/Role"
+          },
+          "description": "Stores user roles.",
+          "params": [
+            {
+              "name": "roleId",
+              "description": "The unique ID of the role."
             }
           ]
         }

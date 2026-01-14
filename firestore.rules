@@ -58,8 +58,13 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    function isRole(role) {
-      return isSignedIn() && getUserData().role == role;
+    function getRoleData(roleId) {
+      return get(/databases/$(database)/documents/roles/$(roleId)).data;
+    }
+
+    function isRole(roleName) {
+      let roleId = getUserData().roleId;
+      return isSignedIn() && getRoleData(roleId).name == roleName;
     }
     
     function isDoctor() {
@@ -113,6 +118,17 @@ service cloud.firestore {
       allow create: if isAdmin();
       allow update: if isAdmin() && isExistingDoc();
       allow delete: if isAdmin() && isExistingDoc();
+    }
+
+     /**
+     * @description User roles. Readable by authenticated users, managed by admins.
+     * @path /roles/{roleId}
+     * @allow (get) An authenticated user reads role details.
+     * @deny (create) A non-admin user tries to create a new role.
+     */
+    match /roles/{roleId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin();
     }
 
     /**
@@ -229,3 +245,4 @@ service cloud.firestore {
     }
   }
 }
+    
