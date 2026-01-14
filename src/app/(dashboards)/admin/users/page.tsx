@@ -125,7 +125,11 @@ function UserForm({
   }, [isOpen, user]);
 
   const handleInputChange = (field: keyof typeof formData, value: string) => {
-      setFormData(prev => ({...prev, [field]: value}));
+      const newFormData = {...formData, [field]: value};
+      if (field === 'role' && value === 'central-admin') {
+        newFormData.affiliation = 'Omni Platform';
+      }
+      setFormData(newFormData);
   }
 
   const handleConfirm = () => {
@@ -159,19 +163,21 @@ function UserForm({
                 </SelectContent>
               </Select>
             </div>
-             <div className="space-y-1">
-              <Label htmlFor="affiliation" className="text-[10px] font-semibold text-gray-600">AFFILIATION</Label>
-              <Select value={formData.affiliation} onValueChange={(value) => handleInputChange('affiliation', value)}>
-                <SelectTrigger className="h-7 text-[11px]">
-                    <SelectValue placeholder="Select Affiliation..."/>
-                </SelectTrigger>
-                <SelectContent>
-                    {uniqueAffiliations.map(aff => (
-                         <SelectItem key={aff} value={aff} className="text-[11px]">{aff}</SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
+             {formData.role !== 'central-admin' && (
+              <div className="space-y-1">
+                <Label htmlFor="affiliation" className="text-[10px] font-semibold text-gray-600">AFFILIATION</Label>
+                <Select value={formData.affiliation} onValueChange={(value) => handleInputChange('affiliation', value)}>
+                  <SelectTrigger className="h-7 text-[11px]">
+                      <SelectValue placeholder="Select Affiliation..."/>
+                  </SelectTrigger>
+                  <SelectContent>
+                      {uniqueAffiliations.map(aff => (
+                          <SelectItem key={aff} value={aff} className="text-[11px]">{aff}</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-1">
               <Label htmlFor="userName" className="text-[10px] font-semibold text-gray-600">FULL NAME</Label>
               <Input id="userName" className="h-7 text-[11px]" value={formData.name} onChange={e => handleInputChange('name', e.target.value)} />
