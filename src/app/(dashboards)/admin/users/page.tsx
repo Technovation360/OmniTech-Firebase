@@ -136,7 +136,11 @@ function UserForm({
       toast({ variant: 'destructive', title: 'Passwords do not match.' });
       return;
     }
-    onConfirm(formData, user?.id);
+    const dataToConfirm = { ...formData };
+    if (!dataToConfirm.password && !isEditMode) {
+      dataToConfirm.password = 'password';
+    }
+    onConfirm(dataToConfirm, user?.id);
     onClose();
   }
 
@@ -208,7 +212,7 @@ function UserForm({
             )}
             <div className="space-y-1">
               <Label htmlFor="password">{isEditMode ? 'NEW PASSWORD (OPTIONAL)' : 'PASSWORD'}</Label>
-              <Input id="password" type="password" value={formData.password} onChange={(e) => handleInputChange('password', e.target.value)} className="h-7 text-[11px]" />
+              <Input id="password" type="password" value={formData.password} onChange={(e) => handleInputChange('password', e.target.value)} className="h-7 text-[11px]" placeholder={!isEditMode ? "Defaults to 'password'" : ''} />
             </div>
              <div className="space-y-1">
               <Label htmlFor="confirmPassword">{isEditMode ? 'CONFIRM NEW PASSWORD' : 'CONFIRM PASSWORD'}</Label>
@@ -717,3 +721,5 @@ export default function UsersPage() {
     </>
   )
 }
+
+    
