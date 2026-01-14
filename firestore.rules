@@ -101,8 +101,8 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isSignedIn();
       allow list: if isAdmin(); // Prevent user enumeration by non-admins
-      allow create: if isOwner(userId) && incomingData().id == userId;
-      allow update: if (isOwner(userId) || isAdmin()) && isExistingDoc() && incomingData().id == resource.data.id;
+      allow create: if (isOwner(userId) || isAdmin()) && incomingData().uid == userId;
+      allow update: if (isOwner(userId) || isAdmin()) && isExistingDoc() && incomingData().uid == resource.data.uid;
       allow delete: if (isOwner(userId) || isAdmin()) && isExistingDoc();
     }
 

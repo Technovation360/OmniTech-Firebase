@@ -97,7 +97,8 @@ export type Role = {
 }
 
 export type User = {
-    id: string;
+    id: string; // Document ID
+    uid: string; // Firebase Auth User ID
     name: string;
     email: string;
     roleId: string;

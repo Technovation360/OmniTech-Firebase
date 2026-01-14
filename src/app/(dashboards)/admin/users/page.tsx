@@ -82,7 +82,7 @@ function UserForm({
   isOpen: boolean;
   onClose: () => void;
   user: User | null;
-  onConfirm: (formData: Omit<User, 'id'> & {password?: string}, authUserId?: string) => void;
+  onConfirm: (formData: Omit<User, 'id' | 'uid'> & {password?: string}, authUserId?: string) => void;
   clinics: Clinic[];
   roles: Role[];
 }) {
@@ -443,7 +443,7 @@ export default function UsersPage() {
     }
   }
 
-  const handleFormConfirm = async (formData: Omit<User, 'id'> & {password?: string}, authUserId?: string) => {
+  const handleFormConfirm = async (formData: Omit<User, 'id' | 'uid'> & {password?: string}, authUserId?: string) => {
     if (authUserId) { // Edit mode
         const userRef = doc(firestore, 'users', authUserId);
         const { password, ...userData } = formData;
@@ -466,7 +466,7 @@ export default function UsersPage() {
             const userDocRef = doc(firestore, "users", newAuthUser.uid);
             
             const batch = writeBatch(firestore);
-            batch.set(userDocRef, { ...userData, id: newAuthUser.uid });
+            batch.set(userDocRef, { ...userData, uid: newAuthUser.uid });
 
             const role = roles.find(r => r.id === formData.roleId);
             if(role?.name === 'central-admin') {
@@ -492,18 +492,6 @@ export default function UsersPage() {
         title: "Admin Password Reset",
         description: `This feature is for demonstration. In a production app, direct password modification by admins is a security risk. Re-authenticating the admin would be required.`,
       });
-
-      // This is a simplified flow. A real app would require the admin to re-authenticate.
-      // try {
-      //   const adminCredential = EmailAuthProvider.credential(authUser.email!, 'ADMIN_PASSWORD_HERE');
-      //   await reauthenticateWithCredential(authUser, adminCredential);
-      //   // Now you could potentially use an admin SDK function, but that's server-side.
-      //   // Client-side, there's no direct way to change another user's password.
-      //   // The code below will fail without Admin SDK.
-      //   // await admin.auth().updateUser(userToResetPassword.id, { password: password });
-      // } catch (error: any) {
-      //   toast({ variant: "destructive", title: "Password Reset Failed", description: error.message });
-      // }
       
       setIsPasswordModalOpen(false);
       setUserToResetPassword(null);
@@ -514,52 +502,48 @@ export default function UsersPage() {
       toast({ variant: 'destructive', title: 'Admin user not signed in.' });
       return;
     }
-
-    // This function requires administrative privileges and direct server-side access to Firebase Admin SDK
-    // which is not available on the client. As a workaround, we demonstrate the logic
-    // but cannot execute it fully from the browser. The ideal solution is a Cloud Function.
+    
     toast({
-        variant: "destructive",
-        title: "Feature Not Available",
-        description: "This client-side implementation cannot securely fix UIDs. This requires a server-side Admin SDK. The logic has been corrected for future server-side implementation."
+        title: "Starting UID Fix",
+        description: "Checking user documents for UID synchronization..."
     });
 
-    console.log("Attempting to fix UIDs (client-side simulation)...");
-    
-    // In a real scenario, you would call a Cloud Function here.
-    // The simulation below demonstrates the logic.
     try {
         const querySnapshot = await getDocs(collection(firestore, "users"));
         const batch = writeBatch(firestore);
         let changesMade = 0;
 
-        querySnapshot.forEach(userDoc => {
-            const userData = userDoc.data() as User;
-            // In a real Admin SDK environment, you'd use admin.auth().getUserByEmail()
-            // We cannot do that here, so this is just for show.
-            const assumedAuthUid = `simulated-uid-for-${userData.email}`; 
+        for (const userDoc of querySnapshot.docs) {
+            const userData = userDoc.data() as Omit<User, 'id'> & {id?: string}; // Allow for old data shape
+            const docId = userDoc.id;
 
-            if (userDoc.id !== userData.id) {
-                console.log(`Mismatch found for ${userData.email}: DocID ${userDoc.id} vs DataID ${userData.id}`);
-                const correctDocRef = doc(firestore, 'users', userData.id);
-                batch.set(correctDocRef, userData);
+            if (userData.uid !== docId) {
+                console.log(`Mismatch for ${userData.email}: DocID ${docId} vs UID ${userData.uid}`);
+                const correctDocRef = doc(firestore, 'users', userData.uid);
+                // Set the data on the correct document, ensuring the 'uid' field is also correct.
+                batch.set(correctDocRef, { ...userData, uid: userData.uid });
+                // Delete the old, incorrectly-keyed document
                 batch.delete(userDoc.ref);
                 changesMade++;
+            } else if (!userData.uid) {
+                // This case handles documents that might not even have a uid field.
+                console.log(`Adding missing UID field for ${userData.email} (DocID: ${docId})`);
+                batch.update(userDoc.ref, { uid: docId });
+                changesMade++;
             }
-        });
+        }
 
         if (changesMade > 0) {
-            // await batch.commit(); // This would be called in a real scenario
-            toast({ title: 'UIDs checked.', description: `${changesMade} potential mismatches found. Commit skipped on client.` });
+            await batch.commit();
+            toast({ title: 'UIDs Fixed', description: `${changesMade} user document(s) were synchronized.` });
+            refetchUsers(); // Re-fetch the user list to update the UI
         } else {
-            toast({ title: 'No UID mismatches found.' });
+            toast({ title: 'No Mismatches Found', description: 'All user UIDs are correctly synchronized.' });
         }
-        refetchUsers();
-    } catch(e) {
-        console.error("Error during simulated UID fix: ", e);
-        toast({variant: 'destructive', title: "Error during simulation."});
+    } catch(e: any) {
+        console.error("Error during UID fix: ", e);
+        toast({variant: 'destructive', title: "Error during UID fix.", description: e.message });
     }
-
   };
   
   const handleSort = (key: keyof User) => {
