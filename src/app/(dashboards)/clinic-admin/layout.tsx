@@ -31,10 +31,12 @@ import {
   QrCode,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname, useParams } from 'next/navigation';
+import { usePathname, useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import React from 'react';
+import { useAuth, useUser } from '@/firebase';
+import { signOut } from 'firebase/auth';
 
 
 function DashboardSidebar() {
@@ -95,6 +97,15 @@ function DashboardLayoutContent({
   children: React.ReactNode;
 }) {
   const { state, toggleSidebar } = useSidebar();
+  const { user } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/');
+  }
+
   const pathname = usePathname();
   const pageName = pathname.split('/').pop()?.replace('-', ' ') || 'Dashboard';
   
@@ -118,14 +129,12 @@ function DashboardLayoutContent({
           <div className="flex items-center gap-3">
             <Avatar className="h-8 w-8">
               <AvatarFallback className="bg-background text-foreground">
-                CA
+                {user?.email?.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <Link href="/">
-              <Button variant="ghost" size="icon" className="h-8 w-8 bg-red-500 hover:bg-red-600 text-white">
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </Link>
+            <Button variant="ghost" size="icon" className="h-8 w-8 bg-red-500 hover:bg-red-600 text-white" onClick={handleLogout}>
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-muted/40">

@@ -47,9 +47,10 @@ import { Edit, Trash2, KeyRound, ArrowUp, ArrowDown, Search, Loader, PlusCircle 
 import { cn } from '@/lib/utils';
 import type { Clinic, User, Role } from '@/lib/types';
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, doc, query, where } from 'firebase/firestore';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { collection, doc, query, where, writeBatch } from 'firebase/firestore';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
+import { createUserWithEmailAndPassword, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 
 
 const badgeColors = [
@@ -82,19 +83,20 @@ function UserForm({
   isOpen: boolean;
   onClose: () => void;
   user: User | null;
-  onConfirm: (formData: Omit<User, 'id'>) => void;
+  onConfirm: (formData: Omit<User, 'id'> & {password?: string}, authUserId?: string) => void;
   clinics: Clinic[];
   roles: Role[];
 }) {
   const { toast } = useToast();
   const isEditMode = !!user;
-  const [formData, setFormData] = useState<Omit<User, 'id'>>({
+  const [formData, setFormData] = useState({
       name: '',
       email: '',
       roleId: '',
       affiliation: '',
       phone: '',
       specialty: '',
+      password: '',
   });
 
   const selectedRole = useMemo(() => roles.find(r => r.id === formData.roleId), [roles, formData.roleId]);
@@ -109,10 +111,11 @@ function UserForm({
             affiliation: user.affiliation,
             phone: user.phone || '',
             specialty: user.specialty || '',
+            password: '',
         });
       } else {
         setFormData({
-            name: '', email: '', roleId: '', affiliation: '', phone: '', specialty: ''
+            name: '', email: '', roleId: '', affiliation: '', phone: '', specialty: '', password: ''
         })
       }
     }
@@ -128,7 +131,7 @@ function UserForm({
   }
 
   const handleConfirm = () => {
-    onConfirm(formData);
+    onConfirm(formData, user?.id);
     onClose();
   }
 
@@ -176,7 +179,7 @@ function UserForm({
             </div>
             <div className="space-y-1">
               <Label htmlFor="email" className="text-[10px] font-semibold text-gray-600">EMAIL</Label>
-              <Input id="email" type="email" className="h-7 text-[11px]" value={formData.email} onChange={e => handleInputChange('email', e.target.value)} />
+              <Input id="email" type="email" className="h-7 text-[11px]" value={formData.email} onChange={e => handleInputChange('email', e.target.value)} disabled={isEditMode} />
             </div>
             <div className="space-y-1">
               <Label htmlFor="phone" className="text-[10px] font-semibold text-gray-600">PHONE</Label>
@@ -198,6 +201,10 @@ function UserForm({
                 </Select>
               </div>
             )}
+            <div className="space-y-1">
+                <Label htmlFor="password">{isEditMode ? 'NEW PASSWORD (OPTIONAL)' : 'PASSWORD'}</Label>
+                <Input id="password" type="password" value={formData.password} onChange={(e) => handleInputChange('password', e.target.value)} className="h-7 text-[11px]" />
+            </div>
           </div>
         </div>
         <DialogFooter className="bg-gray-50 px-4 py-2 flex justify-end gap-2 rounded-b-lg">
@@ -214,19 +221,20 @@ function UserForm({
 function PasswordResetForm({
   isOpen,
   onClose,
-  userName,
+  user,
   onConfirm
 }: {
   isOpen: boolean;
   onClose: () => void;
-  userName: string;
-  onConfirm: (password: string) => void;
+  user: User | null;
+  onConfirm: (password: string) => Promise<void>;
 }) {
   const { toast } = useToast();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (newPassword !== confirmPassword) {
       toast({
         variant: "destructive",
@@ -243,7 +251,9 @@ function PasswordResetForm({
       });
       return;
     }
-    onConfirm(newPassword);
+    setIsSubmitting(true);
+    await onConfirm(newPassword);
+    setIsSubmitting(false);
     onClose();
   };
   
@@ -253,6 +263,8 @@ function PasswordResetForm({
         setConfirmPassword('');
     }
   }, [isOpen]);
+
+  if (!user) return null;
 
   return (
      <Dialog open={isOpen} onOpenChange={onClose}>
@@ -264,7 +276,7 @@ function PasswordResetForm({
         </DialogHeader>
         <div className="p-4 space-y-4">
           <p className="text-sm text-muted-foreground">
-            Set a new password for <span className="font-semibold">{userName}</span>.
+            Set a new password for <span className="font-semibold">{user.name}</span>.
           </p>
           <div className="space-y-1">
             <Label htmlFor="newPassword" className="text-[10px] font-semibold text-gray-600">NEW PASSWORD</Label>
@@ -276,15 +288,16 @@ function PasswordResetForm({
           </div>
         </div>
         <DialogFooter className="bg-gray-50 px-4 py-2 flex justify-end gap-2 rounded-b-lg">
-          <Button variant="destructive" onClick={onClose} size="xs">
+          <Button variant="destructive" onClick={onClose} size="xs" disabled={isSubmitting}>
             CANCEL
           </Button>
-          <Button onClick={handleConfirm} size="xs">CONFIRM</Button>
+          <Button onClick={handleConfirm} size="xs" disabled={isSubmitting}>
+            {isSubmitting ? "Resetting..." : "CONFIRM"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   )
-
 }
 
 function DeleteUserDialog({
@@ -304,7 +317,7 @@ function DeleteUserDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete the user account for "{userName}".
+            This action cannot be undone. This will permanently delete the user account for "{userName}". This does not delete the Firebase Auth user.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -421,23 +434,54 @@ export default function UsersPage() {
     }
   }
 
-  const handleFormConfirm = (formData: Omit<User, 'id'>) => {
-    if (userToEdit) {
-      const docRef = doc(firestore, 'users', userToEdit.id);
-      setDocumentNonBlocking(docRef, formData, { merge: true });
-    } else {
-      addDocumentNonBlocking(collection(firestore, 'users'), formData);
+  const handleFormConfirm = async (formData: Omit<User, 'id'> & {password?: string}, authUserId?: string) => {
+    if (authUserId) { // Edit mode
+        const userRef = doc(firestore, 'users', authUserId);
+        const { password, ...userData } = formData;
+        setDocumentNonBlocking(userRef, userData, { merge: true });
+        toast({ title: "User updated successfully."});
+        if (password) {
+            toast({ title: "Password change requires re-authentication", description: "Please ask the user to re-login to update their password."});
+        }
+
+    } else { // Create mode
+        if (!formData.password) {
+            toast({ variant: "destructive", title: "Password is required for new users."});
+            return;
+        }
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+            const newAuthUser = userCredential.user;
+            const { password, ...userData } = formData;
+            
+            const userDocRef = doc(firestore, "users", newAuthUser.uid);
+            
+            const batch = writeBatch(firestore);
+            batch.set(userDocRef, { ...userData, id: newAuthUser.uid });
+
+            const role = roles.find(r => r.id === formData.roleId);
+            if(role?.name === 'central-admin') {
+                const adminRoleRef = doc(firestore, "roles_admin", newAuthUser.uid);
+                batch.set(adminRoleRef, { uid: newAuthUser.uid });
+            }
+            await batch.commit();
+
+            toast({ title: "User created successfully."});
+
+        } catch (error: any) {
+            console.error(error);
+            toast({ variant: "destructive", title: "Failed to create user", description: error.message });
+        }
     }
     closeModal();
   };
-
-  const handlePasswordResetConfirm = (password: string) => {
-      if (userToResetPassword) {
-        // This is a simulated action. In a real app, this would be a secure server-side call.
-        console.log(`Resetting password for ${userToResetPassword.email} to ${password}`);
+  
+  const handlePasswordResetConfirm = async (password: string) => {
+      if (userToResetPassword && authUser) {
         toast({
-          title: "Password Updated (Simulated)",
-          description: `Password for ${userToResetPassword.name} has been updated.`,
+          title: "Password Reset In-App Unavailable",
+          description: `For security, please instruct ${userToResetPassword.name} to use the 'Forgot Password' link on the login screen.`,
+          variant: "destructive"
         });
       }
       setIsPasswordModalOpen(false);
@@ -459,6 +503,14 @@ export default function UsersPage() {
   };
 
   const isLoading = isUserLoading || usersLoading || clinicsLoading || rolesLoading;
+
+  if (!authUser) {
+     return (
+      <div className="flex items-center justify-center h-full">
+        <p>Please log in to manage users.</p>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -568,7 +620,7 @@ export default function UsersPage() {
     <PasswordResetForm 
       isOpen={isPasswordModalOpen}
       onClose={() => setIsPasswordModalOpen(false)}
-      userName={userToResetPassword?.name || ''}
+      user={userToResetPassword}
       onConfirm={handlePasswordResetConfirm}
     />
     <DeleteUserDialog 

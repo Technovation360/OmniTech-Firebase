@@ -1,5 +1,4 @@
 
-
 export type UserRole = 'central-admin' | 'clinic-admin' | 'doctor' | 'assistant' | 'display' | 'advertiser';
 
 const userRoles: Record<string, UserRole> = {
@@ -17,42 +16,34 @@ const userRoles: Record<string, UserRole> = {
 const affiliationMap: Record<string, string> = {
     'clinic-admin-city@omni.com': 'clinic_01',
     'clinic-admin-health@omni.com': 'clinic_02',
-    'doc_ashish@omni.com': 'grp_cardiology_01', // This is a group id
-    'doc_vijay@omni.com': 'grp_ortho_01', // This is a group id
+    'doc_ashish@omni.com': 'doc_ashish',
+    'doc_vijay@omni.com': 'doc_vijay', 
     'asst_sunita@omni.com': 'asst_sunita', 
     'asst_rajesh@omni.com': 'asst_rajesh',
 };
 
 
-const doctorIdMap: Record<string, string> = {
-    'doc_ashish@omni.com': 'doc_ashish',
-    'doc_vijay@omni.com': 'doc_vijay'
-};
-
-const assistantIdMap: Record<string, string> = {
-    'asst_sunita@omni.com': 'asst_sunita',
-    'asst_rajesh@omni.com': 'asst_rajesh'
-}
-
 export function getUserRole(email: string): UserRole | null {
+    // This is now mainly for sample data. In a real app, role is fetched from Firestore.
     return userRoles[email] || null;
 }
 
-export function getRedirectUrlForRole(role: UserRole, email: string): string | null {
+export function getRedirectUrlForRole(role: UserRole, userId: string): string | null {
     switch (role) {
         case 'central-admin':
             return '/admin';
         case 'clinic-admin':
-            const clinicId = affiliationMap[email];
-            return clinicId ? `/clinic-admin/${clinicId}` : null;
+            // In a real app, the clinicId would be stored on the user document.
+            // For this mock, we'll keep the affiliation map but it's not robust.
+            // A better approach would be to look up the user's affiliation from their profile.
+            // Assuming userId for clinic admin is like 'clinic_01' from a lookup.
+            return `/clinic-admin/${userId}`;
         case 'doctor':
-            const doctorId = doctorIdMap[email];
-            return doctorId ? `/doctor/${doctorId}` : null;
+            return `/doctor/${userId}`;
         case 'assistant':
-            const assistantId = assistantIdMap[email];
-            return assistantId ? `/assistant/${assistantId}` : null;
+            return `/assistant/${userId}`;
         case 'display':
-            return '/display/scr_main_hall'; // Assuming a default screen
+            return `/display/${userId}`; // e.g. /display/scr_main_hall
         case 'advertiser':
             return '/admin/advertising';
         default:

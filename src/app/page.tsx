@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -15,7 +16,11 @@ import { Logo } from '@/components/logo';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { handleLogin } from '@/lib/auth-actions';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { useAuth, useFirestore } from '@/firebase';
+import { getRedirectUrlForRole } from '@/lib/roles';
+import type { User, Role } from '@/lib/types';
 import {
   Table,
   TableBody,
@@ -40,23 +45,55 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+  const auth = useAuth();
+  const firestore = useFirestore();
 
   const onLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    const { success, message, redirectUrl } = await handleLogin(email, password);
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
 
-    setLoading(false);
+      if (!firebaseUser) {
+        throw new Error("Could not get user.");
+      }
 
-    if (success && redirectUrl) {
+      // Fetch user profile from Firestore to get the role
+      const userDocRef = doc(firestore, 'users', firebaseUser.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (!userDocSnap.exists()) {
+          throw new Error("User profile not found in database.");
+      }
+      
+      const userData = userDocSnap.data() as User;
+      const roleDocRef = doc(firestore, 'roles', userData.roleId);
+      const roleDocSnap = await getDoc(roleDocRef);
+
+      if (!roleDocSnap.exists()) {
+           throw new Error("User role not found.");
+      }
+      
+      const roleData = roleDocSnap.data() as Role;
+      const redirectUrl = getRedirectUrlForRole(roleData.name, firebaseUser.uid);
+
+      if (!redirectUrl) {
+          throw new Error("Could not determine redirect for your role.");
+      }
+
       router.push(redirectUrl);
-    } else {
+
+    } catch (error: any) {
+      console.error(error);
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: message,
+        description: error.message || 'Invalid email or password.',
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -91,7 +128,7 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder='any password will work'
+                  placeholder='password'
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
@@ -104,7 +141,7 @@ export default function LoginPage() {
         <Card className="mt-6">
             <CardHeader>
                 <CardTitle className="text-lg">Sample Credentials</CardTitle>
-                <CardDescription>You can use any password to log in with these sample accounts.</CardDescription>
+                <CardDescription>Use "password" as the password for all sample accounts.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Table>
@@ -133,5 +170,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    
