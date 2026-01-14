@@ -27,7 +27,6 @@ import {
   Sparkles,
   ChevronLeft,
   Stethoscope,
-  Briefcase
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';

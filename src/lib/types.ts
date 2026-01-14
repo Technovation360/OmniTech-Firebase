@@ -1,4 +1,5 @@
 
+import type { UserRole } from './roles';
 
 export type Patient = {
   id: string;
@@ -93,7 +94,7 @@ export type PatientHistoryEntry = {
 
 export type Role = {
     id: string;
-    name: 'central-admin' | 'clinic-admin' | 'doctor' | 'assistant' | 'display' | 'advertiser';
+    name: UserRole;
 }
 
 export type User = {
@@ -101,11 +102,8 @@ export type User = {
     uid: string; // Firebase Auth User ID
     name: string;
     email: string;
-    roleId: string;
+    role: UserRole;
     affiliation?: string;
     phone?: string;
     specialty?: string;
 };
-
-    
-    

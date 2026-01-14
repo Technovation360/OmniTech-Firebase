@@ -51,6 +51,7 @@ import { collection, doc, query, where, writeBatch, getDoc, setDoc, deleteDoc, g
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { createUserWithEmailAndPassword, updatePassword, reauthenticateWithCredential, EmailAuthProvider, signInWithEmailAndPassword } from 'firebase/auth';
+import type { UserRole } from '@/lib/roles';
 
 
 const badgeColors = [
@@ -71,27 +72,34 @@ const roleColorMap: Record<string, string> = {
   'Advertiser': badgeColors[5],
 };
 
+const availableRoles: {value: UserRole, label: string}[] = [
+    { value: 'central-admin', label: 'Central Admin'},
+    { value: 'clinic-admin', label: 'Clinic Admin'},
+    { value: 'doctor', label: 'Doctor'},
+    { value: 'assistant', label: 'Assistant'},
+    { value: 'display', label: 'Display'},
+    { value: 'advertiser', label: 'Advertiser'},
+]
+
 function UserForm({
   isOpen,
   onClose,
   user,
   onConfirm,
-  clinics,
-  roles
+  clinics
 }: {
   isOpen: boolean;
   onClose: () => void;
   user: User | null;
   onConfirm: (formData: Omit<User, 'id' | 'uid'> & {password?: string}, authUserId?: string) => void;
   clinics: Clinic[];
-  roles: Role[];
 }) {
   const { toast } = useToast();
   const isEditMode = !!user;
   const [formData, setFormData] = useState({
       name: '',
       email: '',
-      roleId: '',
+      role: 'assistant' as UserRole,
       affiliation: '',
       phone: '',
       specialty: '',
@@ -99,7 +107,7 @@ function UserForm({
       confirmPassword: ''
   });
 
-  const selectedRole = useMemo(() => roles.find(r => r.id === formData.roleId), [roles, formData.roleId]);
+  const selectedRole = useMemo(() => availableRoles.find(r => r.value === formData.role), [formData.role]);
 
   useEffect(() => {
     if (isOpen) {
@@ -107,7 +115,7 @@ function UserForm({
         setFormData({
             name: user.name,
             email: user.email,
-            roleId: user.roleId,
+            role: user.role,
             affiliation: user.affiliation || '',
             phone: user.phone || '',
             specialty: user.specialty || '',
@@ -116,7 +124,7 @@ function UserForm({
         });
       } else {
         setFormData({
-            name: '', email: '', roleId: '', affiliation: '', phone: '', specialty: '', password: '', confirmPassword: ''
+            name: '', email: '', role: 'assistant' as UserRole, affiliation: '', phone: '', specialty: '', password: '', confirmPassword: ''
         })
       }
     }
@@ -151,18 +159,18 @@ function UserForm({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
             <div className="space-y-1">
               <Label htmlFor="role" className="text-[10px] font-semibold text-gray-600">ROLE</Label>
-               <Select value={formData.roleId} onValueChange={(value) => handleInputChange('roleId', value)}>
+               <Select value={formData.role} onValueChange={(value) => handleInputChange('role', value as UserRole)}>
                 <SelectTrigger className="h-7 text-[11px]">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
-                  {roles.map((role) => (
-                    <SelectItem key={role.id} value={role.id} className="text-[11px] capitalize">{role.name.replace('-', ' ')}</SelectItem>
+                  {availableRoles.map((role) => (
+                    <SelectItem key={role.value} value={role.value} className="text-[11px] capitalize">{role.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-             {selectedRole?.name !== 'central-admin' && (
+             {selectedRole?.value !== 'central-admin' && (
               <div className="space-y-1">
                 <Label htmlFor="affiliation" className="text-[10px] font-semibold text-gray-600">AFFILIATION</Label>
                 <Select value={formData.affiliation} onValueChange={(value) => handleInputChange('affiliation', value)}>
@@ -189,7 +197,7 @@ function UserForm({
               <Label htmlFor="phone" className="text-[10px] font-semibold text-gray-600">PHONE</Label>
               <Input id="phone" type="tel" className="h-7 text-[11px]" value={formData.phone} onChange={e => handleInputChange('phone', e.target.value)} />
             </div>
-            {selectedRole?.name === 'doctor' && (
+            {selectedRole?.value === 'doctor' && (
                <div className="space-y-1">
                 <Label htmlFor="specialties" className="text-[10px] font-semibold text-gray-600">SPECIALTY</Label>
                 <Select value={formData.specialty} onValueChange={(value) => handleInputChange('specialty', value)}>
@@ -348,13 +356,7 @@ export default function UsersPage() {
     return collection(firestore, 'users')
   }, [firestore, authUser]);
   
-  const rolesRef = useMemoFirebase(() => {
-    if (!authUser) return null;
-    return collection(firestore, 'roles')
-  }, [firestore, authUser]);
-  
   const { data: allUsers, isLoading: usersLoading, refetch: refetchUsers } = useCollection<User>(usersRef);
-  const { data: allRoles, isLoading: rolesLoading } = useCollection<Role>(rolesRef);
 
   const clinicsQuery = useMemoFirebase(() => {
     if (!authUser) return null;
@@ -370,36 +372,11 @@ export default function UsersPage() {
   const [userToResetPassword, setUserToResetPassword] = useState<User | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: keyof User; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc' });
   const [searchQuery, setSearchQuery] = useState('');
-  const [hasSeededRoles, setHasSeededRoles] = useState(false);
-
-  useEffect(() => {
-    if (!rolesLoading && allRoles && allRoles.length === 0 && !hasSeededRoles) {
-      setHasSeededRoles(true);
-      const rolesToSeed: Omit<Role, 'id'>[] = [
-        { name: 'central-admin' },
-        { name: 'clinic-admin' },
-        { name: 'doctor' },
-        { name: 'assistant' },
-        { name: 'display' },
-        { name: 'advertiser' },
-      ];
-      const rolesCol = collection(firestore, 'roles');
-      const batch = writeBatch(firestore);
-      rolesToSeed.forEach(role => {
-        const docRef = doc(rolesCol); // auto-generate ID
-        batch.set(docRef, role);
-      });
-      batch.commit().then(() => {
-        toast({ title: "Roles collection seeded." });
-      });
-    }
-  }, [allRoles, rolesLoading, hasSeededRoles, firestore, toast]);
 
   const clinics = clinicsData || [];
-  const roles = allRoles || [];
 
-  const getRoleName = (roleId: string) => {
-    return roles.find(r => r.id === roleId)?.name.replace('-', ' ') || 'Unknown';
+  const getRoleName = (role: UserRole) => {
+    return availableRoles.find(r => r.value === role)?.label || 'Unknown';
   }
 
   useEffect(() => {
@@ -489,11 +466,10 @@ export default function UsersPage() {
             const userDocRef = doc(firestore, "users", newAuthUser.uid);
             
             const batch = writeBatch(firestore);
-            const role = roles.find(r => r.id === formData.roleId);
             
             const finalUserData: Partial<User> = { ...userData, uid: newAuthUser.uid };
 
-            if(role?.name === 'central-admin' && 'affiliation' in finalUserData) {
+            if(finalUserData.role === 'central-admin' && 'affiliation' in finalUserData) {
               delete finalUserData.affiliation;
             }
 
@@ -586,7 +562,7 @@ export default function UsersPage() {
     return <ArrowDown className="ml-2 h-3 w-3" />;
   };
 
-  const isLoading = isUserLoading || usersLoading || clinicsLoading || rolesLoading;
+  const isLoading = isUserLoading || usersLoading || clinicsLoading;
 
   if (!authUser) {
      return (
@@ -655,9 +631,9 @@ export default function UsersPage() {
                 </Button>
               </TableHead>
               <TableHead>
-                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('roleId')}>
+                <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('role')}>
                     Role
-                    {getSortIcon('roleId')}
+                    {getSortIcon('role')}
                 </Button>
               </TableHead>
               <TableHead>Actions</TableHead>
@@ -670,7 +646,7 @@ export default function UsersPage() {
                 <TableCell className="py-2 text-xs text-muted-foreground">{user.email}</TableCell>
                 <TableCell className="py-2 text-xs">{user.affiliation || 'N/A'}</TableCell>
                 <TableCell className="py-2 text-xs">
-                  <Badge variant="secondary" className={cn("text-[10px] border-transparent capitalize", roleColorMap[getRoleName(user.roleId) as string])}>{getRoleName(user.roleId) || 'Unknown'}</Badge>
+                  <Badge variant="secondary" className={cn("text-[10px] border-transparent capitalize", roleColorMap[getRoleName(user.role) as string])}>{getRoleName(user.role) || 'Unknown'}</Badge>
                 </TableCell>
                 <TableCell className="flex gap-2 py-2">
                   <Button variant="ghost" size="icon-xs" onClick={() => openPasswordResetModal(user)}>
@@ -702,7 +678,6 @@ export default function UsersPage() {
         user={userToEdit}
         onConfirm={handleFormConfirm}
         clinics={clinics}
-        roles={roles}
     />
     <PasswordResetForm 
       isOpen={isPasswordModalOpen}

@@ -52,46 +52,9 @@ export default function LoginPage() {
   
 
   const bootstrapFirstAdmin = async (adminAuthUser: FirebaseAuthUser): Promise<void> => {
-    const rolesCol = collection(firestore, 'roles');
-    const rolesSnapshot = await getDocs(rolesCol);
-
     const batch = writeBatch(firestore);
 
-    let centralAdminRoleId: string | null = null;
-
-    if (rolesSnapshot.empty) {
-      toast({ title: 'First-time setup...', description: 'Creating roles collection.' });
-      const rolesToSeed: Omit<Role, 'id'>[] = [
-        { name: 'central-admin' },
-        { name: 'clinic-admin' },
-        { name: 'doctor' },
-        { name: 'assistant' },
-        { name: 'display' },
-        { name: 'advertiser' },
-      ];
-      
-      for (const roleData of rolesToSeed) {
-        const roleDocRef = doc(rolesCol);
-        batch.set(roleDocRef, roleData);
-        if (roleData.name === 'central-admin') {
-          centralAdminRoleId = roleDocRef.id;
-        }
-      }
-    } else {
-        const adminRole = rolesSnapshot.docs.find(d => d.data().name === 'central-admin');
-        if (adminRole) {
-            centralAdminRoleId = adminRole.id;
-        }
-    }
-
-    if (!centralAdminRoleId) {
-        // This case handles if roles exist but admin role is missing for some reason.
-        const adminRoleRef = doc(rolesCol);
-        batch.set(adminRoleRef, { name: 'central-admin' });
-        centralAdminRoleId = adminRoleRef.id;
-    }
-
-    // 2. Create the user document in Firestore
+    // 1. Create the user document in Firestore
     const userDocRef = doc(firestore, 'users', adminAuthUser.uid);
     const userDocSnap = await getDoc(userDocRef);
 
@@ -101,16 +64,8 @@ export default function LoginPage() {
             uid: adminAuthUser.uid,
             name: 'Central Admin',
             email: adminAuthUser.email,
-            roleId: centralAdminRoleId,
+            role: 'central-admin',
         });
-    }
-
-    // 3. Create the admin role document in /roles_admin
-    const adminRoleDocRef = doc(firestore, 'roles_admin', adminAuthUser.uid);
-    const adminRoleDocSnap = await getDoc(adminRoleDocRef);
-    if (!adminRoleDocSnap.exists()) {
-        toast({ description: 'Assigning admin privileges.' });
-        batch.set(adminRoleDocRef, { uid: adminAuthUser.uid });
     }
     
     await batch.commit();
@@ -165,22 +120,17 @@ export default function LoginPage() {
       }
       
       const userData = userDocSnap.data() as User;
-      const roleDocRef = doc(firestore, 'roles', userData.roleId);
-      const roleDocSnap = await getDoc(roleDocRef);
-
-      if (!roleDocSnap.exists()) throw new Error("User role not found.");
-      
-      const roleData = roleDocSnap.data() as Role;
+      const userRole = userData.role;
       
       let affiliationId = firebaseUser.uid;
-      if (roleData.name !== 'central-admin' && clinics && userData.affiliation) {
+      if (userRole !== 'central-admin' && clinics && userData.affiliation) {
          const affiliatedClinic = clinics.find(c => c.name === userData.affiliation && c.type === 'Clinic');
          if (affiliatedClinic) {
            affiliationId = affiliatedClinic.id;
          }
       }
 
-      const redirectUrl = getRedirectUrlForRole(roleData.name, affiliationId);
+      const redirectUrl = getRedirectUrlForRole(userRole, affiliationId);
 
       if (!redirectUrl) throw new Error("Could not determine redirect for your role.");
 
