@@ -11,24 +11,18 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
-    function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-    }
-
     function isAdmin() {
       // This is the ideal production rule using custom claims.
-      // return request.auth.token.role == 'central-admin';
-      
-      // For now, we use a Firestore document read, which works for get/create/update/delete but not list.
-      return isSignedIn() && getUserData().role == 'central-admin';
+      return request.auth.token.role == 'central-admin';
     }
 
     function isDoctor() {
-      return isSignedIn() && getUserData().role == 'doctor';
+      // Check for either a doctor claim or ownership for individual access
+      return isSignedIn() && (request.auth.token.role == 'doctor' || isOwner(resource.data.doctorId));
     }
     
     function isAdvertiser() {
-      return isSignedIn() && getUserData().role == 'advertiser';
+      return isSignedIn() && request.auth.token.role == 'advertiser';
     }
 
     function isExistingDoc() {
@@ -41,9 +35,7 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow get: if isSignedIn();
-      // This is a temporary rule to allow development.
-      // In production, this should be `if isAdmin()`, relying on custom claims.
-      allow list: if isSignedIn();
+      allow list: if isAdmin();
       allow create: if (isOwner(userId) || isAdmin()) && incomingData().uid == userId;
       allow update: if (isOwner(userId) || isAdmin()) && isExistingDoc() && incomingData().uid == resource.data.uid;
       allow delete: if (isOwner(userId) || isAdmin()) && isExistingDoc();
@@ -76,11 +68,11 @@ service cloud.firestore {
     }
 
     match /consultations/{consultationId} {
-      allow get: if (isAdmin() || isOwner(resource.data.doctorId)) && isExistingDoc();
-      allow list: if isAdmin(); // This will fail for non-admins if it relies on a `get`
-      allow create: if (isAdmin() || (isDoctor() && isOwner(incomingData().doctorId)));
-      allow update: if (isAdmin() || isOwner(resource.data.doctorId)) && isExistingDoc();
-      allow delete: if (isAdmin() || isOwner(resource.data.doctorId)) && isExistingDoc();
+      allow get: if (isAdmin() || isDoctor()) && isExistingDoc();
+      allow list: if isAdmin();
+      allow create: if isAdmin() || (isDoctor() && isOwner(incomingData().doctorId));
+      allow update: if (isAdmin() || isDoctor()) && isExistingDoc();
+      allow delete: if (isAdmin() || isDoctor()) && isExistingDoc();
     }
 
     match /screens/{screenId} {
