@@ -144,7 +144,7 @@ function OnboardClinicForm({
                 options={specialties}
                 selected={formData.specialties}
                 onChange={(selected) => handleInputChange('specialties', selected)}
-                className="text-sm"
+                className="text-[11px]"
                 placeholder="Select specialties..."
             />
           </div>
@@ -406,7 +406,3 @@ export default function ClinicsPage() {
     </>
   )
 }
-
-    
-
-    
