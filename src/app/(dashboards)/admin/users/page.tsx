@@ -126,7 +126,7 @@ function UserForm({
       const newFormData = {...formData, [field]: value};
       const role = roles.find(r => r.id === value);
       if (field === 'roleId' && role?.name === 'central-admin') {
-        newFormData.affiliation = '';
+        delete (newFormData as Partial<typeof newFormData>).affiliation;
       }
       setFormData(newFormData);
   }
@@ -495,9 +495,10 @@ export default function UsersPage() {
             
             const batch = writeBatch(firestore);
             const role = roles.find(r => r.id === formData.roleId);
-            const finalUserData = { ...userData, uid: newAuthUser.uid };
+            
+            const finalUserData: Omit<User, 'id'> = { ...userData, uid: newAuthUser.uid };
 
-            if(role?.name === 'central-admin') {
+            if(role?.name === 'central-admin' && 'affiliation' in finalUserData) {
               delete (finalUserData as Partial<typeof finalUserData>).affiliation;
             }
 

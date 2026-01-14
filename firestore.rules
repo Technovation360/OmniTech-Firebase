@@ -52,7 +52,7 @@ service cloud.firestore {
      * These functions check for roles by looking up the user's profile or an admin collection.
      */
     function isAdmin() {
-      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
 
     function getUserData() {
