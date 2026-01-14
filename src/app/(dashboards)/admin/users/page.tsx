@@ -99,7 +99,7 @@ function UserForm({
   const [formData, setFormData] = useState<Omit<User, 'id'>>({
       name: '',
       email: '',
-      role: 'assistant',
+      role: '' as UserRole,
       affiliation: '',
       phone: '',
       specialty: '',
@@ -118,7 +118,7 @@ function UserForm({
         });
       } else {
         setFormData({
-            name: '', email: '', role: 'assistant', affiliation: '', phone: '', specialty: ''
+            name: '', email: '', role: '' as UserRole, affiliation: '', phone: '', specialty: ''
         })
       }
     }
@@ -255,8 +255,6 @@ function DeleteUserDialog({
 
 export default function UsersPage() {
   const firestore = useFirestore();
-  const { user, isUserLoading } = useUser();
-
   const usersRef = useMemoFirebase(() => {
     return collection(firestore, 'users');
   }, [firestore]);
@@ -366,7 +364,7 @@ export default function UsersPage() {
     return <ArrowDown className="ml-2 h-3 w-3" />;
   };
 
-  const isLoading = isUserLoading || usersLoading || clinicsLoading || groupsLoading;
+  const isLoading = usersLoading || clinicsLoading || groupsLoading;
 
   return (
     <>
