@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -17,7 +17,7 @@ import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc, getDocs, collection } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, writeBatch } from 'firebase/firestore';
 import { useAuth, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { getRedirectUrlForRole } from '@/lib/roles';
 import type { User, Role, Clinic } from '@/lib/types';
@@ -50,6 +50,34 @@ export default function LoginPage() {
 
   const clinicsQuery = useMemoFirebase(() => collection(firestore, 'groups'), [firestore]);
   const { data: clinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
+  
+  const rolesQuery = useMemoFirebase(() => collection(firestore, 'roles'), [firestore]);
+  const { data: allRoles, isLoading: rolesLoading } = useCollection<Role>(rolesQuery);
+  
+  const [hasSeededRoles, setHasSeededRoles] = useState(false);
+
+  useEffect(() => {
+    if (!rolesLoading && allRoles && allRoles.length === 0 && !hasSeededRoles) {
+      setHasSeededRoles(true);
+      const rolesToSeed: Omit<Role, 'id'>[] = [
+        { name: 'central-admin' },
+        { name: 'clinic-admin' },
+        { name: 'doctor' },
+        { name: 'assistant' },
+        { name: 'display' },
+        { name: 'advertiser' },
+      ];
+      const rolesCol = collection(firestore, 'roles');
+      const batch = writeBatch(firestore);
+      rolesToSeed.forEach(role => {
+        const docRef = doc(rolesCol); // auto-generate ID
+        batch.set(docRef, role);
+      });
+      batch.commit().then(() => {
+        toast({ title: "Roles collection seeded." });
+      });
+    }
+  }, [allRoles, rolesLoading, hasSeededRoles, firestore, toast]);
 
 
   const onLogin = async (e: React.FormEvent) => {
