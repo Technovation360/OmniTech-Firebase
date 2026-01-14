@@ -97,15 +97,18 @@ function UserForm({
   clinics: Clinic[];
   clinicGroups: ClinicGroup[];
 }) {
+  const { toast } = useToast();
   const isEditMode = !!user;
   const [formData, setFormData] = useState<Omit<User, 'id'>>({
       name: '',
       email: '',
-      role: '' as UserRole,
+      role: 'assistant',
       affiliation: '',
       phone: '',
       specialty: '',
   });
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -123,6 +126,8 @@ function UserForm({
             name: '', email: '', role: '' as UserRole, affiliation: '', phone: '', specialty: ''
         })
       }
+      setPassword('');
+      setConfirmPassword('');
     }
   }, [isOpen, user]);
 
@@ -135,8 +140,19 @@ function UserForm({
   }
 
   const handleConfirm = () => {
-      onConfirm(formData);
-      onClose();
+    if (password !== confirmPassword) {
+      toast({
+        variant: "destructive",
+        title: "Password Mismatch",
+        description: "The new password and confirm password fields do not match.",
+      });
+      return;
+    }
+    // In a real app, you'd handle the password update here.
+    // For now, we just pass the user data.
+    // If a password was entered, you would typically call a server function to update it.
+    onConfirm(formData);
+    onClose();
   }
 
   return (
@@ -205,9 +221,13 @@ function UserForm({
                 </Select>
               </div>
             )}
-            <div className="space-y-1">
-              <Label htmlFor="password" className="text-[10px] font-semibold text-gray-600">PASSWORD</Label>
-              <Input id="password" type="password" className="h-7 text-[11px]" placeholder="Set new password"/>
+             <div className="space-y-1">
+              <Label htmlFor="newPassword" className="text-[10px] font-semibold text-gray-600">NEW PASSWORD</Label>
+              <Input id="newPassword" type="password" className="h-7 text-[11px]" placeholder="Set new password" value={password} onChange={e => setPassword(e.target.value)} />
+            </div>
+             <div className="space-y-1">
+              <Label htmlFor="confirmPassword" className="text-[10px] font-semibold text-gray-600">CONFIRM PASSWORD</Label>
+              <Input id="confirmPassword" type="password" className="h-7 text-[11px]" placeholder="Confirm new password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
             </div>
           </div>
         </div>
@@ -473,3 +493,5 @@ export default function UsersPage() {
     </>
   )
 }
+
+    
