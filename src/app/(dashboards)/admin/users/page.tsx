@@ -48,7 +48,7 @@ import { cn } from '@/lib/utils';
 import type { Clinic, User, Role } from '@/lib/types';
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc, query, where, writeBatch, getDoc, setDoc, deleteDoc, getDocs } from 'firebase/firestore';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { createUserWithEmailAndPassword, updatePassword, reauthenticateWithCredential, EmailAuthProvider, signInWithEmailAndPassword } from 'firebase/auth';
 
@@ -371,7 +371,31 @@ export default function UsersPage() {
   const [userToResetPassword, setUserToResetPassword] = useState<User | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: keyof User; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc' });
   const [searchQuery, setSearchQuery] = useState('');
-  
+  const [hasSeededRoles, setHasSeededRoles] = useState(false);
+
+  useEffect(() => {
+    if (!rolesLoading && allRoles && allRoles.length === 0 && !hasSeededRoles) {
+      setHasSeededRoles(true);
+      const rolesToSeed: Omit<Role, 'id'>[] = [
+        { name: 'central-admin' },
+        { name: 'clinic-admin' },
+        { name: 'doctor' },
+        { name: 'assistant' },
+        { name: 'display' },
+        { name: 'advertiser' },
+      ];
+      const rolesCol = collection(firestore, 'roles');
+      const batch = writeBatch(firestore);
+      rolesToSeed.forEach(role => {
+        const docRef = doc(rolesCol); // auto-generate ID
+        batch.set(docRef, role);
+      });
+      batch.commit().then(() => {
+        toast({ title: "Roles collection seeded." });
+      });
+    }
+  }, [allRoles, rolesLoading, hasSeededRoles, firestore, toast]);
+
   const clinics = clinicsData || [];
   const roles = allRoles || [];
 
@@ -693,5 +717,3 @@ export default function UsersPage() {
     </>
   )
 }
-
-    
