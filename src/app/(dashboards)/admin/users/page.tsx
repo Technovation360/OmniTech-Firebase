@@ -88,27 +88,23 @@ function UserForm({
   user,
   onConfirm,
   clinics,
-  clinicGroups,
 }: {
   isOpen: boolean;
   onClose: () => void;
   user: User | null;
   onConfirm: (formData: Omit<User, 'id'>) => void;
   clinics: Clinic[];
-  clinicGroups: ClinicGroup[];
 }) {
   const { toast } = useToast();
   const isEditMode = !!user;
   const [formData, setFormData] = useState<Omit<User, 'id'>>({
       name: '',
       email: '',
-      role: 'assistant',
+      role: '' as UserRole,
       affiliation: '',
       phone: '',
       specialty: '',
   });
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -126,8 +122,6 @@ function UserForm({
             name: '', email: '', role: '' as UserRole, affiliation: '', phone: '', specialty: ''
         })
       }
-      setPassword('');
-      setConfirmPassword('');
     }
   }, [isOpen, user]);
 
@@ -140,17 +134,6 @@ function UserForm({
   }
 
   const handleConfirm = () => {
-    if (password !== confirmPassword) {
-      toast({
-        variant: "destructive",
-        title: "Password Mismatch",
-        description: "The new password and confirm password fields do not match.",
-      });
-      return;
-    }
-    // In a real app, you'd handle the password update here.
-    // For now, we just pass the user data.
-    // If a password was entered, you would typically call a server function to update it.
     onConfirm(formData);
     onClose();
   }
@@ -221,13 +204,9 @@ function UserForm({
                 </Select>
               </div>
             )}
-             <div className="space-y-1">
-              <Label htmlFor="newPassword" className="text-[10px] font-semibold text-gray-600">NEW PASSWORD</Label>
-              <Input id="newPassword" type="password" className="h-7 text-[11px]" placeholder="Set new password" value={password} onChange={e => setPassword(e.target.value)} />
-            </div>
-             <div className="space-y-1">
-              <Label htmlFor="confirmPassword" className="text-[10px] font-semibold text-gray-600">CONFIRM PASSWORD</Label>
-              <Input id="confirmPassword" type="password" className="h-7 text-[11px]" placeholder="Confirm new password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+             <div className="space-y-1 md:col-span-2">
+              <Label htmlFor="newPassword" className="text-[10px] font-semibold text-gray-600">PASSWORD</Label>
+              <Input id="newPassword" type="password" className="h-7 text-[11px]" placeholder={isEditMode ? 'Leave blank to keep current password' : 'Set initial password'}/>
             </div>
           </div>
         </div>
@@ -240,6 +219,85 @@ function UserForm({
       </DialogContent>
     </Dialog>
   );
+}
+
+function PasswordResetForm({
+  isOpen,
+  onClose,
+  userName,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  userName: string;
+}) {
+  const { toast } = useToast();
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  
+  const handleConfirm = () => {
+    if (newPassword !== confirmPassword) {
+      toast({
+        variant: "destructive",
+        title: "Password Mismatch",
+        description: "The new password and confirm password fields do not match.",
+      });
+      return;
+    }
+    if (!newPassword) {
+      toast({
+        variant: "destructive",
+        title: "Password Required",
+        description: "Please enter a new password.",
+      });
+      return;
+    }
+
+    // In a real app, you would call a server function to update the password securely.
+    toast({
+      title: "Password Updated (Simulated)",
+      description: `Password for ${userName} has been updated.`,
+    });
+    onClose();
+  };
+  
+  useEffect(() => {
+    if (isOpen) {
+        setNewPassword('');
+        setConfirmPassword('');
+    }
+  }, [isOpen]);
+
+  return (
+     <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader className="p-4 pb-2">
+          <DialogTitle className="text-base font-bold tracking-normal">
+            RESET PASSWORD
+          </DialogTitle>
+        </DialogHeader>
+        <div className="p-4 space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Set a new password for <span className="font-semibold">{userName}</span>.
+          </p>
+          <div className="space-y-1">
+            <Label htmlFor="newPassword" className="text-[10px] font-semibold text-gray-600">NEW PASSWORD</Label>
+            <Input id="newPassword" type="password" className="h-7 text-[11px]" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="confirmPassword" className="text-[10px] font-semibold text-gray-600">CONFIRM PASSWORD</Label>
+            <Input id="confirmPassword" type="password" className="h-7 text-[11px]" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter className="bg-gray-50 px-4 py-2 flex justify-end gap-2 rounded-b-lg">
+          <Button variant="destructive" onClick={onClose} size="xs">
+            CANCEL
+          </Button>
+          <Button onClick={handleConfirm} size="xs">CONFIRM</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+
 }
 
 function DeleteUserDialog({
@@ -286,20 +344,16 @@ export default function UsersPage() {
   }, [firestore]);
   const { data: clinicsData, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
   
-  const clinicGroupsQuery = useMemoFirebase(() => {
-    return query(collection(firestore, 'groups'), where('type', '==', 'Doctor'))
-  }, [firestore]);
-  const { data: clinicGroupsData, isLoading: groupsLoading } = useCollection<ClinicGroup>(clinicGroupsQuery);
-  
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [userToResetPassword, setUserToResetPassword] = useState<User | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: keyof User; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc' });
   const [searchQuery, setSearchQuery] = useState('');
   
   const clinics = clinicsData || [];
-  const clinicGroups = clinicGroupsData || [];
 
   useEffect(() => {
     let sourceUsers = allUsers || [];
@@ -333,6 +387,11 @@ export default function UsersPage() {
     setUserToEdit(user);
     setIsModalOpen(true);
   }
+  
+  const openPasswordResetModal = (user: User) => {
+    setUserToResetPassword(user);
+    setIsPasswordModalOpen(true);
+  };
 
   const openCreateModal = () => {
     setUserToEdit(null);
@@ -384,7 +443,7 @@ export default function UsersPage() {
     return <ArrowDown className="ml-2 h-3 w-3" />;
   };
 
-  const isLoading = usersLoading || clinicsLoading || groupsLoading;
+  const isLoading = usersLoading || clinicsLoading;
 
   return (
     <>
@@ -453,7 +512,7 @@ export default function UsersPage() {
                   <Badge variant="secondary" className={cn("text-[10px] border-transparent", roleColorMap[user.role as UserRole])}>{roleLabels[user.role as UserRole] || 'Unknown'}</Badge>
                 </TableCell>
                 <TableCell className="flex gap-2 py-2">
-                  <Button variant="ghost" size="icon-xs" onClick={() => openEditModal(user)}>
+                  <Button variant="ghost" size="icon-xs" onClick={() => openPasswordResetModal(user)}>
                     <KeyRound className="h-3 w-3" />
                   </Button>
                   <Button variant="ghost" size="icon-xs" onClick={() => openEditModal(user)}>
@@ -482,7 +541,11 @@ export default function UsersPage() {
         user={userToEdit}
         onConfirm={handleFormConfirm}
         clinics={clinics}
-        clinicGroups={clinicGroups}
+    />
+    <PasswordResetForm 
+      isOpen={isPasswordModalOpen}
+      onClose={() => setIsPasswordModalOpen(false)}
+      userName={userToResetPassword?.name || ''}
     />
     <DeleteUserDialog 
         isOpen={!!userToDelete}
@@ -493,5 +556,3 @@ export default function UsersPage() {
     </>
   )
 }
-
-    
