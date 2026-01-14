@@ -44,13 +44,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Edit, Trash2, KeyRound, ArrowUp, ArrowDown, Search, Loader, PlusCircle } from 'lucide-react';
-import type { UserRole } from '@/lib/roles';
 import { cn } from '@/lib/utils';
-import type { Clinic, ClinicGroup, User, Role } from '@/lib/types';
+import type { Clinic, User, Role } from '@/lib/types';
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc, query, where } from 'firebase/firestore';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { sendPasswordResetEmail } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 
 
@@ -98,8 +96,6 @@ function UserForm({
       phone: '',
       specialty: '',
   });
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
 
   const selectedRole = useMemo(() => roles.find(r => r.id === formData.roleId), [roles, formData.roleId]);
 
@@ -119,8 +115,6 @@ function UserForm({
             name: '', email: '', roleId: '', affiliation: '', phone: '', specialty: ''
         })
       }
-      setNewPassword('');
-      setConfirmPassword('');
     }
   }, [isOpen, user]);
 
@@ -134,15 +128,6 @@ function UserForm({
   }
 
   const handleConfirm = () => {
-     if (newPassword && newPassword !== confirmPassword) {
-      toast({
-        variant: "destructive",
-        title: "Password Mismatch",
-        description: "Passwords do not match.",
-      });
-      return;
-    }
-    // TODO: Add password update logic
     onConfirm(formData);
     onClose();
   }
@@ -213,14 +198,6 @@ function UserForm({
                 </Select>
               </div>
             )}
-             <div className="space-y-1 md:col-span-2">
-                <Label htmlFor="newPassword" className="text-[10px] font-semibold text-gray-600">New Password</Label>
-                <Input id="newPassword" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="h-7 text-[11px]" placeholder="Leave blank to keep current"/>
-            </div>
-             <div className="space-y-1 md:col-span-2">
-                <Label htmlFor="confirmPassword" className="text-[10px] font-semibold text-gray-600">Confirm Password</Label>
-                <Input id="confirmPassword" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="h-7 text-[11px]" />
-            </div>
           </div>
         </div>
         <DialogFooter className="bg-gray-50 px-4 py-2 flex justify-end gap-2 rounded-b-lg">
@@ -343,12 +320,25 @@ export default function UsersPage() {
   const firestore = useFirestore();
   const auth = useAuth();
   const { toast } = useToast();
-  const usersRef = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
-  const rolesRef = useMemoFirebase(() => collection(firestore, 'roles'), [firestore]);
+  const { user: authUser, isUserLoading } = useUser();
+
+  const usersRef = useMemoFirebase(() => {
+    if (!authUser) return null;
+    return collection(firestore, 'users')
+  }, [firestore, authUser]);
+  
+  const rolesRef = useMemoFirebase(() => {
+    if (!authUser) return null;
+    return collection(firestore, 'roles')
+  }, [firestore, authUser]);
+  
   const { data: allUsers, isLoading: usersLoading } = useCollection<User>(usersRef);
   const { data: allRoles, isLoading: rolesLoading } = useCollection<Role>(rolesRef);
 
-  const clinicsQuery = useMemoFirebase(() => query(collection(firestore, 'groups'), where('type', '==', 'Clinic')), [firestore]);
+  const clinicsQuery = useMemoFirebase(() => {
+    if (!authUser) return null;
+    return query(collection(firestore, 'groups'), where('type', '==', 'Clinic'))
+  }, [firestore, authUser]);
   const { data: clinicsData, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
   
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
@@ -450,6 +440,8 @@ export default function UsersPage() {
           description: `Password for ${userToResetPassword.name} has been updated.`,
         });
       }
+      setIsPasswordModalOpen(false);
+      setUserToResetPassword(null);
   }
   
   const handleSort = (key: keyof User) => {
@@ -466,7 +458,15 @@ export default function UsersPage() {
     return <ArrowDown className="ml-2 h-3 w-3" />;
   };
 
-  const isLoading = usersLoading || clinicsLoading || rolesLoading;
+  const isLoading = isUserLoading || usersLoading || clinicsLoading || rolesLoading;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -525,8 +525,7 @@ export default function UsersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading && <TableRow><TableCell colSpan={5} className="text-center py-4">Loading users...</TableCell></TableRow>}
-            {!isLoading && filteredUsers.map((user) => (
+            {filteredUsers.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="py-2 text-xs font-medium">{user.name}</TableCell>
                 <TableCell className="py-2 text-xs text-muted-foreground">{user.email}</TableCell>
@@ -581,5 +580,3 @@ export default function UsersPage() {
     </>
   )
 }
-
-    
