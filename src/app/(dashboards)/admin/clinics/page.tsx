@@ -116,29 +116,27 @@ function OnboardClinicForm({
           </div>
           <div className="space-y-1">
             <Label htmlFor="phone" className="text-[10px] font-semibold text-gray-600">PHONE NUMBER</Label>
-            <Input id="phone" type="tel" className="h-8 text-sm" value={formData.phone} onChange={(e) => handleInputChange('phone', e.target.value)} />
+            <Input id="phone" type="tel" className="h-7 text-[11px]" value={formData.phone} onChange={(e) => handleInputChange('phone', e.target.value)} />
           </div>
           <div className="space-y-1">
             <Label htmlFor="email" className="text-[10px] font-semibold text-gray-600">EMAIL</Label>
-            <Input id="email" type="email" className="h-8 text-sm" value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} />
+            <Input id="email" type="email" className="h-7 text-[11px]" value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} />
           </div>
           <div className="md:col-span-2 space-y-1">
             <Label htmlFor="address" className="text-[10px] font-semibold text-gray-600">ADDRESS</Label>
             <Textarea id="address" className="text-sm" value={formData.address} onChange={(e) => handleInputChange('address', e.target.value)} />
           </div>
-          <div className="grid grid-cols-3 gap-x-4">
-             <div className="space-y-1">
-                <Label htmlFor="city" className="text-[10px] font-semibold text-gray-600">CITY</Label>
-                <Input id="city" className="h-8 text-sm" value={formData.city} onChange={(e) => handleInputChange('city', e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="state" className="text-[10px] font-semibold text-gray-600">STATE</Label>
-                <Input id="state" className="h-8 text-sm" value={formData.state} onChange={(e) => handleInputChange('state', e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="pincode" className="text-[10px] font-semibold text-gray-600">PINCODE</Label>
-                <Input id="pincode" className="h-8 text-sm" value={formData.pincode} onChange={(e) => handleInputChange('pincode', e.target.value)} />
-              </div>
+          <div className="space-y-1">
+            <Label htmlFor="city" className="text-[10px] font-semibold text-gray-600">CITY</Label>
+            <Input id="city" className="h-7 text-[11px]" value={formData.city} onChange={(e) => handleInputChange('city', e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="state" className="text-[10px] font-semibold text-gray-600">STATE</Label>
+            <Input id="state" className="h-7 text-[11px]" value={formData.state} onChange={(e) => handleInputChange('state', e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="pincode" className="text-[10px] font-semibold text-gray-600">PINCODE</Label>
+            <Input id="pincode" className="h-7 text-[11px]" value={formData.pincode} onChange={(e) => handleInputChange('pincode', e.target.value)} />
           </div>
            <div className="space-y-1">
             <Label htmlFor="specialties" className="text-[10px] font-semibold text-gray-600">SPECIALTIES</Label>
