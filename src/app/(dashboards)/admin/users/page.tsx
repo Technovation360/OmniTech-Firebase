@@ -251,36 +251,6 @@ function DeleteUserDialog({
   );
 }
 
-function PasswordResetDialog({
-    isOpen,
-    onClose,
-    onConfirm,
-    user,
-  }: {
-    isOpen: boolean;
-    onClose: () => void;
-    onConfirm: () => void;
-    user: User | null;
-  }) {
-    return (
-      <AlertDialog open={isOpen} onOpenChange={onClose}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Reset Password?</AlertDialogTitle>
-            <AlertDialogDescription>
-              An email will be sent to <span className="font-semibold">{user?.email}</span> with instructions to reset their password.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={onClose}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={onConfirm}>Send Reset Email</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    );
-  }
-
-
 export default function UsersPage() {
   const firestore = useFirestore();
   const auth = useAuth();
@@ -305,7 +275,6 @@ export default function UsersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
-  const [userToResetPassword, setUserToResetPassword] = useState<User | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: keyof User; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc' });
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -363,14 +332,6 @@ export default function UsersPage() {
     setUserToDelete(null);
   }
 
-  const openPasswordResetDialog = (user: User) => {
-    setUserToResetPassword(user);
-  };
-  
-  const closePasswordResetDialog = () => {
-    setUserToResetPassword(null);
-  };
-
   const handleDeleteConfirm = () => {
     if (userToDelete) {
       const docRef = doc(firestore, 'users', userToDelete.id);
@@ -378,25 +339,6 @@ export default function UsersPage() {
       closeDeleteDialog();
     }
   }
-
-  const handlePasswordResetConfirm = async () => {
-    if (userToResetPassword) {
-      try {
-        await sendPasswordResetEmail(auth, userToResetPassword.email);
-        toast({
-          title: 'Email Sent',
-          description: `A password reset email has been sent to ${userToResetPassword.email}.`,
-        });
-      } catch (error: any) {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: error.message || 'Failed to send password reset email.',
-        });
-      }
-      closePasswordResetDialog();
-    }
-  };
 
   const handleFormConfirm = (formData: Omit<User, 'id'>) => {
     if (userToEdit) {
@@ -491,9 +433,6 @@ export default function UsersPage() {
                   <Badge variant="secondary" className={cn("text-[10px] border-transparent", roleColorMap[user.role as UserRole])}>{roleLabels[user.role as UserRole] || 'Unknown'}</Badge>
                 </TableCell>
                 <TableCell className="flex gap-2 py-2">
-                   <Button variant="ghost" size="icon-xs" onClick={() => openPasswordResetDialog(user)}>
-                    <KeyRound className="h-3 w-3" />
-                  </Button>
                   <Button variant="ghost" size="icon-xs" onClick={() => openEditModal(user)}>
                     <Edit className="h-3 w-3" />
                   </Button>
@@ -527,12 +466,6 @@ export default function UsersPage() {
         onClose={closeDeleteDialog}
         onConfirm={handleDeleteConfirm}
         userName={userToDelete?.name || ''}
-    />
-     <PasswordResetDialog 
-        isOpen={!!userToResetPassword}
-        onClose={closePasswordResetDialog}
-        onConfirm={handlePasswordResetConfirm}
-        user={userToResetPassword}
     />
     </>
   )
