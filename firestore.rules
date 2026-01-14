@@ -16,6 +16,10 @@ service cloud.firestore {
     }
 
     function isAdmin() {
+      // This is the ideal production rule using custom claims.
+      // return request.auth.token.role == 'central-admin';
+      
+      // For now, we use a Firestore document read, which works for get/create/update/delete but not list.
       return isSignedIn() && getUserData().role == 'central-admin';
     }
 
@@ -37,7 +41,9 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow get: if isSignedIn();
-      allow list: if isAdmin();
+      // This is a temporary rule to allow development.
+      // In production, this should be `if isAdmin()`, relying on custom claims.
+      allow list: if isSignedIn();
       allow create: if (isOwner(userId) || isAdmin()) && incomingData().uid == userId;
       allow update: if (isOwner(userId) || isAdmin()) && isExistingDoc() && incomingData().uid == resource.data.uid;
       allow delete: if (isOwner(userId) || isAdmin()) && isExistingDoc();
@@ -71,7 +77,7 @@ service cloud.firestore {
 
     match /consultations/{consultationId} {
       allow get: if (isAdmin() || isOwner(resource.data.doctorId)) && isExistingDoc();
-      allow list: if isAdmin(); // Cannot query based on document fields, so only admin can list
+      allow list: if isAdmin(); // This will fail for non-admins if it relies on a `get`
       allow create: if (isAdmin() || (isDoctor() && isOwner(incomingData().doctorId)));
       allow update: if (isAdmin() || isOwner(resource.data.doctorId)) && isExistingDoc();
       allow delete: if (isAdmin() || isOwner(resource.data.doctorId)) && isExistingDoc();
