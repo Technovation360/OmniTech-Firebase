@@ -112,7 +112,7 @@ function OnboardClinicForm({
         <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
           <div className="md:col-span-2 space-y-1">
             <Label htmlFor="clinicName" className="text-[10px] font-semibold text-gray-600">CLINIC NAME</Label>
-            <Input id="clinicName" className="h-8 text-sm" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} />
+            <Input id="clinicName" className="h-7 text-[11px]" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} />
           </div>
           <div className="space-y-1">
             <Label htmlFor="phone" className="text-[10px] font-semibold text-gray-600">PHONE NUMBER</Label>
