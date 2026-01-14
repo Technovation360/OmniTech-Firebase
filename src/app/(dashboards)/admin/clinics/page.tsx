@@ -103,7 +103,7 @@ function OnboardClinicForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader className="p-4 pb-2">
           <DialogTitle className="text-base font-bold tracking-normal">
             {isEditMode ? 'EDIT CLINIC' : 'ONBOARD CLINIC'}
@@ -406,5 +406,7 @@ export default function ClinicsPage() {
     </>
   )
 }
+
+    
 
     
