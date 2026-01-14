@@ -117,10 +117,16 @@ export default function LoginPage() {
 
     } catch (error: any) {
       console.error(error);
+      let description = 'An unknown error occurred during login.';
+      if (error.code === 'auth/invalid-credential') {
+        description = 'Invalid email or password. Please try again.';
+      } else if (error.message) {
+        description = error.message;
+      }
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: error.message || 'Invalid email or password.',
+        description: description,
       });
     } finally {
       setLoading(false);
