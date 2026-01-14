@@ -65,7 +65,14 @@ export default function LoginPage() {
       const userDocSnap = await getDoc(userDocRef);
 
       if (!userDocSnap.exists()) {
-          throw new Error("User profile not found in database.");
+          toast({
+            variant: 'destructive',
+            title: 'Login Failed',
+            description: 'User profile not found. Please contact an administrator.',
+          });
+          await auth.signOut(); // Sign out the user as they can't proceed
+          setLoading(false);
+          return;
       }
       
       const userData = userDocSnap.data() as User;
@@ -77,7 +84,9 @@ export default function LoginPage() {
       }
       
       const roleData = roleDocSnap.data() as Role;
-      const redirectUrl = getRedirectUrlForRole(roleData.name, firebaseUser.uid);
+      const affiliationId = (userData.affiliation === 'Omni Platform') ? firebaseUser.uid : clinics.find(c => c.name === userData.affiliation)?.id || firebaseUser.uid;
+      const redirectUrl = getRedirectUrlForRole(roleData.name, affiliationId);
+
 
       if (!redirectUrl) {
           throw new Error("Could not determine redirect for your role.");
