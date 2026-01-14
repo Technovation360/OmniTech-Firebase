@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -12,11 +13,9 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Logo } from '@/components/logo';
-import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, User as FirebaseAuthUser } from 'firebase/auth';
 import { doc, getDoc, getDocs, collection, writeBatch } from 'firebase/firestore';
 import { useAuth, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { getRedirectUrlForRole } from '@/lib/roles';
@@ -51,6 +50,74 @@ export default function LoginPage() {
   const clinicsQuery = useMemoFirebase(() => collection(firestore, 'groups'), [firestore]);
   const { data: clinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
   
+
+  const bootstrapFirstAdmin = async (adminAuthUser: FirebaseAuthUser): Promise<void> => {
+    const rolesCol = collection(firestore, 'roles');
+    const rolesSnapshot = await getDocs(rolesCol);
+
+    const batch = writeBatch(firestore);
+
+    let centralAdminRoleId: string | null = null;
+
+    if (rolesSnapshot.empty) {
+      toast({ title: 'First-time setup...', description: 'Creating roles collection.' });
+      const rolesToSeed: Omit<Role, 'id'>[] = [
+        { name: 'central-admin' },
+        { name: 'clinic-admin' },
+        { name: 'doctor' },
+        { name: 'assistant' },
+        { name: 'display' },
+        { name: 'advertiser' },
+      ];
+      
+      for (const roleData of rolesToSeed) {
+        const roleDocRef = doc(rolesCol);
+        batch.set(roleDocRef, roleData);
+        if (roleData.name === 'central-admin') {
+          centralAdminRoleId = roleDocRef.id;
+        }
+      }
+    } else {
+        const adminRole = rolesSnapshot.docs.find(d => d.data().name === 'central-admin');
+        if (adminRole) {
+            centralAdminRoleId = adminRole.id;
+        }
+    }
+
+    if (!centralAdminRoleId) {
+        // This case handles if roles exist but admin role is missing for some reason.
+        const adminRoleRef = doc(rolesCol);
+        batch.set(adminRoleRef, { name: 'central-admin' });
+        centralAdminRoleId = adminRoleRef.id;
+    }
+
+    // 2. Create the user document in Firestore
+    const userDocRef = doc(firestore, 'users', adminAuthUser.uid);
+    const userDocSnap = await getDoc(userDocRef);
+
+    if (!userDocSnap.exists()) {
+        toast({ description: 'Creating admin user profile.' });
+        batch.set(userDocRef, {
+            uid: adminAuthUser.uid,
+            name: 'Central Admin',
+            email: adminAuthUser.email,
+            roleId: centralAdminRoleId,
+            affiliation: 'Omni Platform',
+        });
+    }
+
+    // 3. Create the admin role document in /roles_admin
+    const adminRoleDocRef = doc(firestore, 'roles_admin', adminAuthUser.uid);
+    const adminRoleDocSnap = await getDoc(adminRoleDocRef);
+    if (!adminRoleDocSnap.exists()) {
+        toast({ description: 'Assigning admin privileges.' });
+        batch.set(adminRoleDocRef, { uid: adminAuthUser.uid });
+    }
+    
+    await batch.commit();
+    toast({ title: 'Setup Complete!', description: 'You can now log in.' });
+  }
+
   const onLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -66,35 +133,43 @@ export default function LoginPage() {
     }
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      let userCredential = await signInWithEmailAndPassword(auth, email, password)
+        .catch(async (error) => {
+            // If the user doesn't exist and it's the primary admin email, create them.
+            if (error.code === 'auth/user-not-found' && email === 'admin@omni.com') {
+                toast({ title: 'First-time Login Detected', description: 'Setting up the admin account...' });
+                const newUserCredential = await createUserWithEmailAndPassword(auth, email, password);
+                await bootstrapFirstAdmin(newUserCredential.user);
+                return newUserCredential;
+            }
+             // For any other error, re-throw it to be caught by the outer catch block.
+            throw error;
+        });
+
       const firebaseUser = userCredential.user;
 
-      if (!firebaseUser) {
-        throw new Error("Could not get user.");
-      }
-
+      if (!firebaseUser) throw new Error("Could not get user.");
+      
       // Fetch user profile from Firestore to get the role
       const userDocRef = doc(firestore, 'users', firebaseUser.uid);
       const userDocSnap = await getDoc(userDocRef);
 
       if (!userDocSnap.exists()) {
-          toast({
-            variant: 'destructive',
-            title: 'Login Failed',
-            description: 'User profile not found. Please contact an administrator.',
-          });
-          await auth.signOut(); // Sign out the user as they can't proceed
-          setLoading(false);
-          return;
+        if (email === 'admin@omni.com') {
+             await bootstrapFirstAdmin(firebaseUser);
+             // Re-fetch after bootstrapping
+             const refreshedUserSnap = await getDoc(userDocRef);
+             if (!refreshedUserSnap.exists()) throw new Error("Admin profile not found even after setup.");
+             return onLogin(e); // Retry login flow
+        }
+        throw new Error('User profile not found. Please contact an administrator.');
       }
       
       const userData = userDocSnap.data() as User;
       const roleDocRef = doc(firestore, 'roles', userData.roleId);
       const roleDocSnap = await getDoc(roleDocRef);
 
-      if (!roleDocSnap.exists()) {
-           throw new Error("User role not found.");
-      }
+      if (!roleDocSnap.exists()) throw new Error("User role not found.");
       
       const roleData = roleDocSnap.data() as Role;
       
@@ -108,16 +183,14 @@ export default function LoginPage() {
 
       const redirectUrl = getRedirectUrlForRole(roleData.name, affiliationId);
 
-      if (!redirectUrl) {
-          throw new Error("Could not determine redirect for your role.");
-      }
+      if (!redirectUrl) throw new Error("Could not determine redirect for your role.");
 
       router.push(redirectUrl);
 
     } catch (error: any) {
       console.error(error);
       let description = 'An unknown error occurred during login.';
-      if (error.code === 'auth/invalid-credential') {
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
         description = 'Invalid email or password. Please try again.';
       } else if (error.message) {
         description = error.message;
