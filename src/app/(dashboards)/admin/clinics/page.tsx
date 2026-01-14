@@ -190,16 +190,19 @@ function DeleteClinicDialog({
 
 export default function ClinicsPage() {
   const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
   
   const clinicsQuery = useMemoFirebase(() => {
-      return query(collection(firestore, 'groups'), where('type', '==', 'Clinic'));
-  }, [firestore]);
+    if (!user) return null;
+    return query(collection(firestore, 'groups'), where('type', '==', 'Clinic'));
+  }, [firestore, user]);
   
   const { data: allClinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
 
   const specialtiesQuery = useMemoFirebase(() => {
+    if (!user) return null;
     return query(collection(firestore, 'specialties'), where('forClinic', '==', true));
-  }, [firestore]);
+  }, [firestore, user]);
   const { data: specialtiesData, isLoading: specialtiesLoading } = useCollection<{id: string, name: string}>(specialtiesQuery);
 
   const [filteredClinics, setFilteredClinics] = useState<Clinic[]>([]);
@@ -294,7 +297,7 @@ export default function ClinicsPage() {
     return <ArrowDown className="ml-2 h-3 w-3" />;
   };
 
-  const isLoading = clinicsLoading || specialtiesLoading;
+  const isLoading = isUserLoading || clinicsLoading || specialtiesLoading;
   
   if (isLoading) {
     return (
@@ -403,3 +406,5 @@ export default function ClinicsPage() {
     </>
   )
 }
+
+    
