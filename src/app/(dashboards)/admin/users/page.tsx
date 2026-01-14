@@ -434,6 +434,9 @@ export default function UsersPage() {
                 </TableCell>
                 <TableCell className="flex gap-2 py-2">
                   <Button variant="ghost" size="icon-xs" onClick={() => openEditModal(user)}>
+                    <KeyRound className="h-3 w-3" />
+                  </Button>
+                  <Button variant="ghost" size="icon-xs" onClick={() => openEditModal(user)}>
                     <Edit className="h-3 w-3" />
                   </Button>
                   <Button variant="ghost" size="icon-xs" onClick={() => openDeleteDialog(user)}>
