@@ -108,7 +108,7 @@ function UserForm({
             name: user.name,
             email: user.email,
             roleId: user.roleId,
-            affiliation: user.affiliation,
+            affiliation: user.affiliation || '',
             phone: user.phone || '',
             specialty: user.specialty || '',
             password: '',
@@ -126,7 +126,7 @@ function UserForm({
       const newFormData = {...formData, [field]: value};
       const role = roles.find(r => r.id === value);
       if (field === 'roleId' && role?.name === 'central-admin') {
-        newFormData.affiliation = 'Omni Platform';
+        newFormData.affiliation = '';
       }
       setFormData(newFormData);
   }
@@ -416,7 +416,7 @@ export default function UsersPage() {
         filteredData = filteredData.filter(user => 
             user.name.toLowerCase().includes(lowercasedQuery) ||
             user.email.toLowerCase().includes(lowercasedQuery) ||
-            user.affiliation.toLowerCase().includes(lowercasedQuery)
+            (user.affiliation && user.affiliation.toLowerCase().includes(lowercasedQuery))
         );
     }
     
@@ -494,9 +494,15 @@ export default function UsersPage() {
             const userDocRef = doc(firestore, "users", newAuthUser.uid);
             
             const batch = writeBatch(firestore);
-            batch.set(userDocRef, { ...userData, uid: newAuthUser.uid });
-
             const role = roles.find(r => r.id === formData.roleId);
+            const finalUserData = { ...userData, uid: newAuthUser.uid };
+
+            if(role?.name === 'central-admin') {
+              delete (finalUserData as Partial<typeof finalUserData>).affiliation;
+            }
+
+            batch.set(userDocRef, finalUserData);
+
             if(role?.name === 'central-admin') {
                 const adminRoleRef = doc(firestore, "roles_admin", newAuthUser.uid);
                 batch.set(adminRoleRef, { uid: newAuthUser.uid });
@@ -670,7 +676,7 @@ export default function UsersPage() {
               <TableRow key={user.id}>
                 <TableCell className="py-2 text-xs font-medium">{user.name}</TableCell>
                 <TableCell className="py-2 text-xs text-muted-foreground">{user.email}</TableCell>
-                <TableCell className="py-2 text-xs">{user.affiliation}</TableCell>
+                <TableCell className="py-2 text-xs">{user.affiliation || 'N/A'}</TableCell>
                 <TableCell className="py-2 text-xs">
                   <Badge variant="secondary" className={cn("text-[10px] border-transparent capitalize", roleColorMap[getRoleName(user.roleId) as string])}>{getRoleName(user.roleId) || 'Unknown'}</Badge>
                 </TableCell>
@@ -721,5 +727,3 @@ export default function UsersPage() {
     </>
   )
 }
-
-    

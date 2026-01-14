@@ -102,7 +102,7 @@ export type User = {
     name: string;
     email: string;
     roleId: string;
-    affiliation: string;
+    affiliation?: string;
     phone?: string;
     specialty?: string;
 };

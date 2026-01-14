@@ -102,7 +102,6 @@ export default function LoginPage() {
             name: 'Central Admin',
             email: adminAuthUser.email,
             roleId: centralAdminRoleId,
-            affiliation: 'Omni Platform',
         });
     }
 
@@ -174,7 +173,7 @@ export default function LoginPage() {
       const roleData = roleDocSnap.data() as Role;
       
       let affiliationId = firebaseUser.uid;
-      if (roleData.name !== 'central-admin' && clinics) {
+      if (roleData.name !== 'central-admin' && clinics && userData.affiliation) {
          const affiliatedClinic = clinics.find(c => c.name === userData.affiliation && c.type === 'Clinic');
          if (affiliatedClinic) {
            affiliationId = affiliatedClinic.id;
