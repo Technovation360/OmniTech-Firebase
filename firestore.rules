@@ -122,13 +122,13 @@ service cloud.firestore {
     }
 
      /**
-     * @description User roles. Readable by authenticated users, managed by admins.
+     * @description User roles. Publicly readable, managed by admins.
      * @path /roles/{roleId}
-     * @allow (get) An authenticated user reads role details.
+     * @allow (get, list) Any user (authenticated or not) can read role definitions.
      * @deny (create) A non-admin user tries to create a new role.
      */
     match /roles/{roleId} {
-      allow get, list: if isSignedIn();
+      allow get, list: if true;
       allow create, update, delete: if isAdmin();
     }
     
