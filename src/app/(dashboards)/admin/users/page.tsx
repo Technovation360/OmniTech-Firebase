@@ -354,7 +354,7 @@ export default function UsersPage() {
     return collection(firestore, 'roles')
   }, [firestore, authUser]);
   
-  const { data: allUsers, isLoading: usersLoading } = useCollection<User>(usersRef);
+  const { data: allUsers, isLoading: usersLoading, refetch: refetchUsers } = useCollection<User>(usersRef);
   const { data: allRoles, isLoading: rolesLoading } = useCollection<Role>(rolesRef);
 
   const clinicsQuery = useMemoFirebase(() => {
@@ -461,7 +461,7 @@ export default function UsersPage() {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
             const newAuthUser = userCredential.user;
-            const { password, ...userData } = formData;
+            const { password, confirmPassword, ...userData } = formData;
             
             const userDocRef = doc(firestore, "users", newAuthUser.uid);
             
@@ -510,55 +510,74 @@ export default function UsersPage() {
   }
 
   const fixUserUids = async () => {
-    const emailToUidMap: Record<string, string> = {};
-    const sampleEmails = ["admin@omni.com", "clinic-admin-city@omni.com", "clinic-admin-health@omni.com", "doc_ashish@omni.com", "asst_sunita@omni.com", "advertiser@omni.com"];
-    
-    try {
-        // This is a temporary admin login to get UIDs.
-        const tempAdmin = await signInWithEmailAndPassword(auth, "admin@omni.com", "password");
-
-        for (const email of sampleEmails) {
-            // This is a mock/conceptual step. The client SDK cannot look up users by email.
-            // In a real scenario, you'd run a cloud function to get this map.
-            // For this fix, we assume we have a way to get UIDs. The login logic will now handle it.
-        }
-        
-        const batch = writeBatch(firestore);
-        if (!allUsers) return;
-
-        for (const user of allUsers) {
-            const authUserUid = (await signInWithEmailAndPassword(auth, user.email, "password")).user.uid;
-            
-            if (user.id !== authUserUid) {
-                console.log(`Fixing UID for ${user.email}. Old ID: ${user.id}, New ID: ${authUserUid}`);
-                const oldDocRef = doc(firestore, 'users', user.id);
-                const newDocRef = doc(firestore, 'users', authUserUid);
-
-                // Copy data to new doc and delete old one
-                batch.set(newDocRef, { ...user, id: authUserUid });
-                batch.delete(oldDocRef);
-
-                // Handle roles_admin collection
-                const role = roles.find(r => r.id === user.roleId);
-                if (role?.name === 'central-admin') {
-                    const oldAdminRoleRef = doc(firestore, 'roles_admin', user.id);
-                    const oldAdminSnap = await getDoc(oldAdminRoleRef);
-                    if (oldAdminSnap.exists()) {
-                        batch.delete(oldAdminRoleRef);
-                    }
-                    const newAdminRoleRef = doc(firestore, 'roles_admin', authUserUid);
-                    batch.set(newAdminRoleRef, { uid: authUserUid });
-                }
-            }
-        }
-        await batch.commit();
-        await auth.updateCurrentUser(tempAdmin.user); // Sign back in as admin
-        toast({title: "User UIDs synchronized."});
-    } catch(error) {
-        console.error("Error fixing UIDs:", error);
-        toast({variant: 'destructive', title: "Failed to fix UIDs"});
+    if (!allUsers || !authUser) {
+      toast({ variant: 'destructive', title: 'User data not loaded yet.' });
+      return;
     }
-  }
+    
+    // Store current user to sign back in later
+    const originalUser = auth.currentUser;
+    if (!originalUser) {
+        toast({variant: 'destructive', title: 'Admin user not signed in.'});
+        return;
+    }
+
+    try {
+      const batch = writeBatch(firestore);
+      let changesMade = false;
+
+      for (const user of allUsers) {
+        try {
+          // This is a workaround for client-side limitations. 
+          // It temporarily signs in as the user to get their real UID.
+          // This is NOT recommended for production but is a necessary evil for this client-side fix.
+          const tempUserCred = await signInWithEmailAndPassword(auth, user.email, "password");
+          const correctUid = tempUserCred.user.uid;
+
+          if (user.id !== correctUid) {
+            console.log(`Fixing UID for ${user.email}. Old: ${user.id}, New: ${correctUid}`);
+            changesMade = true;
+
+            // Create new doc with correct UID and copy data
+            const newDocRef = doc(firestore, 'users', correctUid);
+            batch.set(newDocRef, { ...user, id: correctUid });
+
+            // Delete old doc
+            const oldDocRef = doc(firestore, 'users', user.id);
+            batch.delete(oldDocRef);
+
+            // Handle roles_admin collection if user is an admin
+            const role = roles.find(r => r.id === user.roleId);
+            if (role?.name === 'central-admin') {
+              const oldAdminRoleRef = doc(firestore, 'roles_admin', user.id);
+              const newAdminRoleRef = doc(firestore, 'roles_admin', correctUid);
+              batch.set(newAdminRoleRef, { uid: correctUid });
+              batch.delete(oldAdminRoleRef);
+            }
+          }
+        } catch (signInError) {
+          console.error(`Could not sign in as ${user.email} to fix UID. Skipping.`, signInError);
+        }
+      }
+
+      if (changesMade) {
+        await batch.commit();
+        toast({ title: 'User UIDs synchronized successfully.' });
+        refetchUsers(); // Refresh the user list from Firestore
+      } else {
+        toast({ title: 'No UID mismatches found.' });
+      }
+
+    } catch (error) {
+      console.error('Error during UID fix process:', error);
+      toast({ variant: 'destructive', title: 'An error occurred while fixing UIDs.' });
+    } finally {
+        // Sign back in as the original admin user
+        if (originalUser.email) {
+           await signInWithEmailAndPassword(auth, originalUser.email, "password");
+        }
+    }
+  };
   
   const handleSort = (key: keyof User) => {
     let direction: 'asc' | 'desc' = 'asc';
