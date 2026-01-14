@@ -124,7 +124,7 @@ function OnboardClinicForm({
           </div>
           <div className="md:col-span-2 space-y-1">
             <Label htmlFor="address" className="text-[10px] font-semibold text-gray-600">ADDRESS</Label>
-            <Textarea id="address" className="text-sm" value={formData.address} onChange={(e) => handleInputChange('address', e.target.value)} />
+            <Textarea id="address" className="text-[11px] min-h-[60px]" value={formData.address} onChange={(e) => handleInputChange('address', e.target.value)} />
           </div>
           <div className="space-y-1">
             <Label htmlFor="city" className="text-[10px] font-semibold text-gray-600">CITY</Label>
@@ -192,7 +192,6 @@ function DeleteClinicDialog({
 
 export default function ClinicsPage() {
   const firestore = useFirestore();
-  const { user, isUserLoading } = useUser();
   
   const clinicsQuery = useMemoFirebase(() => {
       return query(collection(firestore, 'groups'), where('type', '==', 'Clinic'));
@@ -297,7 +296,7 @@ export default function ClinicsPage() {
     return <ArrowDown className="ml-2 h-3 w-3" />;
   };
 
-  const isLoading = isUserLoading || clinicsLoading || specialtiesLoading;
+  const isLoading = clinicsLoading || specialtiesLoading;
   
   if (isLoading) {
     return (
