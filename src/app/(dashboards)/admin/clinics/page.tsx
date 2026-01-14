@@ -109,7 +109,7 @@ function OnboardClinicForm({
             {isEditMode ? 'EDIT CLINIC' : 'ONBOARD CLINIC'}
           </DialogTitle>
         </DialogHeader>
-        <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+        <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
           <div className="md:col-span-2 space-y-1">
             <Label htmlFor="clinicName" className="text-[10px] font-semibold text-gray-600">CLINIC NAME</Label>
             <Input id="clinicName" className="h-7 text-[11px]" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} />
