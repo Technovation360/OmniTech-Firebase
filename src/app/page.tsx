@@ -17,10 +17,10 @@ import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { useAuth, useFirestore } from '@/firebase';
+import { doc, getDoc, getDocs, collection } from 'firebase/firestore';
+import { useAuth, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { getRedirectUrlForRole } from '@/lib/roles';
-import type { User, Role } from '@/lib/types';
+import type { User, Role, Clinic } from '@/lib/types';
 import {
   Table,
   TableBody,
@@ -48,9 +48,23 @@ export default function LoginPage() {
   const auth = useAuth();
   const firestore = useFirestore();
 
+  const clinicsQuery = useMemoFirebase(() => collection(firestore, 'groups'), [firestore]);
+  const { data: clinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
+
+
   const onLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    if (!auth || !firestore) {
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: 'Firebase not initialized correctly.',
+      });
+      setLoading(false);
+      return;
+    }
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -84,9 +98,16 @@ export default function LoginPage() {
       }
       
       const roleData = roleDocSnap.data() as Role;
-      const affiliationId = (userData.affiliation === 'Omni Platform') ? firebaseUser.uid : clinics.find(c => c.name === userData.affiliation)?.id || firebaseUser.uid;
-      const redirectUrl = getRedirectUrlForRole(roleData.name, affiliationId);
+      
+      let affiliationId = firebaseUser.uid;
+      if (roleData.name !== 'central-admin' && clinics) {
+         const affiliatedClinic = clinics.find(c => c.name === userData.affiliation && c.type === 'Clinic');
+         if (affiliatedClinic) {
+           affiliationId = affiliatedClinic.id;
+         }
+      }
 
+      const redirectUrl = getRedirectUrlForRole(roleData.name, affiliationId);
 
       if (!redirectUrl) {
           throw new Error("Could not determine redirect for your role.");

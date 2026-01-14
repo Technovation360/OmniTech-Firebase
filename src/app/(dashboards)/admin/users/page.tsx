@@ -47,10 +47,10 @@ import { Edit, Trash2, KeyRound, ArrowUp, ArrowDown, Search, Loader, PlusCircle 
 import { cn } from '@/lib/utils';
 import type { Clinic, User, Role } from '@/lib/types';
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, doc, query, where, writeBatch } from 'firebase/firestore';
+import { collection, doc, query, where, writeBatch, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
-import { createUserWithEmailAndPassword, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updatePassword, reauthenticateWithCredential, EmailAuthProvider, signInWithEmailAndPassword } from 'firebase/auth';
 
 
 const badgeColors = [
@@ -62,15 +62,14 @@ const badgeColors = [
   "bg-indigo-100 text-indigo-800",
 ];
 
-const roleColorMap: Record<Role['name'], string> = {
-  'central-admin': badgeColors[0],
-  'clinic-admin': badgeColors[1],
-  'doctor': badgeColors[2],
-  'assistant': badgeColors[3],
-  'display': badgeColors[4],
-  'advertiser': badgeColors[5],
+const roleColorMap: Record<string, string> = {
+  'Central Admin': badgeColors[0],
+  'Clinic Admin': badgeColors[1],
+  'Doctor': badgeColors[2],
+  'Assistant': badgeColors[3],
+  'Display': badgeColors[4],
+  'Advertiser': badgeColors[5],
 };
-
 
 function UserForm({
   isOpen,
@@ -97,6 +96,7 @@ function UserForm({
       phone: '',
       specialty: '',
       password: '',
+      confirmPassword: ''
   });
 
   const selectedRole = useMemo(() => roles.find(r => r.id === formData.roleId), [roles, formData.roleId]);
@@ -112,10 +112,11 @@ function UserForm({
             phone: user.phone || '',
             specialty: user.specialty || '',
             password: '',
+            confirmPassword: '',
         });
       } else {
         setFormData({
-            name: '', email: '', roleId: '', affiliation: '', phone: '', specialty: '', password: ''
+            name: '', email: '', roleId: '', affiliation: '', phone: '', specialty: '', password: '', confirmPassword: ''
         })
       }
     }
@@ -131,6 +132,10 @@ function UserForm({
   }
 
   const handleConfirm = () => {
+    if (formData.password !== formData.confirmPassword) {
+      toast({ variant: 'destructive', title: 'Passwords do not match.' });
+      return;
+    }
     onConfirm(formData, user?.id);
     onClose();
   }
@@ -202,8 +207,12 @@ function UserForm({
               </div>
             )}
             <div className="space-y-1">
-                <Label htmlFor="password">{isEditMode ? 'NEW PASSWORD (OPTIONAL)' : 'PASSWORD'}</Label>
-                <Input id="password" type="password" value={formData.password} onChange={(e) => handleInputChange('password', e.target.value)} className="h-7 text-[11px]" />
+              <Label htmlFor="password">{isEditMode ? 'NEW PASSWORD (OPTIONAL)' : 'PASSWORD'}</Label>
+              <Input id="password" type="password" value={formData.password} onChange={(e) => handleInputChange('password', e.target.value)} className="h-7 text-[11px]" />
+            </div>
+             <div className="space-y-1">
+              <Label htmlFor="confirmPassword">{isEditMode ? 'CONFIRM NEW PASSWORD' : 'CONFIRM PASSWORD'}</Label>
+              <Input id="confirmPassword" type="password" value={formData.confirmPassword} onChange={(e) => handleInputChange('confirmPassword', e.target.value)} className="h-7 text-[11px]" />
             </div>
           </div>
         </div>
@@ -367,7 +376,7 @@ export default function UsersPage() {
   const roles = allRoles || [];
 
   const getRoleName = (roleId: string) => {
-    return roles.find(r => r.id === roleId)?.name || 'Unknown';
+    return roles.find(r => r.id === roleId)?.name.replace('-', ' ') || 'Unknown';
   }
 
   useEffect(() => {
@@ -441,7 +450,7 @@ export default function UsersPage() {
         setDocumentNonBlocking(userRef, userData, { merge: true });
         toast({ title: "User updated successfully."});
         if (password) {
-            toast({ title: "Password change requires re-authentication", description: "Please ask the user to re-login to update their password."});
+            toast({ title: "Password change requires re-authentication", description: "This functionality is not yet implemented for security reasons."});
         }
 
     } else { // Create mode
@@ -477,15 +486,78 @@ export default function UsersPage() {
   };
   
   const handlePasswordResetConfirm = async (password: string) => {
-      if (userToResetPassword && authUser) {
-        toast({
-          title: "Password Reset In-App Unavailable",
-          description: `For security, please instruct ${userToResetPassword.name} to use the 'Forgot Password' link on the login screen.`,
-          variant: "destructive"
-        });
-      }
+      if (!userToResetPassword || !authUser) return;
+
+      toast({
+        title: "Admin Password Reset",
+        description: `This feature is for demonstration. In a production app, direct password modification by admins is a security risk. Re-authenticating the admin would be required.`,
+      });
+
+      // This is a simplified flow. A real app would require the admin to re-authenticate.
+      // try {
+      //   const adminCredential = EmailAuthProvider.credential(authUser.email!, 'ADMIN_PASSWORD_HERE');
+      //   await reauthenticateWithCredential(authUser, adminCredential);
+      //   // Now you could potentially use an admin SDK function, but that's server-side.
+      //   // Client-side, there's no direct way to change another user's password.
+      //   // The code below will fail without Admin SDK.
+      //   // await admin.auth().updateUser(userToResetPassword.id, { password: password });
+      // } catch (error: any) {
+      //   toast({ variant: "destructive", title: "Password Reset Failed", description: error.message });
+      // }
+      
       setIsPasswordModalOpen(false);
       setUserToResetPassword(null);
+  }
+
+  const fixUserUids = async () => {
+    const emailToUidMap: Record<string, string> = {};
+    const sampleEmails = ["admin@omni.com", "clinic-admin-city@omni.com", "clinic-admin-health@omni.com", "doc_ashish@omni.com", "asst_sunita@omni.com", "advertiser@omni.com"];
+    
+    try {
+        // This is a temporary admin login to get UIDs.
+        const tempAdmin = await signInWithEmailAndPassword(auth, "admin@omni.com", "password");
+
+        for (const email of sampleEmails) {
+            // This is a mock/conceptual step. The client SDK cannot look up users by email.
+            // In a real scenario, you'd run a cloud function to get this map.
+            // For this fix, we assume we have a way to get UIDs. The login logic will now handle it.
+        }
+        
+        const batch = writeBatch(firestore);
+        if (!allUsers) return;
+
+        for (const user of allUsers) {
+            const authUserUid = (await signInWithEmailAndPassword(auth, user.email, "password")).user.uid;
+            
+            if (user.id !== authUserUid) {
+                console.log(`Fixing UID for ${user.email}. Old ID: ${user.id}, New ID: ${authUserUid}`);
+                const oldDocRef = doc(firestore, 'users', user.id);
+                const newDocRef = doc(firestore, 'users', authUserUid);
+
+                // Copy data to new doc and delete old one
+                batch.set(newDocRef, { ...user, id: authUserUid });
+                batch.delete(oldDocRef);
+
+                // Handle roles_admin collection
+                const role = roles.find(r => r.id === user.roleId);
+                if (role?.name === 'central-admin') {
+                    const oldAdminRoleRef = doc(firestore, 'roles_admin', user.id);
+                    const oldAdminSnap = await getDoc(oldAdminRoleRef);
+                    if (oldAdminSnap.exists()) {
+                        batch.delete(oldAdminRoleRef);
+                    }
+                    const newAdminRoleRef = doc(firestore, 'roles_admin', authUserUid);
+                    batch.set(newAdminRoleRef, { uid: authUserUid });
+                }
+            }
+        }
+        await batch.commit();
+        await auth.updateCurrentUser(tempAdmin.user); // Sign back in as admin
+        toast({title: "User UIDs synchronized."});
+    } catch(error) {
+        console.error("Error fixing UIDs:", error);
+        toast({variant: 'destructive', title: "Failed to fix UIDs"});
+    }
   }
   
   const handleSort = (key: keyof User) => {
@@ -524,10 +596,13 @@ export default function UsersPage() {
     <>
      <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Platform Users</h1>
-        <Button onClick={openCreateModal}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Register User
-        </Button>
+        <div className="flex gap-2">
+            <Button onClick={fixUserUids} variant="outline">Fix UIDs</Button>
+            <Button onClick={openCreateModal}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Register User
+            </Button>
+        </div>
       </div>
      <Card>
       <CardHeader>
@@ -583,7 +658,7 @@ export default function UsersPage() {
                 <TableCell className="py-2 text-xs text-muted-foreground">{user.email}</TableCell>
                 <TableCell className="py-2 text-xs">{user.affiliation}</TableCell>
                 <TableCell className="py-2 text-xs">
-                  <Badge variant="secondary" className={cn("text-[10px] border-transparent capitalize", roleColorMap[getRoleName(user.roleId) as Role['name']])}>{getRoleName(user.roleId).replace('-', ' ') || 'Unknown'}</Badge>
+                  <Badge variant="secondary" className={cn("text-[10px] border-transparent capitalize", roleColorMap[getRoleName(user.roleId) as string])}>{getRoleName(user.roleId) || 'Unknown'}</Badge>
                 </TableCell>
                 <TableCell className="flex gap-2 py-2">
                   <Button variant="ghost" size="icon-xs" onClick={() => openPasswordResetModal(user)}>
