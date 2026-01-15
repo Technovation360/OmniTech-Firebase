@@ -192,56 +192,38 @@ export default function ClinicsPage() {
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const [currentUserData, setCurrentUserData] = useState<any>(null);
-  const [allClinics, setAllClinics] = useState<Clinic[]>([]);
-  const [clinicsLoading, setClinicsLoading] = useState(true);
 
+  const clinicsQuery = useMemoFirebase(() => {
+    if (!currentUserData) return null;
+    const { role, affiliation } = currentUserData;
+    const clinicsCol = collection(firestore, 'clinics');
+    
+    if (role === 'central-admin') {
+      return query(clinicsCol, where('type', '==', 'Clinic'));
+    }
+    if (role === 'clinic-admin' && affiliation) {
+      return query(clinicsCol, where('type', '==', 'Clinic'), where('name', '==', affiliation));
+    }
+    return null;
+  }, [firestore, currentUserData]);
+  
+  const { data: allClinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
+  
   const specialtiesQuery = useMemoFirebase(() => {
     if (!user) return null;
     return query(collection(firestore, 'specialties'), where('forClinic', '==', true));
   }, [firestore, user]);
-
   const { data: specialtiesData, isLoading: specialtiesLoading } = useCollection<{id: string, name: string}>(specialtiesQuery);
   
   useEffect(() => {
-    if(user) {
+    if(user && !isUserLoading) {
         getDoc(doc(firestore, 'users', user.uid)).then(snap => {
             if(snap.exists()) {
                 setCurrentUserData(snap.data());
-            } else {
-                setClinicsLoading(false);
             }
         });
-    } else if (!isUserLoading) {
-        setClinicsLoading(false);
     }
   }, [user, isUserLoading, firestore]);
-  
-  useEffect(() => {
-    if (!currentUserData) return;
-
-    const fetchClinics = async () => {
-        setClinicsLoading(true);
-        const { role, affiliation } = currentUserData;
-        const clinicsCol = collection(firestore, 'clinics');
-        let q;
-
-        if (role === 'central-admin') {
-            q = query(clinicsCol, where('type', '==', 'Clinic'));
-        } else if (role === 'clinic-admin' && affiliation) {
-            q = query(clinicsCol, where('type', '==', 'Clinic'), where('name', '==', affiliation));
-        } else {
-            setAllClinics([]);
-            setClinicsLoading(false);
-            return;
-        }
-
-        const snapshot = await getDocs(q);
-        setAllClinics(snapshot.docs.map(d => ({...d.data(), id: d.id } as Clinic)));
-        setClinicsLoading(false);
-    };
-
-    fetchClinics();
-  }, [currentUserData, firestore]);
 
   const [filteredClinics, setFilteredClinics] = useState<Clinic[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -307,7 +289,7 @@ export default function ClinicsPage() {
     if (clinicToDelete) {
       const docRef = doc(firestore, 'clinics', clinicToDelete.id);
       deleteDocumentNonBlocking(docRef);
-      setAllClinics(prev => prev.filter(c => c.id !== clinicToDelete.id));
+      // Data will be removed from state by useCollection hook automatically
       closeDeleteDialog();
     }
   }
@@ -338,7 +320,7 @@ export default function ClinicsPage() {
 
   const isLoading = isUserLoading || !currentUserData || clinicsLoading || specialtiesLoading;
   
-  if (isLoading) {
+  if (isLoading && !allClinics) {
     return (
       <div className="flex h-full items-center justify-center">
         <Loader className="h-8 w-8 animate-spin" />
@@ -447,3 +429,5 @@ export default function ClinicsPage() {
     </>
   )
 }
+
+    
