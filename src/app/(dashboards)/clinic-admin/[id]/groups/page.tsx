@@ -200,11 +200,23 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
   const clinicRef = useMemoFirebase(() => doc(firestore, 'clinics', clinicId), [firestore, clinicId]);
   const { data: clinic, isLoading: clinicLoading } = useDoc<Clinic>(clinicRef);
 
-  const usersQuery = useMemoFirebase(() => {
+  const doctorsQuery = useMemoFirebase(() => {
     if (!clinic) return null;
-    return query(collection(firestore, 'users'), where('affiliation', '==', clinic.name));
+    return query(collection(firestore, 'users'), where('affiliation', '==', clinic.name), where('role', '==', 'doctor'));
   }, [firestore, clinic]);
-  const { data: users, isLoading: usersLoading } = useCollection<User>(usersQuery);
+  const { data: doctors, isLoading: doctorsLoading } = useCollection<User>(doctorsQuery);
+
+  const assistantsQuery = useMemoFirebase(() => {
+    if (!clinic) return null;
+    return query(collection(firestore, 'users'), where('affiliation', '==', clinic.name), where('role', '==', 'assistant'));
+  }, [firestore, clinic]);
+  const { data: assistants, isLoading: assistantsLoading } = useCollection<User>(assistantsQuery);
+
+  const screensQuery = useMemoFirebase(() => {
+    if (!clinic) return null;
+    return query(collection(firestore, 'users'), where('affiliation', '==', clinic.name), where('role', '==', 'display'));
+  }, [firestore, clinic]);
+  const { data: screens, isLoading: screensLoading } = useCollection<User>(screensQuery);
 
   const cabinsQuery = useMemoFirebase(() => {
       return query(collection(firestore, 'cabins'), where('clinicId', '==', clinicId));
@@ -215,12 +227,6 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
       return query(collection(firestore, 'clinics'), where('clinicId', '==', clinicId), where('type', '==', 'Doctor'));
   }, [firestore, clinicId]);
   const { data: allGroups, isLoading: groupsLoading } = useCollection<ClinicGroup>(groupsQuery);
-
-
-  const doctors = useMemo(() => users?.filter(u => u.role === 'doctor') || [], [users]);
-  const assistants = useMemo(() => users?.filter(u => u.role === 'assistant') || [], [users]);
-  const screens = useMemo(() => users?.filter(u => u.role === 'display') || [], [users]);
-
 
   useEffect(() => {
     if (!allGroups) {
@@ -286,9 +292,9 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
   const handleFormConfirm = (formData: { name: string, tokenInitial: string, doctorIds: string[], assistantIds: string[], screenIds: string[], cabinIds: string[] }) => {
     if (!clinic) return;
 
-    const selectedDoctors = formData.doctorIds.map(id => doctors.find(d => d.id === id)).filter(Boolean) as User[];
-    const selectedAssistants = formData.assistantIds.map(id => assistants.find(a => a.id === id)).filter(Boolean) as User[];
-    const selectedScreens = formData.screenIds.map(id => screens.find(s => s.id === id)).filter(Boolean) as User[];
+    const selectedDoctors = formData.doctorIds.map(id => (doctors || []).find(d => d.id === id)).filter(Boolean) as User[];
+    const selectedAssistants = formData.assistantIds.map(id => (assistants || []).find(a => a.id === id)).filter(Boolean) as User[];
+    const selectedScreens = formData.screenIds.map(id => (screens || []).find(s => s.id === id)).filter(Boolean) as User[];
     const selectedCabins = formData.cabinIds.map(id => (cabins || []).find(c => c.id === id)).filter(Boolean) as Cabin[];
 
     if (selectedDoctors.length === 0) {
@@ -322,7 +328,7 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
     closeModal();
   };
 
-  const isLoading = clinicLoading || usersLoading || cabinsLoading || groupsLoading;
+  const isLoading = clinicLoading || doctorsLoading || assistantsLoading || screensLoading || cabinsLoading || groupsLoading;
 
   if (isLoading) {
     return <div className="flex h-full w-full items-center justify-center"><Loader className="animate-spin h-8 w-8" /></div>
@@ -464,9 +470,9 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
         onClose={closeModal}
         group={groupToEdit}
         onConfirm={handleFormConfirm}
-        doctors={doctors}
-        assistants={assistants}
-        screens={screens}
+        doctors={doctors || []}
+        assistants={assistants || []}
+        screens={screens || []}
         cabins={cabins || []}
       />
       <DeleteGroupDialog
