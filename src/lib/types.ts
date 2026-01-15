@@ -10,7 +10,7 @@ export type Patient = {
   emailAddress: string;
   tokenNumber: string;
   status: 'waiting' | 'in-consultation' | 'consultation-done' | 'no-show' | 'called';
-  groupId: string;
+  departmentId: string;
   clinicId: string;
   registeredAt: string; // ISO 8601 date string
 };
@@ -50,7 +50,7 @@ export type Clinic = {
   specialties?: string[];
 };
 
-export type ClinicGroup = {
+export type ClinicDepartment = {
   id: string;
   clinicId: string;
   name: string;
@@ -84,7 +84,7 @@ export type Consultation = {
 export type PatientHistoryEntry = {
     tokenNumber: string;
     clinicName: string;
-    groupName: string;
+    departmentName: string;
     doctorName: string;
     issuedAt: string; // ISO 8601 date string
     startTime?: string; // ISO 8601 date string

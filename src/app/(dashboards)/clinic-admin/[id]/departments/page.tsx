@@ -19,8 +19,8 @@ import {
   PlusCircle,
   Search,
 } from 'lucide-react';
-import { getClinicGroups, getClinicById, mockUsers, getCabinsByClinicId } from '@/lib/data';
-import type { Clinic, ClinicGroup, User, Cabin } from '@/lib/types';
+import { getClinicDepartments, getClinicById, mockUsers, getCabinsByClinicId } from '@/lib/data';
+import type { Clinic, ClinicDepartment, User, Cabin } from '@/lib/types';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -31,10 +31,10 @@ import { MultiSelect } from '@/components/ui/multi-select';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 
 
-function GroupForm({
+function DepartmentForm({
   isOpen,
   onClose,
-  group,
+  department,
   onConfirm,
   doctors,
   assistants,
@@ -43,14 +43,14 @@ function GroupForm({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  group: ClinicGroup | null;
+  department: ClinicDepartment | null;
   onConfirm: (formData: any) => void;
   doctors: User[];
   assistants: User[];
   screens: User[];
   cabins: Cabin[];
 }) {
-  const isEditMode = !!group;
+  const isEditMode = !!department;
   const [formData, setFormData] = useState({ 
     name: '', 
     tokenInitial: '',
@@ -61,19 +61,19 @@ function GroupForm({
   });
 
   useEffect(() => {
-    if (group) {
+    if (department) {
       setFormData({ 
-        name: group.name, 
-        tokenInitial: group.tokenInitial,
-        doctorIds: group.doctors.map(d => d.id),
-        assistantIds: group.assistants.map(a => a.id),
-        screenIds: group.screens.map(s => s.id),
-        cabinIds: group.cabins.map(c => c.id),
+        name: department.name, 
+        tokenInitial: department.tokenInitial,
+        doctorIds: department.doctors.map(d => d.id),
+        assistantIds: department.assistants.map(a => a.id),
+        screenIds: department.screens.map(s => s.id),
+        cabinIds: department.cabins.map(c => c.id),
       });
     } else {
       setFormData({ name: '', tokenInitial: '', doctorIds: [], assistantIds: [], screenIds: [], cabinIds: [] });
     }
-  }, [group]);
+  }, [department]);
 
   const handleInputChange = (field: keyof typeof formData, value: string | string[]) => {
       setFormData(prev => ({ ...prev, [field]: value }));
@@ -91,13 +91,13 @@ function GroupForm({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader className="p-4 pb-2">
           <DialogTitle className="text-base font-bold tracking-normal">
-            {isEditMode ? 'EDIT GROUP' : 'CREATE GROUP'}
+            {isEditMode ? 'EDIT DEPARTMENT' : 'CREATE DEPARTMENT'}
           </DialogTitle>
         </DialogHeader>
         <div className="p-4 pb-4 grid grid-cols-2 gap-4">
             <div className="space-y-1">
-                <Label htmlFor="groupName" className="text-[10px] font-semibold text-gray-600">GROUP NAME</Label>
-                <Input id="groupName" className="h-7 text-[11px]" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} />
+                <Label htmlFor="departmentName" className="text-[10px] font-semibold text-gray-600">DEPARTMENT NAME</Label>
+                <Input id="departmentName" className="h-7 text-[11px]" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} />
             </div>
              <div className="space-y-1">
                 <Label htmlFor="tokenInitial" className="text-[10px] font-semibold text-gray-600">TOKEN INITIALS</Label>
@@ -153,16 +153,16 @@ function GroupForm({
   );
 }
 
-function DeleteGroupDialog({
+function DeleteDepartmentDialog({
   isOpen,
   onClose,
   onConfirm,
-  groupName,
+  departmentName,
 }: {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  groupName: string;
+  departmentName: string;
 }) {
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
@@ -170,7 +170,7 @@ function DeleteGroupDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete the group "{groupName}".
+            This action cannot be undone. This will permanently delete the department "{departmentName}".
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -183,15 +183,15 @@ function DeleteGroupDialog({
 }
 
 
-export default function GroupsPage({ params }: { params: Promise<{ id: string }> }) {
+export default function DepartmentsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: clinicId } = use(params);
   const [clinic, setClinic] = useState<Clinic | null>(null);
-  const [allGroups, setAllGroups] = useState<ClinicGroup[]>([]);
-  const [filteredGroups, setFilteredGroups] = useState<ClinicGroup[]>([]);
+  const [allDepartments, setAllDepartments] = useState<ClinicDepartment[]>([]);
+  const [filteredDepartments, setFilteredDepartments] = useState<ClinicDepartment[]>([]);
   const { toast } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [groupToEdit, setGroupToEdit] = useState<ClinicGroup | null>(null);
-  const [groupToDelete, setGroupToDelete] = useState<ClinicGroup | null>(null);
+  const [departmentToEdit, setDepartmentToEdit] = useState<ClinicDepartment | null>(null);
+  const [departmentToDelete, setDepartmentToDelete] = useState<ClinicDepartment | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [cabins, setCabins] = useState<Cabin[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -205,20 +205,20 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
       }
     });
 
-    getClinicGroups(clinicId).then(setAllGroups);
+    getClinicDepartments(clinicId).then(setAllDepartments);
   }, [clinicId]);
 
   useEffect(() => {
-    let filteredData = allGroups;
+    let filteredData = allDepartments;
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
-        filteredData = allGroups.filter(group => 
-            group.name.toLowerCase().includes(lowercasedQuery) ||
-            group.tokenInitial.toLowerCase().includes(lowercasedQuery)
+        filteredData = allDepartments.filter(department => 
+            department.name.toLowerCase().includes(lowercasedQuery) ||
+            department.tokenInitial.toLowerCase().includes(lowercasedQuery)
         );
     }
-    setFilteredGroups(filteredData);
-  }, [searchQuery, allGroups]);
+    setFilteredDepartments(filteredData);
+  }, [searchQuery, allDepartments]);
 
   const doctors = users.filter(u => u.role === 'doctor');
   const assistants = users.filter(u => u.role === 'assistant');
@@ -243,32 +243,32 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
     });
   };
 
-  const openEditModal = (group: ClinicGroup) => {
-    setGroupToEdit(group);
+  const openEditModal = (department: ClinicDepartment) => {
+    setDepartmentToEdit(department);
     setIsModalOpen(true);
   }
 
   const openCreateModal = () => {
-    setGroupToEdit(null);
+    setDepartmentToEdit(null);
     setIsModalOpen(true);
   }
 
   const closeModal = () => {
     setIsModalOpen(false);
-    setGroupToEdit(null);
+    setDepartmentToEdit(null);
   }
 
-  const openDeleteDialog = (group: ClinicGroup) => {
-    setGroupToDelete(group);
+  const openDeleteDialog = (department: ClinicDepartment) => {
+    setDepartmentToDelete(department);
   }
 
   const closeDeleteDialog = () => {
-    setGroupToDelete(null);
+    setDepartmentToDelete(null);
   }
 
   const handleDeleteConfirm = () => {
-    if (groupToDelete) {
-      setAllGroups(allGroups.filter(g => g.id !== groupToDelete.id));
+    if (departmentToDelete) {
+      setAllDepartments(allDepartments.filter(g => g.id !== departmentToDelete.id));
       closeDeleteDialog();
     }
   }
@@ -290,10 +290,10 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
         return;
     }
 
-    if (groupToEdit) {
-      // Update existing group
-      setAllGroups(allGroups.map(g => g.id === groupToEdit.id ? { 
-        ...groupToEdit, 
+    if (departmentToEdit) {
+      // Update existing department
+      setAllDepartments(allDepartments.map(g => g.id === departmentToEdit.id ? { 
+        ...departmentToEdit, 
         name: formData.name,
         tokenInitial: formData.tokenInitial,
         doctors: selectedDoctors.map(d => ({ id: d.id, name: d.name })),
@@ -302,9 +302,9 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
         cabins: selectedCabins,
       } : g));
     } else {
-      // Add new group
-        const newGroup: ClinicGroup = {
-          id: `grp_${Date.now()}`,
+      // Add new department
+        const newDepartment: ClinicDepartment = {
+          id: `dept_${Date.now()}`,
           clinicId: clinic.id,
           name: formData.name,
           tokenInitial: formData.tokenInitial,
@@ -316,7 +316,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
           cabins: selectedCabins,
           screens: selectedScreens.map(s => ({ id: s.id, name: s.name })),
         };
-        setAllGroups(prev => [newGroup, ...prev]);
+        setAllDepartments(prev => [newDepartment, ...prev]);
     }
     closeModal();
   };
@@ -329,7 +329,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                  <div className="flex items-center gap-4 w-full sm:w-auto">
                     <div className="space-y-1 w-full sm:w-auto">
-                      <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">SEARCH GROUP</Label>
+                      <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">SEARCH DEPARTMENT</Label>
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -343,10 +343,10 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                     </div>
                  </div>
                 <div className="flex flex-col items-end gap-1">
-                  <p className="text-xs font-medium text-muted-foreground text-right">{filteredGroups.length} TOTAL GROUPS</p>
+                  <p className="text-xs font-medium text-muted-foreground text-right">{filteredDepartments.length} TOTAL DEPARTMENTS</p>
                   <Button onClick={openCreateModal} className="h-10">
                       <PlusCircle className="mr-2 h-4 w-4" />
-                      CREATE GROUP
+                      CREATE DEPARTMENT
                   </Button>
                 </div>
               </div>
@@ -356,7 +356,7 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
           <Card>
             <CardHeader>
               <div className="grid grid-cols-12 font-semibold text-xs text-muted-foreground">
-                  <div className="col-span-3">GROUP NAME</div>
+                  <div className="col-span-3">DEPARTMENT NAME</div>
                   <div className="col-span-3">RESOURCES</div>
                   <div className="col-span-3 text-center">REGISTRATION</div>
                   <div className="col-span-3 text-center">ACTIONS</div>
@@ -364,48 +364,48 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
             </CardHeader>
             <CardContent className="p-0">
               <Accordion type="single" collapsible>
-                  {filteredGroups.map((group) => (
-                      <AccordionItem value={group.id} key={group.id} className="border-b last:border-b-0">
-                           <div className="grid grid-cols-12 items-center group">
+                  {filteredDepartments.map((department) => (
+                      <AccordionItem value={department.id} key={department.id} className="border-b last:border-b-0">
+                           <div className="grid grid-cols-12 items-center department">
                                 <div className="col-span-3 p-4">
                                     <AccordionTrigger className="hover:no-underline p-0 w-full">
                                         <div className="flex items-center gap-3">
-                                            <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:-rotate-180" />
+                                            <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200 department-data-[state=open]:-rotate-180" />
                                             <div>
-                                                <p className="font-semibold text-sm text-card-foreground">{group.name}</p>
-                                                <p className="text-xs text-muted-foreground">Initial: {group.tokenInitial}</p>
+                                                <p className="font-semibold text-sm text-card-foreground">{department.name}</p>
+                                                <p className="text-xs text-muted-foreground">Initial: {department.tokenInitial}</p>
                                             </div>
                                         </div>
                                     </AccordionTrigger>
                                 </div>
                                 <div className="col-span-3 py-0 px-2">
                                   <div className="grid grid-cols-2 gap-1">
-                                      <Badge variant="secondary" className="px-1 py-0 text-[10px] leading-tight bg-blue-100 text-blue-800">{group.doctors.length} Docs</Badge>
-                                      <Badge variant="secondary" className="px-1 py-0 text-[10px] leading-tight bg-yellow-100 text-yellow-800">{group.assistants.length} Asst</Badge>
-                                      <Badge variant="secondary" className="px-1 py-0 text-[10px] leading-tight bg-green-100 text-green-800">{group.screens.length} Displays</Badge>
-                                      <Badge variant="secondary" className="px-1 py-0 text-[10px] leading-tight bg-purple-100 text-purple-800">{group.cabins.length} Cabins</Badge>
+                                      <Badge variant="secondary" className="px-1 py-0 text-[10px] leading-tight bg-blue-100 text-blue-800">{department.doctors.length} Docs</Badge>
+                                      <Badge variant="secondary" className="px-1 py-0 text-[10px] leading-tight bg-yellow-100 text-yellow-800">{department.assistants.length} Asst</Badge>
+                                      <Badge variant="secondary" className="px-1 py-0 text-[10px] leading-tight bg-green-100 text-green-800">{department.screens.length} Displays</Badge>
+                                      <Badge variant="secondary" className="px-1 py-0 text-[10px] leading-tight bg-purple-100 text-purple-800">{department.cabins.length} Cabins</Badge>
                                   </div>
                                 </div>
                                 <div className="col-span-3 p-4 flex items-center justify-center gap-1">
                                     <Button variant="outline" size="icon-xs" asChild>
-                                        <Link href={`/register/${group.id}`} target="_blank">
+                                        <Link href={`/register/${department.id}`} target="_blank">
                                             <ExternalLink className="h-4 w-4"/>
                                         </Link>
                                     </Button>
                                     <Button variant="outline" size="icon-xs" asChild>
-                                        <Link href={`/clinic-admin/${clinicId}/groups/qr-code?groupId=${group.id}`}>
+                                        <Link href={`/clinic-admin/${clinicId}/departments/qr-code?departmentId=${department.id}`}>
                                             <QrCode className="h-4 w-4"/>
                                         </Link>
                                     </Button>
-                                    <Button variant="outline" size="icon-xs" onClick={() => copyToClipboard(`${window.location.origin}/register/${group.id}`)}>
+                                    <Button variant="outline" size="icon-xs" onClick={() => copyToClipboard(`${window.location.origin}/register/${department.id}`)}>
                                         <LinkIcon className="h-4 w-4"/>
                                     </Button>
                                 </div>
                                 <div className="col-span-3 p-4 flex justify-start gap-1">
-                                  <Button variant="ghost" size="icon-xs" onClick={() => openEditModal(group)}>
+                                  <Button variant="ghost" size="icon-xs" onClick={() => openEditModal(department)}>
                                       <Edit className="h-4 w-4 text-muted-foreground"/>
                                   </Button>
-                                  <Button variant="ghost" size="icon-xs" onClick={() => openDeleteDialog(group)}>
+                                  <Button variant="ghost" size="icon-xs" onClick={() => openDeleteDialog(department)}>
                                       <Trash2 className="h-4 w-4 text-destructive"/>
                                   </Button>
                                 </div>
@@ -415,58 +415,58 @@ export default function GroupsPage({ params }: { params: Promise<{ id: string }>
                                   <div>
                                       <h4 className="font-semibold text-muted-foreground mb-2">DOCTORS</h4>
                                       <ul className="space-y-1">
-                                          {group.doctors.map(d => <li key={d.id}>{d.name}</li>)}
+                                          {department.doctors.map(d => <li key={d.id}>{d.name}</li>)}
                                       </ul>
                                   </div>
                                   <div>
                                       <h4 className="font-semibold text-muted-foreground mb-2">ASSISTANTS</h4>
                                       <ul className="space-y-1">
-                                          {group.assistants.map(a => <li key={a.id}>{a.name}</li>)}
-                                          {group.assistants.length === 0 && <li className="text-muted-foreground">No assistants assigned</li>}
+                                          {department.assistants.map(a => <li key={a.id}>{a.name}</li>)}
+                                          {department.assistants.length === 0 && <li className="text-muted-foreground">No assistants assigned</li>}
                                       </ul>
                                   </div>
                                   <div>
                                       <h4 className="font-semibold text-muted-foreground mb-2">DISPLAYS</h4>
                                       <ul className="space-y-1">
-                                        {group.screens.map(s => <li key={s.id}>{s.name}</li>)}
-                                        {group.screens.length === 0 && <li className="text-muted-foreground">No displays assigned</li>}
+                                        {department.screens.map(s => <li key={s.id}>{s.name}</li>)}
+                                        {department.screens.length === 0 && <li className="text-muted-foreground">No displays assigned</li>}
                                       </ul>
                                   </div>
                                   <div>
                                       <h4 className="font-semibold text-muted-foreground mb-2">CABINS</h4>
                                       <ul className="space-y-1">
-                                          {group.cabins?.map(c => <li key={c.id}>{c.name}</li>)}
-                                          {group.cabins.length === 0 && <li className="text-muted-foreground">No cabins assigned</li>}
+                                          {department.cabins?.map(c => <li key={c.id}>{c.name}</li>)}
+                                          {department.cabins.length === 0 && <li className="text-muted-foreground">No cabins assigned</li>}
                                       </ul>
                                   </div>
                               </div>
                           </AccordionContent>
                       </AccordionItem>
                   ))}
-                   {filteredGroups.length === 0 && (
+                   {filteredDepartments.length === 0 && (
                      <div className="text-center text-muted-foreground p-8">
-                        No groups found.
+                        No departments found.
                      </div>
                    )}
               </Accordion>
             </CardContent>
           </Card>
       </div>
-      <GroupForm 
+      <DepartmentForm 
         isOpen={isModalOpen}
         onClose={closeModal}
-        group={groupToEdit}
+        department={departmentToEdit}
         onConfirm={handleFormConfirm}
         doctors={doctors}
         assistants={assistants}
         screens={screens}
         cabins={cabins}
       />
-      <DeleteGroupDialog
-        isOpen={!!groupToDelete}
+      <DeleteDepartmentDialog
+        isOpen={!!departmentToDelete}
         onClose={closeDeleteDialog}
         onConfirm={handleDeleteConfirm}
-        groupName={groupToDelete?.name || ''}
+        departmentName={departmentToDelete?.name || ''}
       />
     </>
   );

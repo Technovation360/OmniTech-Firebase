@@ -49,8 +49,8 @@ function DashboardSidebar() {
       { href: `/clinic-admin/${clinicId}/live-queue`, icon: Monitor, label: 'Live Queue', active: pathname === `/clinic-admin/${clinicId}/live-queue` },
       { href: `/clinic-admin/${clinicId}/register`, icon: Ticket, label: 'Patients Register', active: pathname === `/clinic-admin/${clinicId}/register` },
       { href: `/clinic-admin/${clinicId}/stations`, icon: Building, label: 'Stations', active: pathname === `/clinic-admin/${clinicId}/stations` },
-      { href: `/clinic-admin/${clinicId}/groups`, icon: Folder, label: 'Groups', active: pathname === `/clinic-admin/${clinicId}/groups` },
-      { href: `/clinic-admin/${clinicId}/groups/qr-code`, icon: QrCode, label: 'QR Codes', active: pathname === `/clinic-admin/${clinicId}/groups/qr-code` },
+      { href: `/clinic-admin/${clinicId}/departments`, icon: Folder, label: 'Departments', active: pathname === `/clinic-admin/${clinicId}/departments` },
+      { href: `/clinic-admin/${clinicId}/departments/qr-code`, icon: QrCode, label: 'QR Codes', active: pathname === `/clinic-admin/${clinicId}/departments/qr-code` },
       { href: `/clinic-admin/${clinicId}/users`, icon: Users, label: 'Users', active: pathname === `/clinic-admin/${clinicId}/users` },
       { href: `/clinic-admin/${clinicId}/settings`, icon: Settings, label: 'Settings', active: pathname === `/clinic-admin/${clinicId}/settings` },
   ]

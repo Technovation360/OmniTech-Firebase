@@ -3,8 +3,8 @@
 
 import { use, useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { getClinicGroups, getClinicById } from '@/lib/data';
-import type { ClinicGroup, Clinic } from '@/lib/types';
+import { getClinicDepartments, getClinicById } from '@/lib/data';
+import type { ClinicDepartment, Clinic } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -21,37 +21,37 @@ function QRCodePageContent({ params }: { params: { id: string } }) {
   const { id: clinicId } = params;
   const searchParams = useSearchParams();
   const router = useRouter();
-  const initialGroupId = searchParams.get('groupId');
+  const initialDepartmentId = searchParams.get('departmentId');
 
   const [clinic, setClinic] = useState<Clinic | null>(null);
-  const [groups, setGroups] = useState<ClinicGroup[]>([]);
-  const [selectedGroup, setSelectedGroup] = useState<ClinicGroup | null>(null);
+  const [departments, setDepartments] = useState<ClinicDepartment[]>([]);
+  const [selectedDepartment, setSelectedDepartment] = useState<ClinicDepartment | null>(null);
 
   useEffect(() => {
     getClinicById(clinicId).then(setClinic);
-    getClinicGroups(clinicId).then(clinicGroups => {
-      setGroups(clinicGroups);
-      if (initialGroupId) {
-        setSelectedGroup(clinicGroups.find(g => g.id === initialGroupId) || clinicGroups[0] || null);
-      } else if (clinicGroups.length > 0) {
-        setSelectedGroup(clinicGroups[0]);
+    getClinicDepartments(clinicId).then(clinicDepartments => {
+      setDepartments(clinicDepartments);
+      if (initialDepartmentId) {
+        setSelectedDepartment(clinicDepartments.find(g => g.id === initialDepartmentId) || clinicDepartments[0] || null);
+      } else if (clinicDepartments.length > 0) {
+        setSelectedDepartment(clinicDepartments[0]);
       }
     });
-  }, [clinicId, initialGroupId]);
+  }, [clinicId, initialDepartmentId]);
 
-  if (groups.length === 0 || !selectedGroup || !clinic) {
+  if (departments.length === 0 || !selectedDepartment || !clinic) {
     return <div>Loading...</div>;
   }
   
-  const registrationUrl = `${window.location.origin}/register/${selectedGroup.id}`;
+  const registrationUrl = `${window.location.origin}/register/${selectedDepartment.id}`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(registrationUrl)}`;
 
-  const handleGroupChange = (groupId: string) => {
-    const group = groups.find(g => g.id === groupId);
-    if (group) {
-        setSelectedGroup(group);
-        // Update URL to reflect selected group
-        router.push(`/clinic-admin/${clinicId}/groups/qr-code?groupId=${groupId}`);
+  const handleDepartmentChange = (departmentId: string) => {
+    const department = departments.find(g => g.id === departmentId);
+    if (department) {
+        setSelectedDepartment(department);
+        // Update URL to reflect selected department
+        router.push(`/clinic-admin/${clinicId}/departments/qr-code?departmentId=${departmentId}`);
     }
   };
 
@@ -60,7 +60,7 @@ function QRCodePageContent({ params }: { params: { id: string } }) {
     <div className="space-y-6">
        <div className="flex justify-between items-center">
             <div>
-                <h1 className="text-3xl font-bold font-headline">Group QR Codes</h1>
+                <h1 className="text-3xl font-bold font-headline">Department QR Codes</h1>
                 <p className="text-muted-foreground">Display QR codes for patient self-registration.</p>
             </div>
             <Button onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Print</Button>
@@ -70,17 +70,17 @@ function QRCodePageContent({ params }: { params: { id: string } }) {
         <div className="md:col-span-1">
           <Card>
             <CardHeader>
-              <CardTitle>Select Group</CardTitle>
+              <CardTitle>Select Department</CardTitle>
             </CardHeader>
             <CardContent>
-              <Select value={selectedGroup.id} onValueChange={handleGroupChange}>
+              <Select value={selectedDepartment.id} onValueChange={handleDepartmentChange}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a group" />
+                  <SelectValue placeholder="Select a department" />
                 </SelectTrigger>
                 <SelectContent>
-                  {groups.map(group => (
-                    <SelectItem key={group.id} value={group.id}>
-                      {group.name}
+                  {departments.map(department => (
+                    <SelectItem key={department.id} value={department.id}>
+                      {department.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -93,13 +93,13 @@ function QRCodePageContent({ params }: { params: { id: string } }) {
                 <CardHeader className="text-center pb-2">
                     <CardTitle className="text-base">{clinic.name}</CardTitle>
                     <CardDescription className="text-xs">Scan to Register for</CardDescription>
-                    <p className="text-lg font-bold text-primary">{selectedGroup.name}</p>
+                    <p className="text-lg font-bold text-primary">{selectedDepartment.name}</p>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center p-4">
                    <div className="bg-white p-2 border rounded-md">
                      <Image
                         src={qrCodeUrl}
-                        alt={`QR Code for ${selectedGroup.name}`}
+                        alt={`QR Code for ${selectedDepartment.name}`}
                         width={150}
                         height={150}
                         unoptimized

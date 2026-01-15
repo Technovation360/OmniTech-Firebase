@@ -16,7 +16,7 @@ import { initializeFirebase } from '@/firebase';
 
 import type {
   Clinic,
-  ClinicGroup,
+  ClinicDepartment,
   Patient,
   Advertisement,
   Consultation,
@@ -31,34 +31,34 @@ const { firestore: db } = initializeFirebase();
 // This file is for CLIENT-SIDE data fetching.
 // For server-side, use lib/server-data.ts
 
-// Clinic Groups
-export const getClinicGroups = async (
+// Clinic Departments
+export const getClinicDepartments = async (
   clinicId?: string
-): Promise<ClinicGroup[]> => {
+): Promise<ClinicDepartment[]> => {
   let q;
   if (clinicId) {
     q = query(
-      collection(db, 'groups'),
+      collection(db, 'clinics'),
       where('clinicId', '==', clinicId),
       where('type', '==', 'Doctor')
     );
   } else {
-    q = query(collection(db, 'groups'), where('type', '==', 'Doctor'));
+    q = query(collection(db, 'clinics'), where('type', '==', 'Doctor'));
   }
   const snapshot = await getDocs(q);
-  const groups = snapshot.docs.map(
-    doc => ({ id: doc.id, ...doc.data() } as ClinicGroup)
+  const departments = snapshot.docs.map(
+    doc => ({ id: doc.id, ...doc.data() } as ClinicDepartment)
   );
-  return groups;
+  return departments;
 };
 
-export const getClinicGroupById = async (
+export const getClinicDepartmentById = async (
   id: string
-): Promise<ClinicGroup | undefined> => {
-  const docRef = doc(db, 'groups', id);
+): Promise<ClinicDepartment | undefined> => {
+  const docRef = doc(db, 'clinics', id);
   const docSnap = await getDoc(docRef);
   if (docSnap.exists() && docSnap.data().type === 'Doctor') {
-    return { id: docSnap.id, ...docSnap.data() } as ClinicGroup;
+    return { id: docSnap.id, ...docSnap.data() } as ClinicDepartment;
   }
   return undefined;
 };
@@ -66,7 +66,7 @@ export const getClinicGroupById = async (
 
 // Clinics
 export const getClinics = async (): Promise<Clinic[]> => {
-  const clinicsCol = collection(db, 'groups');
+  const clinicsCol = collection(db, 'clinics');
   const q = query(clinicsCol, where('type', '==', 'Clinic'));
   const snapshot = await getDocs(q);
   const clinics = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Clinic));
@@ -76,7 +76,7 @@ export const getClinics = async (): Promise<Clinic[]> => {
 export const getClinicById = async (
   id: string
 ): Promise<Clinic | undefined> => {
-  const docRef = doc(db, 'groups', id);
+  const docRef = doc(db, 'clinics', id);
   const docSnap = await getDoc(docRef);
   if (docSnap.exists() && docSnap.data().type === 'Clinic') {
     return { id: docSnap.id, ...docSnap.data() } as Clinic;
@@ -89,7 +89,7 @@ export const getClinicById = async (
 export const getCabinsByClinicId = async (
   clinicId: string
 ): Promise<Cabin[]> => {
-  const cabinsCol = collection(db, 'groups');
+  const cabinsCol = collection(db, 'clinics');
   const q = query(
     cabinsCol,
     where('type', '==', 'Cabin'),
@@ -148,10 +148,10 @@ export const getPatientsByClinicId = async (
   return patients;
 };
 
-export const getPatientsByGroupId = async (
-  groupId: string
+export const getPatientsByDepartmentId = async (
+  departmentId: string
 ): Promise<Patient[]> => {
-  const q = query(collection(db, 'patients'), where('groupId', '==', groupId));
+  const q = query(collection(db, 'patients'), where('departmentId', '==', departmentId));
   const snapshot = await getDocs(q);
     const patients = snapshot.docs.map(doc => {
     const data = doc.data();
@@ -166,14 +166,14 @@ export const getPatientsByGroupId = async (
 
 export const addPatient = async (
   data: Omit<Patient, 'id' | 'tokenNumber' | 'status' | 'registeredAt'>,
-  clinicGroup: ClinicGroup
+  clinicDepartment: ClinicDepartment
 ): Promise<Patient> => {
 
-  const prefix = clinicGroup.tokenInitial;
+  const prefix = clinicDepartment.tokenInitial;
 
-  const patientsInGroupQuery = query(collection(db, 'patients'), where('groupId', '==', data.groupId));
-  const patientsInGroupSnapshot = await getDocs(patientsInGroupQuery);
-  const lastToken = patientsInGroupSnapshot.docs
+  const patientsInDepartmentQuery = query(collection(db, 'patients'), where('departmentId', '==', data.departmentId));
+  const patientsInDepartmentSnapshot = await getDocs(patientsInDepartmentQuery);
+  const lastToken = patientsInDepartmentSnapshot.docs
     .map(doc => parseInt(doc.data().tokenNumber.replace(prefix, ''), 10))
     .filter(num => !isNaN(num))
     .sort((a, b) => b - a)[0] || 100;
@@ -216,20 +216,20 @@ export const getPatientHistory = async (
   const consultationsSnapshot = await getDocs(consultationsQuery);
   const patientConsultations = consultationsSnapshot.docs.map(doc => doc.data() as Consultation);
 
-  const tokensQuery = query(collection(db, 'groups'), where('type', '==', 'Token'), where('patientId', '==', patientId));
+  const tokensQuery = query(collection(db, 'clinics'), where('type', '==', 'Token'), where('patientId', '==', patientId));
   const tokensSnapshot = await getDocs(tokensQuery);
   
   const historyPromises = tokensSnapshot.docs.map(async (tokenDoc) => {
     const tokenData = tokenDoc.data();
-    const groupDoc = await getDoc(doc(db, 'groups', tokenData.groupId));
-    const groupData = groupDoc.data() as ClinicGroup;
+    const departmentDoc = await getDoc(doc(db, 'clinics', tokenData.departmentId));
+    const departmentData = departmentDoc.data() as ClinicDepartment;
     
     let clinicName = 'Unknown Clinic';
     if(clinics) {
-        const clinic = clinics.find(c => c.id === groupData.clinicId);
+        const clinic = clinics.find(c => c.id === departmentData.clinicId);
         if(clinic) clinicName = clinic.name;
     } else {
-        const clinicDoc = await getDoc(doc(db, 'groups', groupData.clinicId));
+        const clinicDoc = await getDoc(doc(db, 'clinics', departmentData.clinicId));
         if(clinicDoc.exists()) clinicName = (clinicDoc.data() as Clinic).name;
     }
 
@@ -239,8 +239,8 @@ export const getPatientHistory = async (
     return {
       tokenNumber: tokenData.tokenNumber,
       clinicName: clinicName,
-      groupName: groupData.name,
-      doctorName: groupData.doctors[0]?.name || 'N/A',
+      departmentName: departmentData.name,
+      doctorName: departmentData.doctors[0]?.name || 'N/A',
       issuedAt: (tokenData.generationTime as Timestamp).toDate().toISOString(),
       startTime: consultation ? new Date(new Date(consultation.date).getTime() - 10 * 60000).toISOString() : undefined,
       endTime: consultation?.date,
@@ -256,14 +256,14 @@ export const getPatientHistory = async (
 };
 
 
-export const getQueueInfoByScreenId = async (screenId: string, allGroups: ClinicGroup[], allPatients: Patient[]) => {
-    const groupForScreen = allGroups.find(g => g.screens.some(s => s.id === screenId));
+export const getQueueInfoByScreenId = async (screenId: string, allDepartments: ClinicDepartment[], allPatients: Patient[]) => {
+    const departmentForScreen = allDepartments.find(g => g.screens.some(s => s.id === screenId));
     
-    if (!groupForScreen) {
+    if (!departmentForScreen) {
         return { waiting: [], inConsultation: [], nowCalling: null };
     }
     
-    const patients = allPatients.filter(p => p.groupId === groupForScreen.id);
+    const patients = allPatients.filter(p => p.departmentId === departmentForScreen.id);
 
     const queuePatients = patients.filter(p => ['waiting', 'called', 'in-consultation'].includes(p.status));
     
@@ -273,7 +273,7 @@ export const getQueueInfoByScreenId = async (screenId: string, allGroups: Clinic
     if (calledPatient) {
         calledPatientInfo = {
             ...calledPatient,
-            cabinName: groupForScreen?.cabins[0]?.name || 'Consultation Room',
+            cabinName: departmentForScreen?.cabins[0]?.name || 'Consultation Room',
         }
 
         setTimeout(() => {
@@ -321,4 +321,13 @@ export const addConsultation = async (
   return { id: docRef.id, ...data } as Consultation;
 };
 
+// Mock data for users - replace with actual user management later
+export const mockUsers: User[] = [
+    { id: 'doc_ashish', uid: 'auth_doc_ashish', name: 'Dr. Ashish', email: 'doc_ashish@omni.com', role: 'doctor', specialty: 'Cardiology', affiliation: 'City Clinic' },
+    { id: 'doc_vijay', uid: 'auth_doc_vijay', name: 'Dr. Vijay', email: 'doc_vijay@omni.com', role: 'doctor', specialty: 'Pediatrics', affiliation: 'Health Center' },
+    { id: 'asst_sunita', uid: 'auth_asst_sunita', name: 'Sunita', email: 'asst_sunita@omni.com', role: 'assistant', affiliation: 'City Clinic' },
+    { id: 'asst_rajesh', uid: 'auth_asst_rajesh', name: 'Rajesh', email: 'asst_rajesh@omni.com', role: 'assistant', affiliation: 'Health Center' },
+    { id: 'disp_main_hall', uid: 'auth_disp_main_hall', name: 'Main Hall Display', email: 'display_main@omni.com', role: 'display', affiliation: 'City Clinic' },
+    { id: 'disp_opd1', uid: 'auth_disp_opd1', name: 'OPD 1 Display', email: 'display_opd1@omni.com', role: 'display', affiliation: 'City Clinic' },
+]
     
