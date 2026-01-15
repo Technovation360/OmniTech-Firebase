@@ -48,7 +48,7 @@ function DashboardSidebar() {
       { href: `/clinic-admin/${clinicId}`, icon: LayoutDashboard, label: 'Dashboard', active: pathname === `/clinic-admin/${clinicId}` },
       { href: `/clinic-admin/${clinicId}/live-queue`, icon: Monitor, label: 'Live Queue', active: pathname === `/clinic-admin/${clinicId}/live-queue` },
       { href: `/clinic-admin/${clinicId}/register`, icon: Ticket, label: 'Patients Register', active: pathname === `/clinic-admin/${clinicId}/register` },
-      { href: `/clinic-admin/${clinicId}/stations`, icon: Building, label: 'Stations', active: pathname === `/clinic-admin/${clinicId}/stations` },
+      { href: `/clinic-admin/${clinicId}/cabins`, icon: Building, label: 'Cabins', active: pathname === `/clinic-admin/${clinicId}/cabins` },
       { href: `/clinic-admin/${clinicId}/groups`, icon: Folder, label: 'Groups', active: pathname === `/clinic-admin/${clinicId}/groups` || pathname.startsWith(`/clinic-admin/${clinicId}/groups`) },
       { href: `/clinic-admin/${clinicId}/users`, icon: Users, label: 'Users', active: pathname === `/clinic-admin/${clinicId}/users` },
       { href: `/clinic-admin/${clinicId}/settings`, icon: Settings, label: 'Settings', active: pathname === `/clinic-admin/${clinicId}/settings` },

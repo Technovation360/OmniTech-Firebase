@@ -72,7 +72,7 @@ function CabinForm({
       <DialogContent className="sm:max-w-md">
         <DialogHeader className="p-4 pb-2">
           <DialogTitle className="text-base font-bold tracking-normal">
-            {isEditMode ? 'EDIT STATION' : 'ADD STATION'}
+            {isEditMode ? 'EDIT CABIN' : 'ADD CABIN'}
           </DialogTitle>
         </DialogHeader>
         <div className="p-4 pb-4">
@@ -81,7 +81,7 @@ function CabinForm({
               htmlFor="cabinName"
               className="text-[10px] font-semibold text-gray-600"
             >
-              STATION NAME
+              CABIN NAME
             </Label>
             <Input
               id="cabinName"
@@ -122,7 +122,7 @@ function DeleteCabinDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete the station
+            This action cannot be undone. This will permanently delete the cabin
             "{cabinName}".
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -135,7 +135,7 @@ function DeleteCabinDialog({
   );
 }
 
-export default function StationsPage({ params }: { params: { id: string } }) {
+export default function CabinsPage({ params }: { params: { id: string } }) {
   const { id: clinicId } = use(params);
   const firestore = useFirestore();
 
@@ -243,7 +243,7 @@ export default function StationsPage({ params }: { params: { id: string } }) {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4 w-full sm:w-auto">
               <div className="space-y-1 w-full sm:w-auto">
-                <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">SEARCH STATION</Label>
+                <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">SEARCH CABIN</Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -257,10 +257,10 @@ export default function StationsPage({ params }: { params: { id: string } }) {
               </div>
             </div>
             <div className="flex flex-col items-end gap-1">
-                 <p className="text-xs font-medium text-muted-foreground text-right">{filteredCabins.length} TOTAL STATIONS</p>
+                 <p className="text-xs font-medium text-muted-foreground text-right">{filteredCabins.length} TOTAL CABINS</p>
                 <Button onClick={openCreateModal} className="h-10">
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    ADD STATION
+                    ADD CABIN
                 </Button>
             </div>
           </div>
@@ -269,9 +269,9 @@ export default function StationsPage({ params }: { params: { id: string } }) {
       
       <Card>
           <CardHeader>
-            <CardTitle>Stations</CardTitle>
+            <CardTitle>Cabins</CardTitle>
             <div className="grid grid-cols-12 font-semibold text-xs text-muted-foreground pt-4">
-                <div className="col-span-6">STATION NAME</div>
+                <div className="col-span-6">CABIN NAME</div>
                 <div className="col-span-3 text-center">STATUS</div>
                 <div className="col-span-3 text-center">ACTIONS</div>
             </div>
@@ -308,13 +308,13 @@ export default function StationsPage({ params }: { params: { id: string } }) {
                               </div>
                         </div>
                         <AccordionContent className="bg-muted/30 p-6">
-                            <p className="text-center text-xs text-muted-foreground">No further details for this station.</p>
+                            <p className="text-center text-xs text-muted-foreground">No further details for this cabin.</p>
                         </AccordionContent>
                     </AccordionItem>
                 ))}
                   {!isLoading && filteredCabins.length === 0 && (
                     <div className="text-center text-muted-foreground p-8">
-                      No stations found.
+                      No cabins found.
                     </div>
                   )}
             </Accordion>
