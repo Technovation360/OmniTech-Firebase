@@ -48,9 +48,12 @@ import { Edit, Trash2, KeyRound, ArrowUp, ArrowDown, Search, PlusCircle, Loader 
 import type { UserRole } from '@/lib/roles';
 import { cn } from '@/lib/utils';
 import type { Clinic, User } from '@/lib/types';
-import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where, doc } from 'firebase/firestore';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { useAuth, useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { collection, query, where, doc, setDoc } from 'firebase/firestore';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { useToast } from '@/hooks/use-toast';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { setCustomClaim } from '@/ai/flows/set-custom-claims';
 
 const roleLabels: Record<UserRole, string> = {
   'central-admin': 'Central Admin',
@@ -88,17 +91,20 @@ function UserForm({
   isOpen: boolean;
   onClose: () => void;
   user: User | null;
-  onConfirm: (formData: Omit<User, 'id' | 'uid'>) => void;
+  onConfirm: (formData: Omit<User, 'id' | 'uid'> & {password?: string}, authUserId?: string) => void;
   clinicName: string;
 }) {
+  const { toast } = useToast();
   const isEditMode = !!user;
-  const [formData, setFormData] = useState<Omit<User, 'id' | 'uid'>>({
+  const [formData, setFormData] = useState({
       name: '',
       email: '',
-      role: 'assistant',
+      role: 'assistant' as UserRole,
       affiliation: clinicName,
       phone: '',
       specialty: '',
+      password: '',
+      confirmPassword: ''
   });
 
   useEffect(() => {
@@ -111,10 +117,12 @@ function UserForm({
             affiliation: user.affiliation || clinicName,
             phone: user.phone || '',
             specialty: user.specialty || '',
+            password: '',
+            confirmPassword: '',
         });
       } else {
         setFormData({
-            name: '', email: '', role: 'assistant', affiliation: clinicName, phone: '', specialty: ''
+            name: '', email: '', role: 'assistant', affiliation: clinicName, phone: '', specialty: '', password: '', confirmPassword: ''
         })
       }
     }
@@ -125,8 +133,16 @@ function UserForm({
   }
 
   const handleConfirm = () => {
-      onConfirm(formData);
-      onClose();
+    if (!isEditMode && formData.password !== formData.confirmPassword) {
+      toast({ variant: 'destructive', title: 'Passwords do not match.' });
+      return;
+    }
+    const dataToConfirm = { ...formData };
+    if (!dataToConfirm.password && !isEditMode) {
+      dataToConfirm.password = 'password';
+    }
+    onConfirm(dataToConfirm, user?.id);
+    onClose();
   }
 
   return (
@@ -160,7 +176,7 @@ function UserForm({
             </div>
             <div className="space-y-1">
               <Label htmlFor="email" className="text-[10px] font-semibold text-gray-600">EMAIL</Label>
-              <Input id="email" type="email" className="h-7 text-[11px]" value={formData.email} onChange={e => handleInputChange('email', e.target.value)} />
+              <Input id="email" type="email" className="h-7 text-[11px]" value={formData.email} onChange={e => handleInputChange('email', e.target.value)} disabled={isEditMode} />
             </div>
              <div className="space-y-1">
               <Label htmlFor="phone" className="text-[10px] font-semibold text-gray-600">PHONE</Label>
@@ -182,9 +198,13 @@ function UserForm({
                 </Select>
               </div>
             )}
-            <div className="space-y-1">
-              <Label htmlFor="password" className="text-[10px] font-semibold text-gray-600">PASSWORD</Label>
-              <Input id="password" type="password" className="h-7 text-[11px]" placeholder="Set new password"/>
+             <div className="space-y-1">
+              <Label htmlFor="password">{isEditMode ? 'NEW PASSWORD (OPTIONAL)' : 'PASSWORD'}</Label>
+              <Input id="password" type="password" value={formData.password} onChange={(e) => handleInputChange('password', e.target.value)} className="h-7 text-[11px]" placeholder={!isEditMode ? "Defaults to 'password'" : ''} />
+            </div>
+             <div className="space-y-1">
+              <Label htmlFor="confirmPassword">{isEditMode ? 'CONFIRM NEW PASSWORD' : 'CONFIRM PASSWORD'}</Label>
+              <Input id="confirmPassword" type="password" value={formData.confirmPassword} onChange={(e) => handleInputChange('confirmPassword', e.target.value)} className="h-7 text-[11px]" />
             </div>
           </div>
         </div>
@@ -232,6 +252,8 @@ function DeleteUserDialog({
 export default function UsersPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: clinicId } = use(params);
   const firestore = useFirestore();
+  const auth = useAuth();
+  const { toast } = useToast();
   const { user: authUser, isUserLoading } = useUser();
 
   const clinicRef = useMemoFirebase(() => {
@@ -312,14 +334,31 @@ export default function UsersPage({ params }: { params: Promise<{ id: string }> 
     }
   }
 
-  const handleFormConfirm = (formData: Omit<User, 'id' | 'uid'>) => {
-    if (userToEdit) {
-      setDocumentNonBlocking(doc(firestore, 'users', userToEdit.id), formData, { merge: true });
-    } else {
-      // In a real app, you would use Firebase Auth to create a user first,
-      // get their UID, and then create the Firestore document.
-      // For this mock, we'll just add it to the collection.
-      addDocumentNonBlocking(collection(firestore, 'users'), formData);
+  const handleFormConfirm = async (formData: Omit<User, 'id' | 'uid'> & {password?: string}, authUserId?: string) => {
+    if (authUserId) { // Edit mode
+        setDocumentNonBlocking(doc(firestore, 'users', authUserId), formData, { merge: true });
+        toast({ title: "User updated successfully."});
+    } else { // Create mode
+        if (!formData.password) {
+            toast({ variant: "destructive", title: "Password is required for new users."});
+            return;
+        }
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+            const newAuthUser = userCredential.user;
+            const { password, confirmPassword, ...userData } = formData;
+            
+            const userDocRef = doc(firestore, "users", newAuthUser.uid);
+            
+            await setDoc(userDocRef, { ...userData, uid: newAuthUser.uid });
+            await setCustomClaim({ uid: newAuthUser.uid, role: userData.role });
+            
+            toast({ title: "User created successfully."});
+
+        } catch (error: any) {
+            console.error(error);
+            toast({ variant: "destructive", title: "Failed to create user", description: error.message });
+        }
     }
     closeModal();
   };
@@ -334,8 +373,8 @@ export default function UsersPage({ params }: { params: Promise<{ id: string }> 
   
   const getSortIcon = (key: keyof User) => {
     if (!sortConfig || sortConfig.key !== key) return null;
-    if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3" />;
-    return <ArrowDown className="ml-2 h-3 w-3" />;
+    if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-4 w-4" />;
+    return <ArrowDown className="ml-2 h-4 w-4" />;
   };
 
   const isLoading = isUserLoading || clinicLoading || usersLoading;
@@ -457,3 +496,5 @@ export default function UsersPage({ params }: { params: Promise<{ id: string }> 
     </div>
   )
 }
+
+    
