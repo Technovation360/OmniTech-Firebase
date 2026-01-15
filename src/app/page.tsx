@@ -73,9 +73,7 @@ export default function LoginPage() {
             throw new Error(claimResult.message || 'Failed to set custom claim for admin.');
         }
 
-        toast({ title: 'Admin Account Created!', description: 'Please log in again for the changes to take effect.' });
-        // Force sign out so they have to log in again to get the token with the new claim
-        await auth.signOut();
+        toast({ title: 'Admin Account Created!', description: 'Role assigned. You can now log in.' });
     }
   }
 
@@ -94,36 +92,31 @@ export default function LoginPage() {
     }
 
     try {
-      let userCredential = await signInWithEmailAndPassword(auth, email, password)
-        .catch(async (error) => {
-            if (error.code === 'auth/user-not-found' && email === 'admin@omni.com') {
-                toast({ title: 'First-time Login Detected', description: 'Setting up the admin account...' });
-                const newUserCredential = await createUserWithEmailAndPassword(auth, email, password);
-                await bootstrapFirstAdmin(newUserCredential.user);
-                // After bootstrapping, we throw an error to stop the current login flow
-                // The user must log in again to get the new custom claim.
-                throw new Error("Admin setup complete. Please log in.");
-            }
-            throw error;
-        });
+      let userCredential;
+      try {
+          userCredential = await signInWithEmailAndPassword(auth, email, password);
+      } catch (error: any) {
+          if (error.code === 'auth/user-not-found' && email === 'admin@omni.com') {
+              toast({ title: 'First-time Login Detected', description: 'Setting up the admin account...' });
+              const newUserCredential = await createUserWithEmailAndPassword(auth, email, password);
+              await bootstrapFirstAdmin(newUserCredential.user);
+              // After bootstrapping, we sign in again to get the user credential for the next step.
+              userCredential = await signInWithEmailAndPassword(auth, email, password);
+          } else {
+              throw error; // Re-throw other errors
+          }
+      }
 
       const firebaseUser = userCredential.user;
       if (!firebaseUser) throw new Error("Could not get user.");
       
-      const idTokenResult = await firebaseUser.getIdTokenResult();
-      const userRole = (idTokenResult.claims.role as UserRole) || null;
+      // Force a refresh of the token to get the latest custom claims.
+      let idTokenResult = await firebaseUser.getIdTokenResult(true);
+      let userRole = (idTokenResult.claims.role as UserRole) || null;
 
       if (!userRole) {
-        // This can happen if the claims haven't propagated yet or were never set.
-        // It's a fail-safe.
-        if (email === 'admin@omni.com') {
-          const userDoc = await getDoc(doc(firestore, 'users', firebaseUser.uid));
-          if (!userDoc.exists()) {
-             await bootstrapFirstAdmin(firebaseUser);
-             throw new Error("Admin setup was missing. Please log in again.");
-          }
-        }
-        throw new Error('User role not found. Please sign out and sign in again, or contact an administrator.');
+        // This is a final check. If the role is still not there, something is wrong with the claim setting process.
+        throw new Error('User role not found. Please try logging in again or contact an administrator.');
       }
       
       const userDocRef = doc(firestore, 'users', firebaseUser.uid);
