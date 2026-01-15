@@ -110,15 +110,6 @@ export default function LoginPage() {
       const firebaseUser = userCredential.user;
       if (!firebaseUser) throw new Error("Could not get user.");
       
-      // Force a refresh of the token to get the latest custom claims.
-      let idTokenResult = await firebaseUser.getIdTokenResult(true);
-      let userRole = (idTokenResult.claims.role as UserRole) || null;
-
-      if (!userRole) {
-        // This is a final check. If the role is still not there, something is wrong with the claim setting process.
-        throw new Error('User role not found. Please try logging in again or contact an administrator.');
-      }
-      
       const userDocRef = doc(firestore, 'users', firebaseUser.uid);
       const userDocSnap = await getDoc(userDocRef);
 
@@ -127,6 +118,11 @@ export default function LoginPage() {
       }
       
       const userData = userDocSnap.data() as User;
+      const userRole = userData.role;
+
+      if (!userRole) {
+        throw new Error('User role not found in profile. Please contact an administrator.');
+      }
       
       let affiliationId = firebaseUser.uid;
       if (userRole !== 'central-admin' && clinics && userData.affiliation) {
