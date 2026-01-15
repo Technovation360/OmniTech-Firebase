@@ -16,9 +16,9 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, User as FirebaseAuthUser } from 'firebase/auth';
-import { doc, getDoc, getDocs, collection, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, writeBatch, setDoc } from 'firebase/firestore';
 import { useAuth, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { getRedirectUrlForRole } from '@/lib/roles';
+import { getRedirectUrlForRole, UserRole } from '@/lib/roles';
 import type { User, Role, Clinic } from '@/lib/types';
 import {
   Table,
@@ -28,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { setCustomClaim } from '@/ai/flows/set-custom-claims';
 
 const sampleCredentials = [
     { role: 'Central Admin', email: 'admin@omni.com' },
@@ -52,24 +53,30 @@ export default function LoginPage() {
   
 
   const bootstrapFirstAdmin = async (adminAuthUser: FirebaseAuthUser): Promise<void> => {
-    const batch = writeBatch(firestore);
-
-    // 1. Create the user document in Firestore
     const userDocRef = doc(firestore, 'users', adminAuthUser.uid);
     const userDocSnap = await getDoc(userDocRef);
 
     if (!userDocSnap.exists()) {
-        toast({ description: 'Creating admin user profile.' });
-        batch.set(userDocRef, {
+        toast({ description: 'Creating admin user profile and setting role...' });
+        
+        // 1. Create the user document in Firestore
+        await setDoc(userDocRef, {
             uid: adminAuthUser.uid,
             name: 'Central Admin',
             email: adminAuthUser.email,
             role: 'central-admin',
         });
+
+        // 2. Set the custom claim via the Genkit flow
+        const claimResult = await setCustomClaim({ uid: adminAuthUser.uid, role: 'central-admin' });
+        if (!claimResult.success) {
+            throw new Error(claimResult.message || 'Failed to set custom claim for admin.');
+        }
+
+        toast({ title: 'Admin Account Created!', description: 'Please log in again for the changes to take effect.' });
+        // Force sign out so they have to log in again to get the token with the new claim
+        await auth.signOut();
     }
-    
-    await batch.commit();
-    toast({ title: 'Setup Complete!', description: 'You can now log in.' });
   }
 
   const onLogin = async (e: React.FormEvent) => {
@@ -89,38 +96,44 @@ export default function LoginPage() {
     try {
       let userCredential = await signInWithEmailAndPassword(auth, email, password)
         .catch(async (error) => {
-            // If the user doesn't exist and it's the primary admin email, create them.
             if (error.code === 'auth/user-not-found' && email === 'admin@omni.com') {
                 toast({ title: 'First-time Login Detected', description: 'Setting up the admin account...' });
                 const newUserCredential = await createUserWithEmailAndPassword(auth, email, password);
                 await bootstrapFirstAdmin(newUserCredential.user);
-                return newUserCredential;
+                // After bootstrapping, we throw an error to stop the current login flow
+                // The user must log in again to get the new custom claim.
+                throw new Error("Admin setup complete. Please log in.");
             }
-             // For any other error, re-throw it to be caught by the outer catch block.
             throw error;
         });
 
       const firebaseUser = userCredential.user;
-
       if (!firebaseUser) throw new Error("Could not get user.");
       
-      // Fetch user profile from Firestore to get the role
+      const idTokenResult = await firebaseUser.getIdTokenResult();
+      const userRole = (idTokenResult.claims.role as UserRole) || null;
+
+      if (!userRole) {
+        // This can happen if the claims haven't propagated yet or were never set.
+        // It's a fail-safe.
+        if (email === 'admin@omni.com') {
+          const userDoc = await getDoc(doc(firestore, 'users', firebaseUser.uid));
+          if (!userDoc.exists()) {
+             await bootstrapFirstAdmin(firebaseUser);
+             throw new Error("Admin setup was missing. Please log in again.");
+          }
+        }
+        throw new Error('User role not found. Please sign out and sign in again, or contact an administrator.');
+      }
+      
       const userDocRef = doc(firestore, 'users', firebaseUser.uid);
       const userDocSnap = await getDoc(userDocRef);
 
       if (!userDocSnap.exists()) {
-        if (email === 'admin@omni.com') {
-             await bootstrapFirstAdmin(firebaseUser);
-             // Re-fetch after bootstrapping
-             const refreshedUserSnap = await getDoc(userDocRef);
-             if (!refreshedUserSnap.exists()) throw new Error("Admin profile not found even after setup.");
-             return onLogin(e); // Retry login flow
-        }
         throw new Error('User profile not found. Please contact an administrator.');
       }
       
       const userData = userDocSnap.data() as User;
-      const userRole = userData.role;
       
       let affiliationId = firebaseUser.uid;
       if (userRole !== 'central-admin' && clinics && userData.affiliation) {
@@ -131,9 +144,7 @@ export default function LoginPage() {
       }
 
       const redirectUrl = getRedirectUrlForRole(userRole, affiliationId);
-
       if (!redirectUrl) throw new Error("Could not determine redirect for your role.");
-
       router.push(redirectUrl);
 
     } catch (error: any) {
