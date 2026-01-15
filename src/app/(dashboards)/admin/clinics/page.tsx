@@ -193,16 +193,26 @@ export default function ClinicsPage() {
   const { user, isUserLoading } = useUser();
   const [currentUserData, setCurrentUserData] = useState<any>(null);
 
+  useEffect(() => {
+    if(user && !isUserLoading) {
+        getDoc(doc(firestore, 'users', user.uid)).then(snap => {
+            if(snap.exists()) {
+                setCurrentUserData(snap.data());
+            }
+        });
+    }
+  }, [user, isUserLoading, firestore]);
+
   const clinicsQuery = useMemoFirebase(() => {
     if (!currentUserData) return null;
     const { role, affiliation } = currentUserData;
     const clinicsCol = collection(firestore, 'clinics');
     
     if (role === 'central-admin') {
-      return query(clinicsCol, where('type', '==', 'Clinic'));
+      return query(clinicsCol);
     }
     if (role === 'clinic-admin' && affiliation) {
-      return query(clinicsCol, where('type', '==', 'Clinic'), where('name', '==', affiliation));
+      return query(clinicsCol, where('name', '==', affiliation));
     }
     return null;
   }, [firestore, currentUserData]);
@@ -215,16 +225,6 @@ export default function ClinicsPage() {
   }, [firestore, user]);
   const { data: specialtiesData, isLoading: specialtiesLoading } = useCollection<{id: string, name: string}>(specialtiesQuery);
   
-  useEffect(() => {
-    if(user && !isUserLoading) {
-        getDoc(doc(firestore, 'users', user.uid)).then(snap => {
-            if(snap.exists()) {
-                setCurrentUserData(snap.data());
-            }
-        });
-    }
-  }, [user, isUserLoading, firestore]);
-
   const [filteredClinics, setFilteredClinics] = useState<Clinic[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [clinicToEdit, setClinicToEdit] = useState<Clinic | null>(null);
@@ -289,7 +289,7 @@ export default function ClinicsPage() {
     if (clinicToDelete) {
       const docRef = doc(firestore, 'clinics', clinicToDelete.id);
       deleteDocumentNonBlocking(docRef);
-      // Data will be removed from state by useCollection hook automatically
+      setAllClinics(prev => prev ? prev.filter(c => c.id !== clinicToDelete.id) : []);
       closeDeleteDialog();
     }
   }
@@ -429,5 +429,3 @@ export default function ClinicsPage() {
     </>
   )
 }
-
-    
