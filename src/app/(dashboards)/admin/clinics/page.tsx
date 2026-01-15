@@ -227,20 +227,16 @@ export default function ClinicsPage() {
 
         if (role === 'central-admin') {
             q = query(clinicsCol, where('type', '==', 'Clinic'));
-            const snapshot = await getDocs(q);
-            setAllClinics(snapshot.docs.map(d => ({...d.data(), id: d.id } as Clinic)));
-
         } else if (role === 'clinic-admin' && affiliation) {
-            const docRef = doc(clinicsCol, affiliation);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                setAllClinics([{ ...docSnap.data(), id: docSnap.id } as Clinic]);
-            } else {
-                setAllClinics([]);
-            }
+            q = query(clinicsCol, where('type', '==', 'Clinic'), where('name', '==', affiliation));
         } else {
             setAllClinics([]);
+            setClinicsLoading(false);
+            return;
         }
+
+        const snapshot = await getDocs(q);
+        setAllClinics(snapshot.docs.map(d => ({...d.data(), id: d.id } as Clinic)));
         setClinicsLoading(false);
     };
 
@@ -353,10 +349,12 @@ export default function ClinicsPage() {
     <>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Clinics Management</h1>
-        <Button onClick={openCreateModal}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Onboard Clinic
-        </Button>
+        {currentUserData?.role === 'central-admin' && (
+          <Button onClick={openCreateModal}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Onboard Clinic
+          </Button>
+        )}
       </div>
       <Card>
         <CardHeader>
@@ -448,5 +446,3 @@ export default function ClinicsPage() {
     </>
   )
 }
-
-    
