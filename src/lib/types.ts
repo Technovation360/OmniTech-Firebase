@@ -41,7 +41,6 @@ export type Clinic = {
   id: string;
   name: string;
   location: string;
-  type?: 'Clinic';
   phone?: string;
   email?: string;
   address?: string;

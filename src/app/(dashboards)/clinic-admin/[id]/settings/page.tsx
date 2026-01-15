@@ -13,46 +13,73 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Camera, X, PlusCircle } from 'lucide-react';
-import { getClinicById } from '@/lib/data';
+import { Camera, X, PlusCircle, Loader } from 'lucide-react';
 import type { Clinic } from '@/lib/types';
 import Image from 'next/image';
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
-function ClinicDetails({ clinic, params }: { clinic: Clinic, params: { id: string } }) {
-  const { id: clinicId } = params;
-  const [formData, setFormData] = useState({
-    name: '',
-    contact: 'contact@example.com',
-    phone: '',
-    location: '',
-    city: '',
-    state: '',
-    zip: '',
-    specialties: [] as string[],
-  });
+function ClinicDetails({ clinicId }: { clinicId: string }) {
+  const firestore = useFirestore();
+  const { toast } = useToast();
+  
+  const clinicRef = useMemoFirebase(() => doc(firestore, 'clinics', clinicId), [firestore, clinicId]);
+  const { data: clinic, isLoading, error } = useDoc<Clinic>(clinicRef);
+
+  const [formData, setFormData] = useState<Partial<Clinic>>({});
 
   useEffect(() => {
     if (clinic) {
-      const [state, city] = clinic.location.split(', ');
       setFormData({
-          name: clinic.name,
-          contact: `contact@${clinic.name.toLowerCase().replace(/\s/g, '')}.com`,
-          phone: '555-0199', // mock
-          location: '123 Health Blvd', // mock
-          city: city || 'Metro City', // mock
-          state: state || 'California', // mock
-          zip: '90001', // mock
-          specialties: ['General Medicine', 'Cardiology'], // mock
+        name: clinic.name || '',
+        phone: clinic.phone || '',
+        email: clinic.email || '',
+        address: clinic.address || '',
+        city: clinic.city || '',
+        state: clinic.state || '',
+        pincode: clinic.pincode || '',
+        specialties: clinic.specialties || [],
       });
     }
   }, [clinic]);
 
+  const handleInputChange = (field: keyof typeof formData, value: string | string[]) => {
+      setFormData(prev => ({...prev, [field]: value}));
+  }
+  
   const handleSpecialtyRemove = (specialtyToRemove: string) => {
     setFormData(prev => ({
         ...prev,
-        specialties: prev.specialties.filter(s => s !== specialtyToRemove)
+        specialties: prev.specialties?.filter(s => s !== specialtyToRemove)
     }));
   };
+
+  const handleSave = () => {
+    setDocumentNonBlocking(clinicRef, formData, { merge: true });
+    toast({
+      title: "Settings Saved",
+      description: "Your clinic profile has been updated.",
+    });
+  }
+
+  if (isLoading) {
+      return (
+          <div className="flex items-center justify-center h-64">
+              <Loader className="h-8 w-8 animate-spin" />
+          </div>
+      )
+  }
+  
+  if (error) {
+    return <p className="text-destructive">Error loading clinic settings: {error.message}</p>
+  }
+  
+  if (!clinic) {
+    return <p>Clinic not found.</p>
+  }
+
 
   return (
     <Card>
@@ -78,7 +105,7 @@ function ClinicDetails({ clinic, params }: { clinic: Clinic, params: { id: strin
                <div>
                 <Label className="text-xs font-semibold">CLINICAL SPECIALTIES</Label>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
-                    {formData.specialties.map(spec => (
+                    {formData.specialties?.map(spec => (
                         <Badge key={spec} variant="outline" className="pl-3 pr-2 py-1 text-sm bg-blue-100 border-blue-200 text-blue-800">
                            {spec}
                            <button onClick={() => handleSpecialtyRemove(spec)} className="ml-2 rounded-full hover:bg-black/10 p-0.5">
@@ -98,41 +125,41 @@ function ClinicDetails({ clinic, params }: { clinic: Clinic, params: { id: strin
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label htmlFor="clinicName" className="text-xs font-semibold">CLINIC NAME</Label>
-                  <Input id="clinicName" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                  <Input id="clinicName" value={formData.name} onChange={e => handleInputChange('name', e.target.value)} />
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="contactNo" className="text-xs font-semibold">PUBLIC CONTACT NO.</Label>
-                  <Input id="contactNo" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                  <Input id="contactNo" value={formData.phone} onChange={e => handleInputChange('phone', e.target.value)} />
                 </div>
               </div>
 
                <div className="space-y-1">
                 <Label htmlFor="email" className="text-xs font-semibold">PUBLIC EMAIL ADDRESS</Label>
-                <Input id="email" type="email" value={formData.contact} onChange={e => setFormData({...formData, contact: e.target.value})} />
+                <Input id="email" type="email" value={formData.email} onChange={e => handleInputChange('email', e.target.value)} />
               </div>
 
                <div className="space-y-1">
                 <Label htmlFor="address" className="text-xs font-semibold">PHYSICAL ADDRESS</Label>
-                <Textarea id="address" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
+                <Textarea id="address" value={formData.address} onChange={e => handleInputChange('address', e.target.value)} />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1">
                   <Label htmlFor="city" className="text-xs font-semibold">CITY</Label>
-                  <Input id="city" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} />
+                  <Input id="city" value={formData.city} onChange={e => handleInputChange('city', e.target.value)} />
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="state" className="text-xs font-semibold">STATE / REGION</Label>
-                  <Input id="state" value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})} />
+                  <Input id="state" value={formData.state} onChange={e => handleInputChange('state', e.target.value)} />
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="zip" className="text-xs font-semibold">PINCODE / ZIP</Label>
-                  <Input id="zip" value={formData.zip} onChange={e => setFormData({...formData, zip: e.target.value})} />
+                  <Input id="zip" value={formData.pincode} onChange={e => handleInputChange('pincode', e.target.value)} />
                 </div>
               </div>
               
               <div className="flex justify-start pt-4">
-                <Button size="lg">SAVE PROFILE CHANGES</Button>
+                <Button size="lg" onClick={handleSave}>SAVE PROFILE CHANGES</Button>
               </div>
             </div>
           </div>
@@ -144,23 +171,10 @@ function ClinicDetails({ clinic, params }: { clinic: Clinic, params: { id: strin
 
 export default function SettingsPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
-  const [clinic, setClinic] = useState<Clinic | null>(null);
-
-  useEffect(() => {
-    getClinicById(resolvedParams.id).then((data) => {
-      if (data) {
-        setClinic(data);
-      }
-    });
-  }, [resolvedParams.id]);
-  
-  if (!clinic) {
-    return <div>Loading...</div>;
-  }
 
   return (
      <div className="space-y-6">
-        <ClinicDetails clinic={clinic} params={resolvedParams} />
+        <ClinicDetails clinicId={resolvedParams.id} />
     </div>
   );
 }
