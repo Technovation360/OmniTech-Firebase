@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -27,11 +27,14 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Edit, Trash2, Search, ArrowUp, ArrowDown, PlusCircle } from 'lucide-react';
-import { getCabinsByClinicId } from '@/lib/data';
+import { Edit, Trash2, Search, ArrowUp, ArrowDown, PlusCircle, Loader } from 'lucide-react';
 import type { Cabin } from '@/lib/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ChevronDown } from 'lucide-react';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, doc, query, where } from 'firebase/firestore';
+import { addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+
 
 function CabinForm({
   isOpen,
@@ -69,7 +72,7 @@ function CabinForm({
       <DialogContent className="sm:max-w-md">
         <DialogHeader className="p-4 pb-2">
           <DialogTitle className="text-base font-bold tracking-normal">
-            {isEditMode ? 'EDIT CABIN' : 'ADD CABIN'}
+            {isEditMode ? 'EDIT STATION' : 'ADD STATION'}
           </DialogTitle>
         </DialogHeader>
         <div className="p-4 pb-4">
@@ -78,7 +81,7 @@ function CabinForm({
               htmlFor="cabinName"
               className="text-[10px] font-semibold text-gray-600"
             >
-              CABIN NAME
+              STATION NAME
             </Label>
             <Input
               id="cabinName"
@@ -119,7 +122,7 @@ function DeleteCabinDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete the cabin
+            This action cannot be undone. This will permanently delete the station
             "{cabinName}".
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -134,7 +137,14 @@ function DeleteCabinDialog({
 
 export default function StationsPage({ params }: { params: { id: string } }) {
   const { id: clinicId } = use(params);
-  const [allCabins, setAllCabins] = useState<Cabin[]>([]);
+  const firestore = useFirestore();
+
+  const cabinsQuery = useMemoFirebase(() => {
+    return query(collection(firestore, 'clinics'), where('clinicId', '==', clinicId), where('type', '==', 'Cabin'));
+  }, [firestore, clinicId]);
+
+  const { data: allCabins, isLoading } = useCollection<Cabin>(cabinsQuery);
+
   const [filteredCabins, setFilteredCabins] = useState<Cabin[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [cabinToEdit, setCabinToEdit] = useState<Cabin | null>(null);
@@ -142,13 +152,12 @@ export default function StationsPage({ params }: { params: { id: string } }) {
   const [sortConfig, setSortConfig] = useState<{ key: keyof Cabin; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc' });
   const [searchQuery, setSearchQuery] = useState('');
 
-
   useEffect(() => {
-    getCabinsByClinicId(clinicId).then(setAllCabins);
-  }, [clinicId]);
-
-  useEffect(() => {
-    let filteredData = allCabins;
+    if (!allCabins) {
+      setFilteredCabins([]);
+      return;
+    }
+    let filteredData = [...allCabins];
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
         filteredData = allCabins.filter(cabin =>
@@ -195,25 +204,20 @@ export default function StationsPage({ params }: { params: { id: string } }) {
 
   const handleDeleteConfirm = () => {
     if (cabinToDelete) {
-      setAllCabins(allCabins.filter((c) => c.id !== cabinToDelete.id));
+      deleteDocumentNonBlocking(doc(firestore, 'clinics', cabinToDelete.id));
       closeDeleteDialog();
     }
   };
 
   const handleFormConfirm = (formData: { name: string }) => {
     if (cabinToEdit) {
-      setAllCabins(
-        allCabins.map((c) =>
-          c.id === cabinToEdit.id ? { ...c, name: formData.name } : c
-        )
-      );
+      setDocumentNonBlocking(doc(firestore, 'clinics', cabinToEdit.id), { name: formData.name }, { merge: true });
     } else {
-      const newCabin: Cabin = {
-        id: `cab_${Date.now()}`,
+      addDocumentNonBlocking(collection(firestore, 'clinics'), {
         name: formData.name,
         clinicId: clinicId,
-      };
-      setAllCabins([...allCabins, newCabin]);
+        type: 'Cabin'
+      });
     }
     closeModal();
   };
@@ -274,7 +278,12 @@ export default function StationsPage({ params }: { params: { id: string } }) {
           </CardHeader>
           <CardContent className="p-0">
             <Accordion type="single" collapsible>
-                {filteredCabins.map((cabin) => (
+                {isLoading && (
+                  <div className="flex justify-center items-center p-8">
+                    <Loader className="h-6 w-6 animate-spin" />
+                  </div>
+                )}
+                {!isLoading && filteredCabins.map((cabin) => (
                     <AccordionItem value={cabin.id} key={cabin.id} className="border-b last:border-b-0">
                           <div className="grid grid-cols-12 items-center group">
                               <div className="col-span-6 p-4">
@@ -303,7 +312,7 @@ export default function StationsPage({ params }: { params: { id: string } }) {
                         </AccordionContent>
                     </AccordionItem>
                 ))}
-                  {filteredCabins.length === 0 && (
+                  {!isLoading && filteredCabins.length === 0 && (
                     <div className="text-center text-muted-foreground p-8">
                       No stations found.
                     </div>
