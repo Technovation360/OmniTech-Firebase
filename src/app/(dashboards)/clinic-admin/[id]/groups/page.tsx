@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useMemo } from 'react';
 import {
   Accordion,
   AccordionContent,
@@ -18,8 +18,8 @@ import {
   ChevronDown,
   PlusCircle,
   Search,
+  Loader,
 } from 'lucide-react';
-import { getClinicGroups, getClinicById, mockUsers, getCabinsByClinicId } from '@/lib/data';
 import type { Clinic, ClinicGroup, User, Cabin } from '@/lib/types';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -29,6 +29,9 @@ import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, doc, query, where } from 'firebase/firestore';
+import { setDocumentNonBlocking, addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 
 function GroupForm({
@@ -51,8 +54,8 @@ function GroupForm({
   cabins: Cabin[];
 }) {
   const isEditMode = !!group;
-  const [formData, setFormData] = useState({ 
-    name: '', 
+  const [formData, setFormData] = useState({
+    name: '',
     tokenInitial: '',
     doctorIds: [] as string[],
     assistantIds: [] as string[],
@@ -62,8 +65,8 @@ function GroupForm({
 
   useEffect(() => {
     if (group) {
-      setFormData({ 
-        name: group.name, 
+      setFormData({
+        name: group.name,
         tokenInitial: group.tokenInitial,
         doctorIds: group.doctors.map(d => d.id),
         assistantIds: group.assistants.map(a => a.id),
@@ -85,7 +88,7 @@ function GroupForm({
       onClose();
     }
   };
-  
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg">
@@ -185,34 +188,49 @@ function DeleteGroupDialog({
 
 export default function GroupsPage({ params }: { params: { id: string } }) {
   const { id: clinicId } = use(params);
-  const [clinic, setClinic] = useState<Clinic | null>(null);
-  const [allGroups, setAllGroups] = useState<ClinicGroup[]>([]);
-  const [filteredGroups, setFilteredGroups] = useState<ClinicGroup[]>([]);
+  const firestore = useFirestore();
   const { toast } = useToast();
+
+  const [filteredGroups, setFilteredGroups] = useState<ClinicGroup[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [groupToEdit, setGroupToEdit] = useState<ClinicGroup | null>(null);
   const [groupToDelete, setGroupToDelete] = useState<ClinicGroup | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
-  const [cabins, setCabins] = useState<Cabin[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    getClinicById(clinicId).then(clinicData => {
-      setClinic(clinicData || null);
-      if(clinicData) {
-        setUsers(mockUsers.filter(u => u.affiliation === clinicData.name));
-        getCabinsByClinicId(clinicId).then(setCabins);
-      }
-    });
+  const clinicRef = useMemoFirebase(() => doc(firestore, 'clinics', clinicId), [firestore, clinicId]);
+  const { data: clinic, isLoading: clinicLoading } = useDoc<Clinic>(clinicRef);
 
-    getClinicGroups(clinicId).then(setAllGroups);
-  }, [clinicId]);
+  const usersQuery = useMemoFirebase(() => {
+    if (!clinic) return null;
+    return query(collection(firestore, 'users'), where('affiliation', '==', clinic.name));
+  }, [firestore, clinic]);
+  const { data: users, isLoading: usersLoading } = useCollection<User>(usersQuery);
+
+  const cabinsQuery = useMemoFirebase(() => {
+      return query(collection(firestore, 'clinics'), where('clinicId', '==', clinicId), where('type', '==', 'Cabin'));
+  }, [firestore, clinicId]);
+  const { data: cabins, isLoading: cabinsLoading } = useCollection<Cabin>(cabinsQuery);
+
+  const groupsQuery = useMemoFirebase(() => {
+      return query(collection(firestore, 'clinics'), where('clinicId', '==', clinicId), where('type', '==', 'Doctor'));
+  }, [firestore, clinicId]);
+  const { data: allGroups, isLoading: groupsLoading } = useCollection<ClinicGroup>(groupsQuery);
+
+
+  const doctors = useMemo(() => users?.filter(u => u.role === 'doctor') || [], [users]);
+  const assistants = useMemo(() => users?.filter(u => u.role === 'assistant') || [], [users]);
+  const screens = useMemo(() => users?.filter(u => u.role === 'display') || [], [users]);
+
 
   useEffect(() => {
-    let filteredData = allGroups;
+    if (!allGroups) {
+      setFilteredGroups([]);
+      return;
+    }
+    let filteredData = [...allGroups];
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
-        filteredData = allGroups.filter(group => 
+        filteredData = allGroups.filter(group =>
             group.name.toLowerCase().includes(lowercasedQuery) ||
             group.tokenInitial.toLowerCase().includes(lowercasedQuery)
         );
@@ -220,14 +238,6 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
     setFilteredGroups(filteredData);
   }, [searchQuery, allGroups]);
 
-  const doctors = users.filter(u => u.role === 'doctor');
-  const assistants = users.filter(u => u.role === 'assistant');
-  const screens = users.filter(u => u.role === 'display');
-
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('');
-  }
-  
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
         toast({
@@ -268,7 +278,7 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
 
   const handleDeleteConfirm = () => {
     if (groupToDelete) {
-      setAllGroups(allGroups.filter(g => g.id !== groupToDelete.id));
+      deleteDocumentNonBlocking(doc(firestore, 'clinics', groupToDelete.id));
       closeDeleteDialog();
     }
   }
@@ -279,8 +289,8 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
     const selectedDoctors = formData.doctorIds.map(id => doctors.find(d => d.id === id)).filter(Boolean) as User[];
     const selectedAssistants = formData.assistantIds.map(id => assistants.find(a => a.id === id)).filter(Boolean) as User[];
     const selectedScreens = formData.screenIds.map(id => screens.find(s => s.id === id)).filter(Boolean) as User[];
-    const selectedCabins = formData.cabinIds.map(id => cabins.find(c => c.id === id)).filter(Boolean) as Cabin[];
-    
+    const selectedCabins = formData.cabinIds.map(id => (cabins || []).find(c => c.id === id)).filter(Boolean) as Cabin[];
+
     if (selectedDoctors.length === 0) {
         toast({
             variant: "destructive",
@@ -290,37 +300,33 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
         return;
     }
 
+    const groupData = {
+      clinicId: clinic.id,
+      name: formData.name,
+      type: 'Doctor',
+      tokenInitial: formData.tokenInitial,
+      location: clinic.location,
+      specialties: [],
+      contact: `contact@${clinic.name.toLowerCase().replace(/\s/g, '')}.com`,
+      doctors: selectedDoctors.map(d => ({ id: d.id, name: d.name })),
+      assistants: selectedAssistants.map(a => ({ id: a.id, name: a.name })),
+      cabins: selectedCabins,
+      screens: selectedScreens.map(s => ({ id: s.id, name: s.name })),
+    };
+
     if (groupToEdit) {
-      // Update existing group
-      setAllGroups(allGroups.map(g => g.id === groupToEdit.id ? { 
-        ...groupToEdit, 
-        name: formData.name,
-        tokenInitial: formData.tokenInitial,
-        doctors: selectedDoctors.map(d => ({ id: d.id, name: d.name })),
-        assistants: selectedAssistants.map(a => ({ id: a.id, name: a.name })),
-        screens: selectedScreens.map(s => ({ id: s.id, name: s.name })),
-        cabins: selectedCabins,
-      } : g));
+      setDocumentNonBlocking(doc(firestore, 'clinics', groupToEdit.id), groupData, { merge: true });
     } else {
-      // Add new group
-        const newGroup: ClinicGroup = {
-          id: `dept_${Date.now()}`,
-          clinicId: clinic.id,
-          name: formData.name,
-          type: 'Doctor',
-          tokenInitial: formData.tokenInitial,
-          location: clinic.location,
-          specialties: [],
-          contact: `contact@${clinic.name.toLowerCase().replace(/\s/g, '')}.com`,
-          doctors: selectedDoctors.map(d => ({ id: d.id, name: d.name })),
-          assistants: selectedAssistants.map(a => ({ id: a.id, name: a.name })),
-          cabins: selectedCabins,
-          screens: selectedScreens.map(s => ({ id: s.id, name: s.name })),
-        };
-        setAllGroups(prev => [newGroup, ...prev]);
+      addDocumentNonBlocking(collection(firestore, 'clinics'), groupData);
     }
     closeModal();
   };
+
+  const isLoading = clinicLoading || usersLoading || cabinsLoading || groupsLoading;
+
+  if (isLoading) {
+    return <div className="flex h-full w-full items-center justify-center"><Loader className="animate-spin h-8 w-8" /></div>
+  }
 
   return (
     <>
@@ -453,7 +459,7 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
             </CardContent>
           </Card>
       </div>
-      <GroupForm 
+      <GroupForm
         isOpen={isModalOpen}
         onClose={closeModal}
         group={groupToEdit}
@@ -461,7 +467,7 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
         doctors={doctors}
         assistants={assistants}
         screens={screens}
-        cabins={cabins}
+        cabins={cabins || []}
       />
       <DeleteGroupDialog
         isOpen={!!groupToDelete}
@@ -472,3 +478,5 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
     </>
   );
 }
+
+    
