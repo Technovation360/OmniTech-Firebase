@@ -11,28 +11,20 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
-    function getUserData() {
-        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-    }
-
     function isAdmin() {
-        let data = getUserData();
-        return isSignedIn() && data != null && data.role == 'central-admin';
+      return isSignedIn() && request.auth.token.role == 'central-admin';
     }
 
     function isClinicAdmin() {
-        let data = getUserData();
-        return isSignedIn() && data != null && data.role == 'clinic-admin';
+      return isSignedIn() && request.auth.token.role == 'clinic-admin';
     }
     
     function isDoctor() {
-      let data = getUserData();
-      return isSignedIn() && data != null && data.role == 'doctor';
+      return isSignedIn() && request.auth.token.role == 'doctor';
     }
     
     function isAdvertiser() {
-       let data = getUserData();
-       return isSignedIn() && data != null && data.role == 'advertiser';
+       return isSignedIn() && request.auth.token.role == 'advertiser';
     }
 
     function isExistingDoc() {
