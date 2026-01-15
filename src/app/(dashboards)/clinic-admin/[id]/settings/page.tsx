@@ -28,7 +28,16 @@ function ClinicDetails({ clinicId }: { clinicId: string }) {
   const clinicRef = useMemoFirebase(() => doc(firestore, 'clinics', clinicId), [firestore, clinicId]);
   const { data: clinic, isLoading, error } = useDoc<Clinic>(clinicRef);
 
-  const [formData, setFormData] = useState<Partial<Clinic>>({});
+  const [formData, setFormData] = useState<Partial<Clinic>>({
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+    city: '',
+    state: '',
+    pincode: '',
+    specialties: [],
+  });
 
   useEffect(() => {
     if (clinic) {
@@ -178,3 +187,5 @@ export default function SettingsPage({ params }: { params: Promise<{ id: string 
     </div>
   );
 }
+
+    
