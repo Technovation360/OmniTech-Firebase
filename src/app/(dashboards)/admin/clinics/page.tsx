@@ -289,7 +289,6 @@ export default function ClinicsPage() {
     if (clinicToDelete) {
       const docRef = doc(firestore, 'clinics', clinicToDelete.id);
       deleteDocumentNonBlocking(docRef);
-      setAllClinics(prev => prev ? prev.filter(c => c.id !== clinicToDelete.id) : []);
       closeDeleteDialog();
     }
   }
