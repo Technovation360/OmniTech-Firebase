@@ -23,7 +23,6 @@ export type Doctor = {
 export type Cabin = {
   id: string;
   name: string;
-  clinicId: string;
 };
 
 export type Assistant = {
