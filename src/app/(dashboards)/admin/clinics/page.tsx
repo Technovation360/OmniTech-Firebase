@@ -191,11 +191,21 @@ function DeleteClinicDialog({
 export default function ClinicsPage() {
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
+  const [currentUserData, setCurrentUserData] = useState(null);
   
   const clinicsQuery = useMemoFirebase(() => {
-    if (!user) return null;
-    return query(collection(firestore, 'groups'), where('type', '==', 'Clinic'));
-  }, [firestore, user]);
+    if (!currentUserData) return null;
+    
+    const { role, affiliation } = currentUserData;
+    const clinicsCol = collection(firestore, 'groups');
+
+    if (role === 'central-admin') {
+      return query(clinicsCol, where('type', '==', 'Clinic'));
+    } else if (role === 'clinic-admin' && affiliation) {
+      return query(clinicsCol, where('type', '==', 'Clinic'), where('name', '==', affiliation));
+    }
+    return null;
+  }, [firestore, currentUserData]);
   
   const { data: allClinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
 
@@ -204,6 +214,16 @@ export default function ClinicsPage() {
     return query(collection(firestore, 'specialties'), where('forClinic', '==', true));
   }, [firestore, user]);
   const { data: specialtiesData, isLoading: specialtiesLoading } = useCollection<{id: string, name: string}>(specialtiesQuery);
+  
+  useEffect(() => {
+    if(user) {
+        getDoc(doc(firestore, 'users', user.uid)).then(snap => {
+            if(snap.exists()) {
+                setCurrentUserData(snap.data());
+            }
+        });
+    }
+  }, [user, firestore]);
 
   const [filteredClinics, setFilteredClinics] = useState<Clinic[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -297,7 +317,7 @@ export default function ClinicsPage() {
     return <ArrowDown className="ml-2 h-3 w-3" />;
   };
 
-  const isLoading = isUserLoading || clinicsLoading || specialtiesLoading;
+  const isLoading = isUserLoading || !currentUserData || clinicsLoading || specialtiesLoading;
   
   if (isLoading) {
     return (
@@ -406,5 +426,3 @@ export default function ClinicsPage() {
     </>
   )
 }
-
-    
