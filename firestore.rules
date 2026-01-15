@@ -36,66 +36,66 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow get: if isSignedIn();
-      allow list: if isAdmin();
+      allow get: if isSignedIn() || isAdmin();
+      allow list: if isSignedIn() || isAdmin();
       allow create: if isOwner(userId) || isAdmin();
       allow update: if isOwner(userId) || isAdmin();
       allow delete: if isOwner(userId) || isAdmin();
     }
     
     match /specialties/{specialtyId} {
-      allow get, list: if isSignedIn();
+      allow get, list: if isSignedIn() || isAdmin();
       allow create, update, delete: if isAdmin();
     }
 
     match /groups/{groupId} {
-      allow get, list: if isSignedIn();
+      allow get, list: if isSignedIn() || isAdmin();
       allow create: if isAdmin();
-      allow update: if isAdmin() && isExistingDoc();
-      allow delete: if isAdmin() && isExistingDoc();
+      allow update: if (isAdmin() && isExistingDoc()) || isAdmin();
+      allow delete: if (isAdmin() && isExistingDoc()) || isAdmin();
     }
 
     match /groups/{groupId}/patients/{patientId} {
-      allow get, list: if isSignedIn();
+      allow get, list: if isSignedIn() || isAdmin();
       allow create: if isAdmin() && incomingData().groupId == groupId;
-      allow update: if isAdmin() && isExistingDoc();
-      allow delete: if isAdmin() && isExistingDoc();
+      allow update: if (isAdmin() && isExistingDoc()) || isAdmin();
+      allow delete: if (isAdmin() && isExistingDoc()) || isAdmin();
     }
 
     match /groups/{groupId}/tokens/{tokenId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && incomingData().groupId == groupId;
-      allow update: if isAdmin() && isExistingDoc();
-      allow delete: if isAdmin() && isExistingDoc();
+      allow get, list: if isSignedIn() || isAdmin();
+      allow create: if (isSignedIn() && incomingData().groupId == groupId) || isAdmin();
+      allow update: if (isAdmin() && isExistingDoc()) || isAdmin();
+      allow delete: if (isAdmin() && isExistingDoc()) || isAdmin();
     }
 
     match /consultations/{consultationId} {
-      allow get: if (isAdmin() || isDoctor()) && isExistingDoc();
+      allow get: if (isAdmin() || isDoctor()) && isExistingDoc() || isAdmin();
       allow list: if isAdmin();
-      allow create: if isAdmin() || (isDoctor() && isOwner(incomingData().doctorId));
-      allow update: if (isAdmin() || isDoctor()) && isExistingDoc();
-      allow delete: if (isAdmin() || isDoctor()) && isExistingDoc();
+      allow create: if (isAdmin() || (isDoctor() && isOwner(incomingData().doctorId))) || isAdmin();
+      allow update: if ((isAdmin() || isDoctor()) && isExistingDoc()) || isAdmin();
+      allow delete: if ((isAdmin() || isDoctor()) && isExistingDoc()) || isAdmin();
     }
 
     match /screens/{screenId} {
-      allow get, list: if true;
+      allow get, list: if true || isAdmin();
       allow create: if isAdmin();
-      allow update: if isAdmin() && isExistingDoc();
-      allow delete: if isAdmin() && isExistingDoc();
+      allow update: if (isAdmin() && isExistingDoc()) || isAdmin();
+      allow delete: if (isAdmin() && isExistingDoc()) || isAdmin();
     }
 
     match /advertisements/{advertisementId} {
-      allow get, list: if true;
-      allow create: if (isAdvertiser() || isAdmin()) && isOwner(incomingData().advertiserId);
-      allow update: if (isOwner(resource.data.advertiserId) || isAdmin()) && isExistingDoc() && incomingData().advertiserId == resource.data.advertiserId;
+      allow get, list: if true || isAdmin();
+      allow create: if (isAdvertiser() || isAdmin()) && (isOwner(incomingData().advertiserId) || isAdmin());
+      allow update: if ((isOwner(resource.data.advertiserId) || isAdmin()) && isExistingDoc() && (incomingData().advertiserId == resource.data.advertiserId || isAdmin()));
       allow delete: if (isOwner(resource.data.advertiserId) || isAdmin()) && isExistingDoc();
     }
 
     match /campaigns/{campaignId} {
-      allow get, list: if isSignedIn();
+      allow get, list: if isSignedIn() || isAdmin();
       allow create: if isAdmin();
-      allow update: if isAdmin() && isExistingDoc();
-      allow delete: if isAdmin() && isExistingDoc();
+      allow update: if (isAdmin() && isExistingDoc()) || isAdmin();
+      allow delete: if (isAdmin() && isExistingDoc()) || isAdmin();
     }
 
     match /impressions/{impressionId} {
