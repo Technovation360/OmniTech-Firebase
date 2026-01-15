@@ -89,10 +89,9 @@ export const getClinicById = async (
 export const getCabinsByClinicId = async (
   clinicId: string
 ): Promise<Cabin[]> => {
-  const cabinsCol = collection(db, 'clinics');
+  const cabinsCol = collection(db, 'cabins');
   const q = query(
     cabinsCol,
-    where('type', '==', 'Cabin'),
     where('clinicId', '==', clinicId)
   );
   const snapshot = await getDocs(q);

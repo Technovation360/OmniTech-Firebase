@@ -30,9 +30,8 @@ import { Label } from '@/components/ui/label';
 import { Edit, Trash2, Search, ArrowUp, ArrowDown, PlusCircle, Loader } from 'lucide-react';
 import type { Cabin } from '@/lib/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ChevronDown } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, query, where } from 'firebase/firestore';
 import { addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 
@@ -140,7 +139,7 @@ export default function CabinsPage({ params }: { params: { id: string } }) {
   const firestore = useFirestore();
 
   const cabinsQuery = useMemoFirebase(() => {
-    return collection(firestore, 'clinics', clinicId, 'cabins');
+    return query(collection(firestore, 'cabins'), where('clinicId', '==', clinicId));
   }, [firestore, clinicId]);
 
   const { data: allCabins, isLoading } = useCollection<Cabin>(cabinsQuery);
@@ -204,17 +203,18 @@ export default function CabinsPage({ params }: { params: { id: string } }) {
 
   const handleDeleteConfirm = () => {
     if (cabinToDelete) {
-      deleteDocumentNonBlocking(doc(firestore, 'clinics', clinicId, 'cabins', cabinToDelete.id));
+      deleteDocumentNonBlocking(doc(firestore, 'cabins', cabinToDelete.id));
       closeDeleteDialog();
     }
   };
 
   const handleFormConfirm = (formData: { name: string }) => {
     if (cabinToEdit) {
-      setDocumentNonBlocking(doc(firestore, 'clinics', clinicId, 'cabins', cabinToEdit.id), { name: formData.name }, { merge: true });
+      setDocumentNonBlocking(doc(firestore, 'cabins', cabinToEdit.id), { name: formData.name }, { merge: true });
     } else {
-      addDocumentNonBlocking(collection(firestore, 'clinics', clinicId, 'cabins'), {
+      addDocumentNonBlocking(collection(firestore, 'cabins'), {
         name: formData.name,
+        clinicId: clinicId,
       });
     }
     closeModal();

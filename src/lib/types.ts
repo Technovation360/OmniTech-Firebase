@@ -1,4 +1,5 @@
 
+
 import type { UserRole } from './roles';
 
 export type Patient = {
@@ -23,6 +24,7 @@ export type Doctor = {
 export type Cabin = {
   id: string;
   name: string;
+  clinicId: string;
 };
 
 export type Assistant = {

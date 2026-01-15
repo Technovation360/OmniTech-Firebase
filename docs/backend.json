@@ -179,11 +179,16 @@
         "name": {
           "type": "string",
           "description": "The name of the cabin, e.g., 'Consultation Room 1'."
+        },
+        "clinicId": {
+          "type": "string",
+          "description": "The ID of the clinic this cabin belongs to."
         }
       },
       "required": [
         "id",
-        "name"
+        "name",
+        "clinicId"
       ]
     },
     "User": {
@@ -556,19 +561,15 @@
           ]
         }
       },
-      {
-        "path": "/clinics/{clinicId}/cabins/{cabinId}",
+       {
+        "path": "/cabins/{cabinId}",
         "definition": {
           "entityName": "Cabin",
           "schema": {
             "$ref": "#/backend/entities/Cabin"
           },
-          "description": "Stores cabins as a subcollection of a clinic.",
+          "description": "Stores cabins as a top-level collection, queryable by clinicId.",
           "params": [
-            {
-              "name": "clinicId",
-              "description": "The unique ID of the parent clinic."
-            },
             {
               "name": "cabinId",
               "description": "The unique ID of the cabin."

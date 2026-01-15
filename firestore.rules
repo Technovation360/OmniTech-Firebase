@@ -49,15 +49,15 @@ service cloud.firestore {
     }
 
     match /clinics/{clinicId} {
-      allow get: if isClinicAdmin() || isAdmin();
-      allow list: if isAdmin() || isClinicAdmin();
+      allow get: if isSignedIn() || isClinicAdmin() || isAdmin();
+      allow list: if isClinicAdmin() || isAdmin();
       allow create: if isAdmin();
       allow update: if (isClinicAdmin() && isExistingDoc()) || isAdmin();
       allow delete: if (isClinicAdmin() && isExistingDoc()) || isAdmin();
-
-      match /cabins/{cabinId} {
-        allow read, write: if isAdmin() || isClinicAdmin();
-      }
+    }
+    
+    match /cabins/{cabinId} {
+      allow read, write: if isAdmin() || isClinicAdmin();
     }
 
     match /clinics/{clinicId}/patients/{patientId} {

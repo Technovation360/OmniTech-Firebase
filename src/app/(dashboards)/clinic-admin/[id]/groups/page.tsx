@@ -207,7 +207,7 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
   const { data: users, isLoading: usersLoading } = useCollection<User>(usersQuery);
 
   const cabinsQuery = useMemoFirebase(() => {
-      return collection(firestore, 'clinics', clinicId, 'cabins');
+      return query(collection(firestore, 'cabins'), where('clinicId', '==', clinicId));
   }, [firestore, clinicId]);
   const { data: cabins, isLoading: cabinsLoading } = useCollection<Cabin>(cabinsQuery);
 
