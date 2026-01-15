@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, User as FirebaseAuthUser } from 'firebase/auth';
-import { doc, getDoc, getDocs, collection, writeBatch, setDoc } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, query, where, writeBatch, setDoc } from 'firebase/firestore';
 import { useAuth, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { getRedirectUrlForRole, UserRole } from '@/lib/roles';
 import type { User, Role, Clinic } from '@/lib/types';
@@ -48,10 +48,6 @@ export default function LoginPage() {
   const auth = useAuth();
   const firestore = useFirestore();
 
-  const clinicsQuery = useMemoFirebase(() => collection(firestore, 'groups'), [firestore]);
-  const { data: clinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
-  
-
   const bootstrapFirstAdmin = async (adminAuthUser: FirebaseAuthUser): Promise<void> => {
     const userDocRef = doc(firestore, 'users', adminAuthUser.uid);
     const userDocSnap = await getDoc(userDocRef);
@@ -59,21 +55,12 @@ export default function LoginPage() {
     if (!userDocSnap.exists()) {
         toast({ description: 'Creating admin user profile and setting role...' });
         
-        // 1. Create the user document in Firestore
         await setDoc(userDocRef, {
             uid: adminAuthUser.uid,
             name: 'Central Admin',
             email: adminAuthUser.email,
             role: 'central-admin',
         });
-
-        // 2. Set the custom claim via the Genkit flow
-        const claimResult = await setCustomClaim({ uid: adminAuthUser.uid, role: 'central-admin' });
-        if (!claimResult.success) {
-            throw new Error(claimResult.message || 'Failed to set custom claim for admin.');
-        }
-
-        toast({ title: 'Admin Account Created!', description: 'Role assigned. You can now log in.' });
     }
   }
 
@@ -100,10 +87,9 @@ export default function LoginPage() {
               toast({ title: 'First-time Login Detected', description: 'Setting up the admin account...' });
               const newUserCredential = await createUserWithEmailAndPassword(auth, email, password);
               await bootstrapFirstAdmin(newUserCredential.user);
-              // After bootstrapping, we sign in again to get the user credential for the next step.
               userCredential = await signInWithEmailAndPassword(auth, email, password);
           } else {
-              throw error; // Re-throw other errors
+              throw error; 
           }
       }
 
@@ -124,12 +110,15 @@ export default function LoginPage() {
         throw new Error('User role not found in profile. Please contact an administrator.');
       }
       
-      let affiliationId = firebaseUser.uid;
-      if (userRole !== 'central-admin' && clinics && userData.affiliation) {
-         const affiliatedClinic = clinics.find(c => c.name === userData.affiliation && c.type === 'Clinic');
-         if (affiliatedClinic) {
-           affiliationId = affiliatedClinic.id;
-         }
+      let affiliationId = firebaseUser.uid; // Default for doctor, assistant etc.
+      if (userRole === 'clinic-admin' && userData.affiliation) {
+          const q = query(collection(firestore, "groups"), where("type", "==", "Clinic"), where("name", "==", userData.affiliation));
+          const querySnapshot = await getDocs(q);
+          if (!querySnapshot.empty) {
+            affiliationId = querySnapshot.docs[0].id;
+          } else {
+             throw new Error(`Affiliated clinic '${userData.affiliation}' not found.`);
+          }
       }
 
       const redirectUrl = getRedirectUrlForRole(userRole, affiliationId);

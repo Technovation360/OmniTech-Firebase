@@ -11,16 +11,28 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
-    function isAdmin() {
-      return request.auth.uid == 'tAS82qWal8T4HeRRS8hZdgO0A8M2';
+    function getUserData() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
+    function isAdmin() {
+        let data = getUserData();
+        return isSignedIn() && data != null && data.role == 'central-admin';
+    }
+
+    function isClinicAdmin() {
+        let data = getUserData();
+        return isSignedIn() && data != null && data.role == 'clinic-admin';
+    }
+    
     function isDoctor() {
-      return request.auth.token.role == 'doctor';
+      let data = getUserData();
+      return isSignedIn() && data != null && data.role == 'doctor';
     }
     
     function isAdvertiser() {
-      return request.auth.token.role == 'advertiser';
+       let data = getUserData();
+       return isSignedIn() && data != null && data.role == 'advertiser';
     }
 
     function isExistingDoc() {
@@ -45,8 +57,8 @@ service cloud.firestore {
     }
 
     match /groups/{groupId} {
-      allow get: if true;
-      allow list: if isSignedIn(); // Allow authenticated users to list groups
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && (isAdmin() || isClinicAdmin());
       allow create: if isAdmin();
       allow update: if isAdmin() && isExistingDoc();
       allow delete: if isAdmin() && isExistingDoc();
