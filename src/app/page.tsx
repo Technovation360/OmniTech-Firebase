@@ -61,6 +61,8 @@ export default function LoginPage() {
             email: adminAuthUser.email,
             role: 'central-admin',
         });
+        
+        await setCustomClaim({ uid: adminAuthUser.uid, role: 'central-admin' });
     }
   }
 
@@ -112,7 +114,7 @@ export default function LoginPage() {
       
       let affiliationId = firebaseUser.uid; // Default for doctor, assistant etc.
       if (userRole === 'clinic-admin' && userData.affiliation) {
-          const q = query(collection(firestore, "groups"), where("type", "==", "Clinic"), where("name", "==", userData.affiliation));
+          const q = query(collection(firestore, "clinics"), where("type", "==", "Clinic"), where("name", "==", userData.affiliation));
           const querySnapshot = await getDocs(q);
           if (!querySnapshot.empty) {
             affiliationId = querySnapshot.docs[0].id;

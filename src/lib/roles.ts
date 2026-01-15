@@ -33,10 +33,6 @@ export function getRedirectUrlForRole(role: UserRole, userId: string): string | 
         case 'central-admin':
             return '/admin';
         case 'clinic-admin':
-            // In a real app, the clinicId would be stored on the user document.
-            // For this mock, we'll keep the affiliation map but it's not robust.
-            // A better approach would be to look up the user's affiliation from their profile.
-            // Assuming userId for clinic admin is like 'clinic_01' from a lookup.
             return `/clinic-admin/${userId}`;
         case 'doctor':
             return `/doctor/${userId}`;

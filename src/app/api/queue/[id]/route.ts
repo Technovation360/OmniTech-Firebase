@@ -1,3 +1,4 @@
+
 import { getQueueInfoByScreenId } from '@/lib/data';
 import { getClinicGroups, getPatients } from '@/lib/server-data';
 import { NextResponse } from 'next/server';
@@ -14,8 +15,6 @@ export async function GET(
       return NextResponse.json({ message: 'Screen ID is required' }, { status: 400 });
     }
 
-    // Since this is a route handler (server-side), we fetch all data first
-    // This is not the most efficient way for a large-scale app, but works for this structure
     const allGroups = await getClinicGroups();
     const allPatients = await getPatients();
 

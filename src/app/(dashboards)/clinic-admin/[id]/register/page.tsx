@@ -77,8 +77,6 @@ function VisitHistoryModal({
   useEffect(() => {
     if (patient) {
       getPatientHistory(patient.id).then(setHistory);
-      // getClinicGroups is not specific enough, but we'll leave it for now
-      // A better implementation would fetch groups based on history entries
     } else {
       setHistory([]);
       setClinicGroups([]);
@@ -262,7 +260,7 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
   const { data: allPatients, isLoading: patientsLoading, refetch } = useCollection<Patient>(patientsQuery);
   
   const groupsQuery = useMemoFirebase(() => {
-    return query(collection(firestore, 'groups'), where('clinicId', '==', clinicId), where('type', '==', 'Doctor'));
+    return query(collection(firestore, 'clinics'), where('clinicId', '==', clinicId), where('type', '==', 'Doctor'));
   }, [firestore, clinicId]);
   const { data: clinicGroups, isLoading: groupsLoading } = useCollection<ClinicGroup>(groupsQuery);
 
@@ -524,5 +522,3 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
     </div>
   );
 }
-
-    

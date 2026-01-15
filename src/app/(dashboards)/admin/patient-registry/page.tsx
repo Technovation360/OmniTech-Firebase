@@ -85,7 +85,7 @@ function VisitHistoryModal({
   
   const clinicsRef = useMemoFirebase(() => {
     if (!user) return null;
-    return collection(firestore, 'groups');
+    return collection(firestore, 'clinics');
   }, [firestore, user]);
   const { data: clinicGroups, isLoading } = useCollection<ClinicGroup>(clinicsRef);
 
@@ -318,13 +318,13 @@ export default function PatientRegistryPage() {
   
   const clinicsRef = useMemoFirebase(() => {
     if (!user) return null;
-    return query(collection(firestore, 'groups'), where('type', '==', 'Clinic'));
+    return query(collection(firestore, 'clinics'), where('type', '==', 'Clinic'));
   }, [firestore, user]);
   const { data: clinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsRef);
   
   const clinicGroupsRef = useMemoFirebase(() => {
     if (!user) return null;
-    return query(collection(firestore, 'groups'), where('type', '==', 'Doctor'));
+    return query(collection(firestore, 'clinics'), where('type', '==', 'Doctor'));
   }, [firestore, user]);
   const { data: clinicGroups, isLoading: groupsLoading } = useCollection<ClinicGroup>(clinicGroupsRef);
 

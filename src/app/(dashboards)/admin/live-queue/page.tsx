@@ -50,12 +50,12 @@ export default function LiveQueuePage() {
   const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
 
   const clinicsQuery = useMemoFirebase(() => {
-    return query(collection(firestore, 'groups'), where('type', '==', 'Clinic'));
+    return query(collection(firestore, 'clinics'), where('type', '==', 'Clinic'));
   }, [firestore]);
   const { data: clinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
 
   const groupsQuery = useMemoFirebase(() => {
-    return query(collection(firestore, 'groups'), where('type', '==', 'Doctor'));
+    return query(collection(firestore, 'clinics'), where('type', '==', 'Doctor'));
   }, [firestore]);
   const { data: clinicGroups, isLoading: groupsLoading } = useCollection<ClinicGroup>(groupsQuery);
 
@@ -148,7 +148,7 @@ export default function LiveQueuePage() {
         <div className="flex items-center gap-4">
           <Select value={selectedClinic} onValueChange={setSelectedClinic}>
               <SelectTrigger id="clinicFilter" className="h-10 w-full sm:w-48 text-sm">
-                  <SelectValue placeholder="All Groups" />
+                  <SelectValue placeholder="All Clinics" />
               </SelectTrigger>
               <SelectContent>
                   <SelectItem value="all" className="text-sm">All Clinics</SelectItem>

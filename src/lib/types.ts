@@ -10,7 +10,7 @@ export type Patient = {
   emailAddress: string;
   tokenNumber: string;
   status: 'waiting' | 'in-consultation' | 'consultation-done' | 'no-show' | 'called';
-  departmentId: string;
+  groupId: string; // The ID of the group (e.g. Cardiology Department) within a clinic
   clinicId: string;
   registeredAt: string; // ISO 8601 date string
 };
@@ -36,6 +36,7 @@ export type Screen = {
   name: string;
 };
 
+// Represents a top-level Clinic
 export type Clinic = {
   id: string;
   name: string;
@@ -50,10 +51,12 @@ export type Clinic = {
   specialties?: string[];
 };
 
-export type ClinicDepartment = {
+// Represents a department or a group within a clinic (e.g. Cardiology)
+export type ClinicGroup = {
   id: string;
   clinicId: string;
   name: string;
+  type: 'Doctor'; // Indicates this is a group of doctors/department
   tokenInitial: string;
   location: string;
   specialties: string[];
@@ -84,7 +87,7 @@ export type Consultation = {
 export type PatientHistoryEntry = {
     tokenNumber: string;
     clinicName: string;
-    departmentName: string;
+    groupName: string;
     doctorName: string;
     issuedAt: string; // ISO 8601 date string
     startTime?: string; // ISO 8601 date string

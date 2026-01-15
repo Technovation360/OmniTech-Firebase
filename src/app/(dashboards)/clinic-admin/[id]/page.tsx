@@ -84,7 +84,7 @@ export default function ClinicAdminPage({
   const firestore = useFirestore();
 
   const clinicRef = useMemoFirebase(() => {
-    return doc(firestore, 'groups', id);
+    return doc(firestore, 'clinics', id);
   }, [firestore, id]);
 
   const { data: clinic, isLoading } = useDoc<Clinic>(clinicRef);

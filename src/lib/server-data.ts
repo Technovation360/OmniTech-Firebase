@@ -13,7 +13,7 @@ import { initializeServerFirebase } from '@/firebase/server-init';
 
 import type {
   Clinic,
-  ClinicDepartment,
+  ClinicGroup,
   Patient,
 } from './types';
 
@@ -56,10 +56,10 @@ export const getPatients = async (): Promise<Patient[]> => {
   return patients;
 };
 
-// Clinic Departments
-export const getClinicDepartments = async (
+// Clinic Groups (Departments)
+export const getClinicGroups = async (
   clinicId?: string
-): Promise<ClinicDepartment[]> => {
+): Promise<ClinicGroup[]> => {
   let q;
   if (clinicId) {
     q = query(
@@ -71,19 +71,19 @@ export const getClinicDepartments = async (
     q = query(collection(db, 'clinics'), where('type', '==', 'Doctor'));
   }
   const snapshot = await getDocs(q);
-  const departments = snapshot.docs.map(
-    doc => ({ id: doc.id, ...doc.data() } as ClinicDepartment)
+  const groups = snapshot.docs.map(
+    doc => ({ id: doc.id, ...doc.data() } as ClinicGroup)
   );
-  return departments;
+  return groups;
 };
 
-export const getClinicDepartmentById = async (
+export const getClinicGroupById = async (
   id: string
-): Promise<ClinicDepartment | undefined> => {
+): Promise<ClinicGroup | undefined> => {
   const docRef = doc(db, 'clinics', id);
   const docSnap = await getDoc(docRef);
   if (docSnap.exists()) {
-    return { id: docSnap.id, ...docSnap.data() } as ClinicDepartment;
+    return { id: docSnap.id, ...docSnap.data() } as ClinicGroup;
   }
   return undefined;
 };

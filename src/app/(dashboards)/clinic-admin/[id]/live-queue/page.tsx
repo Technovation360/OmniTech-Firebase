@@ -52,7 +52,7 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
   const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
 
   const groupsQuery = useMemoFirebase(() => {
-    return query(collection(firestore, 'groups'), where('clinicId', '==', clinicId), where('type', '==', 'Doctor'));
+    return query(collection(firestore, 'clinics'), where('clinicId', '==', clinicId), where('type', '==', 'Doctor'));
   }, [firestore, clinicId]);
   const { data: clinicGroups, isLoading: groupsLoading } = useCollection<ClinicGroup>(groupsQuery);
 

@@ -37,7 +37,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Edit, Trash2, ArrowUp, ArrowDown, Search, Loader, PlusCircle } from 'lucide-react';
 import type { Clinic } from '@/lib/types';
-import { collection, addDoc, updateDoc, deleteDoc, doc, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, query, where, getDocs, getDoc } from 'firebase/firestore';
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/multi-select';
@@ -191,13 +191,13 @@ function DeleteClinicDialog({
 export default function ClinicsPage() {
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
-  const [currentUserData, setCurrentUserData] = useState(null);
+  const [currentUserData, setCurrentUserData] = useState<any>(null);
   
   const clinicsQuery = useMemoFirebase(() => {
     if (!currentUserData) return null;
     
     const { role, affiliation } = currentUserData;
-    const clinicsCol = collection(firestore, 'groups');
+    const clinicsCol = collection(firestore, 'clinics');
 
     if (role === 'central-admin') {
       return query(clinicsCol, where('type', '==', 'Clinic'));
@@ -287,7 +287,7 @@ export default function ClinicsPage() {
 
   const handleDeleteConfirm = () => {
     if (clinicToDelete) {
-      const docRef = doc(firestore, 'groups', clinicToDelete.id);
+      const docRef = doc(firestore, 'clinics', clinicToDelete.id);
       deleteDocumentNonBlocking(docRef);
       closeDeleteDialog();
     }
@@ -295,10 +295,10 @@ export default function ClinicsPage() {
 
   const handleFormConfirm = (formData: Omit<Clinic, 'id'>) => {
     if (clinicToEdit) {
-      const docRef = doc(firestore, 'groups', clinicToEdit.id);
+      const docRef = doc(firestore, 'clinics', clinicToEdit.id);
       setDocumentNonBlocking(docRef, formData, { merge: true });
     } else {
-      addDocumentNonBlocking(collection(firestore, 'groups'), { ...formData, type: 'Clinic' });
+      addDocumentNonBlocking(collection(firestore, 'clinics'), { ...formData, type: 'Clinic' });
     }
     closeModal();
   };

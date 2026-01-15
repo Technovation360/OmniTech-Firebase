@@ -22,7 +22,7 @@ export default function SelectGroupPage() {
   const { user, isUserLoading } = useUser();
   
   const clinicGroupsQuery = useMemoFirebase(() => {
-    return query(collection(firestore, 'groups'), where('type', '==', 'Doctor'))
+    return query(collection(firestore, 'clinics'), where('type', '==', 'Doctor'))
   }, [firestore]);
 
   const { data: clinicGroups, isLoading } = useCollection<ClinicGroup>(clinicGroupsQuery);

@@ -88,11 +88,11 @@ function UserForm({
   isOpen: boolean;
   onClose: () => void;
   user: User | null;
-  onConfirm: (formData: Omit<User, 'id'>) => void;
+  onConfirm: (formData: Omit<User, 'id' | 'uid'>) => void;
   clinicName: string;
 }) {
   const isEditMode = !!user;
-  const [formData, setFormData] = useState<Omit<User, 'id'>>({
+  const [formData, setFormData] = useState<Omit<User, 'id' | 'uid'>>({
       name: '',
       email: '',
       role: 'assistant',
@@ -108,7 +108,7 @@ function UserForm({
             name: user.name,
             email: user.email,
             role: user.role,
-            affiliation: user.affiliation,
+            affiliation: user.affiliation || clinicName,
             phone: user.phone || '',
             specialty: user.specialty || '',
         });
@@ -235,7 +235,7 @@ export default function UsersPage({ params }: { params: Promise<{ id: string }> 
   const { user: authUser, isUserLoading } = useUser();
 
   const clinicRef = useMemoFirebase(() => {
-    return doc(firestore, 'groups', clinicId);
+    return doc(firestore, 'clinics', clinicId);
   }, [firestore, clinicId]);
   const { data: clinic, isLoading: clinicLoading } = useDoc<Clinic>(clinicRef);
 
@@ -312,10 +312,13 @@ export default function UsersPage({ params }: { params: Promise<{ id: string }> 
     }
   }
 
-  const handleFormConfirm = (formData: Omit<User, 'id'>) => {
+  const handleFormConfirm = (formData: Omit<User, 'id' | 'uid'>) => {
     if (userToEdit) {
       setDocumentNonBlocking(doc(firestore, 'users', userToEdit.id), formData, { merge: true });
     } else {
+      // In a real app, you would use Firebase Auth to create a user first,
+      // get their UID, and then create the Firestore document.
+      // For this mock, we'll just add it to the collection.
       addDocumentNonBlocking(collection(firestore, 'users'), formData);
     }
     closeModal();

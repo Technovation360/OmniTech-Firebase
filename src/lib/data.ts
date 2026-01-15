@@ -16,7 +16,7 @@ import { initializeFirebase } from '@/firebase';
 
 import type {
   Clinic,
-  ClinicDepartment,
+  ClinicGroup,
   Patient,
   Advertisement,
   Consultation,
@@ -31,10 +31,10 @@ const { firestore: db } = initializeFirebase();
 // This file is for CLIENT-SIDE data fetching.
 // For server-side, use lib/server-data.ts
 
-// Clinic Departments
-export const getClinicDepartments = async (
+// Clinic Groups (Departments)
+export const getClinicGroups = async (
   clinicId?: string
-): Promise<ClinicDepartment[]> => {
+): Promise<ClinicGroup[]> => {
   let q;
   if (clinicId) {
     q = query(
@@ -46,19 +46,19 @@ export const getClinicDepartments = async (
     q = query(collection(db, 'clinics'), where('type', '==', 'Doctor'));
   }
   const snapshot = await getDocs(q);
-  const departments = snapshot.docs.map(
-    doc => ({ id: doc.id, ...doc.data() } as ClinicDepartment)
+  const groups = snapshot.docs.map(
+    doc => ({ id: doc.id, ...doc.data() } as ClinicGroup)
   );
-  return departments;
+  return groups;
 };
 
-export const getClinicDepartmentById = async (
+export const getClinicGroupById = async (
   id: string
-): Promise<ClinicDepartment | undefined> => {
+): Promise<ClinicGroup | undefined> => {
   const docRef = doc(db, 'clinics', id);
   const docSnap = await getDoc(docRef);
   if (docSnap.exists() && docSnap.data().type === 'Doctor') {
-    return { id: docSnap.id, ...docSnap.data() } as ClinicDepartment;
+    return { id: docSnap.id, ...docSnap.data() } as ClinicGroup;
   }
   return undefined;
 };
@@ -148,10 +148,10 @@ export const getPatientsByClinicId = async (
   return patients;
 };
 
-export const getPatientsByDepartmentId = async (
-  departmentId: string
+export const getPatientsByGroupId = async (
+  groupId: string
 ): Promise<Patient[]> => {
-  const q = query(collection(db, 'patients'), where('departmentId', '==', departmentId));
+  const q = query(collection(db, 'patients'), where('groupId', '==', groupId));
   const snapshot = await getDocs(q);
     const patients = snapshot.docs.map(doc => {
     const data = doc.data();
@@ -166,14 +166,14 @@ export const getPatientsByDepartmentId = async (
 
 export const addPatient = async (
   data: Omit<Patient, 'id' | 'tokenNumber' | 'status' | 'registeredAt'>,
-  clinicDepartment: ClinicDepartment
+  clinicGroup: ClinicGroup
 ): Promise<Patient> => {
 
-  const prefix = clinicDepartment.tokenInitial;
+  const prefix = clinicGroup.tokenInitial;
 
-  const patientsInDepartmentQuery = query(collection(db, 'patients'), where('departmentId', '==', data.departmentId));
-  const patientsInDepartmentSnapshot = await getDocs(patientsInDepartmentQuery);
-  const lastToken = patientsInDepartmentSnapshot.docs
+  const patientsInGroupQuery = query(collection(db, 'patients'), where('groupId', '==', data.groupId));
+  const patientsInGroupSnapshot = await getDocs(patientsInGroupQuery);
+  const lastToken = patientsInGroupSnapshot.docs
     .map(doc => parseInt(doc.data().tokenNumber.replace(prefix, ''), 10))
     .filter(num => !isNaN(num))
     .sort((a, b) => b - a)[0] || 100;
@@ -221,15 +221,15 @@ export const getPatientHistory = async (
   
   const historyPromises = tokensSnapshot.docs.map(async (tokenDoc) => {
     const tokenData = tokenDoc.data();
-    const departmentDoc = await getDoc(doc(db, 'clinics', tokenData.departmentId));
-    const departmentData = departmentDoc.data() as ClinicDepartment;
+    const groupDoc = await getDoc(doc(db, 'clinics', tokenData.groupId));
+    const groupData = groupDoc.data() as ClinicGroup;
     
     let clinicName = 'Unknown Clinic';
     if(clinics) {
-        const clinic = clinics.find(c => c.id === departmentData.clinicId);
+        const clinic = clinics.find(c => c.id === groupData.clinicId);
         if(clinic) clinicName = clinic.name;
     } else {
-        const clinicDoc = await getDoc(doc(db, 'clinics', departmentData.clinicId));
+        const clinicDoc = await getDoc(doc(db, 'clinics', groupData.clinicId));
         if(clinicDoc.exists()) clinicName = (clinicDoc.data() as Clinic).name;
     }
 
@@ -239,8 +239,8 @@ export const getPatientHistory = async (
     return {
       tokenNumber: tokenData.tokenNumber,
       clinicName: clinicName,
-      departmentName: departmentData.name,
-      doctorName: departmentData.doctors[0]?.name || 'N/A',
+      groupName: groupData.name,
+      doctorName: groupData.doctors[0]?.name || 'N/A',
       issuedAt: (tokenData.generationTime as Timestamp).toDate().toISOString(),
       startTime: consultation ? new Date(new Date(consultation.date).getTime() - 10 * 60000).toISOString() : undefined,
       endTime: consultation?.date,
@@ -256,14 +256,14 @@ export const getPatientHistory = async (
 };
 
 
-export const getQueueInfoByScreenId = async (screenId: string, allDepartments: ClinicDepartment[], allPatients: Patient[]) => {
-    const departmentForScreen = allDepartments.find(g => g.screens.some(s => s.id === screenId));
+export const getQueueInfoByScreenId = async (screenId: string, allGroups: ClinicGroup[], allPatients: Patient[]) => {
+    const groupForScreen = allGroups.find(g => g.screens.some(s => s.id === screenId));
     
-    if (!departmentForScreen) {
+    if (!groupForScreen) {
         return { waiting: [], inConsultation: [], nowCalling: null };
     }
     
-    const patients = allPatients.filter(p => p.departmentId === departmentForScreen.id);
+    const patients = allPatients.filter(p => p.groupId === groupForScreen.id);
 
     const queuePatients = patients.filter(p => ['waiting', 'called', 'in-consultation'].includes(p.status));
     
@@ -273,7 +273,7 @@ export const getQueueInfoByScreenId = async (screenId: string, allDepartments: C
     if (calledPatient) {
         calledPatientInfo = {
             ...calledPatient,
-            cabinName: departmentForScreen?.cabins[0]?.name || 'Consultation Room',
+            cabinName: groupForScreen?.cabins[0]?.name || 'Consultation Room',
         }
 
         setTimeout(() => {
@@ -330,4 +330,3 @@ export const mockUsers: User[] = [
     { id: 'disp_main_hall', uid: 'auth_disp_main_hall', name: 'Main Hall Display', email: 'display_main@omni.com', role: 'display', affiliation: 'City Clinic' },
     { id: 'disp_opd1', uid: 'auth_disp_opd1', name: 'OPD 1 Display', email: 'display_opd1@omni.com', role: 'display', affiliation: 'City Clinic' },
 ]
-    

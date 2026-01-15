@@ -48,23 +48,23 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
-    match /groups/{groupId} {
+    match /clinics/{clinicId} {
       allow get, list: if isSignedIn() || isAdmin();
       allow create: if isAdmin();
       allow update: if (isAdmin() && isExistingDoc()) || isAdmin();
       allow delete: if (isAdmin() && isExistingDoc()) || isAdmin();
     }
 
-    match /groups/{groupId}/patients/{patientId} {
+    match /clinics/{clinicId}/patients/{patientId} {
       allow get, list: if isSignedIn() || isAdmin();
-      allow create: if isAdmin() && incomingData().groupId == groupId;
+      allow create: if isAdmin() && incomingData().clinicId == clinicId;
       allow update: if (isAdmin() && isExistingDoc()) || isAdmin();
       allow delete: if (isAdmin() && isExistingDoc()) || isAdmin();
     }
 
-    match /groups/{groupId}/tokens/{tokenId} {
+    match /clinics/{clinicId}/tokens/{tokenId} {
       allow get, list: if isSignedIn() || isAdmin();
-      allow create: if (isSignedIn() && incomingData().groupId == groupId) || isAdmin();
+      allow create: if (isSignedIn() && incomingData().clinicId == clinicId) || isAdmin();
       allow update: if (isAdmin() && isExistingDoc()) || isAdmin();
       allow delete: if (isAdmin() && isExistingDoc()) || isAdmin();
     }
