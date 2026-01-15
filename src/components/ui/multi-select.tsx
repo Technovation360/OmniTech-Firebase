@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -90,6 +89,10 @@ export function MultiSelect({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
                   onSelect={() => {
                     onChange(
                       selected.includes(option.value)
