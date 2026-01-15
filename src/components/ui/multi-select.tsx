@@ -53,7 +53,7 @@ export function MultiSelect({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            'w-full justify-between h-auto min-h-10 py-2 px-3',
+            'w-full justify-between h-auto min-h-10 py-2 px-3 hover:bg-transparent',
             className
           )}
           onClick={() => setOpen(!open)}
@@ -66,7 +66,7 @@ export function MultiSelect({
                   <Badge
                     variant="secondary"
                     key={option.value}
-                    className="mr-1 mb-1"
+                    className="flex items-center gap-1 px-1 font-normal"
                   >
                     {option.label}
                     <button
@@ -78,7 +78,11 @@ export function MultiSelect({
                         e.preventDefault();
                         e.stopPropagation();
                       }}
-                      onClick={() => handleUnselect(option.value)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleUnselect(option.value);
+                      }}
                     >
                       <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
                     </button>
@@ -106,14 +110,11 @@ export function MultiSelect({
                   <CommandItem
                     key={option.value}
                     onSelect={() => {
-                      const newSelected = isSelected
-                        ? selected.filter((item) => item !== option.value)
-                        : [...selected, option.value];
-                      onChange(newSelected);
-                    }}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
+                      onChange(
+                        isSelected
+                          ? selected.filter((item) => item !== option.value)
+                          : [...selected, option.value]
+                      );
                     }}
                   >
                     <div
