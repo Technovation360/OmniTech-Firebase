@@ -37,7 +37,7 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow get: if isSignedIn() || isAdmin();
-      allow list: if isSignedIn() || isAdmin();
+      allow list: if isAdmin();
       allow create: if isOwner(userId) || isAdmin();
       allow update: if isOwner(userId) || isAdmin();
       allow delete: if isOwner(userId) || isAdmin();
@@ -49,7 +49,8 @@ service cloud.firestore {
     }
 
     match /clinics/{clinicId} {
-      allow get, list: if isSignedIn() || isAdmin();
+      allow get: if isSignedIn() || isAdmin();
+      allow list: if isAdmin();
       allow create: if isAdmin();
       allow update: if (isAdmin() && isExistingDoc()) || isAdmin();
       allow delete: if (isAdmin() && isExistingDoc()) || isAdmin();
@@ -57,7 +58,7 @@ service cloud.firestore {
 
     match /clinics/{clinicId}/patients/{patientId} {
       allow get, list: if isSignedIn() || isAdmin();
-      allow create: if isAdmin() && incomingData().clinicId == clinicId;
+      allow create: if (isAdmin() || isClinicAdmin()) && incomingData().clinicId == clinicId;
       allow update: if (isAdmin() && isExistingDoc()) || isAdmin();
       allow delete: if (isAdmin() && isExistingDoc()) || isAdmin();
     }
@@ -106,3 +107,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

@@ -192,27 +192,14 @@ export default function ClinicsPage() {
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const [currentUserData, setCurrentUserData] = useState<any>(null);
-  
-  const clinicsQuery = useMemoFirebase(() => {
-    if (!currentUserData) return null;
-    
-    const { role, affiliation } = currentUserData;
-    const clinicsCol = collection(firestore, 'clinics');
-
-    if (role === 'central-admin') {
-      return query(clinicsCol, where('type', '==', 'Clinic'));
-    } else if (role === 'clinic-admin' && affiliation) {
-      return query(clinicsCol, where('type', '==', 'Clinic'), where('name', '==', affiliation));
-    }
-    return null;
-  }, [firestore, currentUserData]);
-  
-  const { data: allClinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
+  const [allClinics, setAllClinics] = useState<Clinic[]>([]);
+  const [clinicsLoading, setClinicsLoading] = useState(true);
 
   const specialtiesQuery = useMemoFirebase(() => {
     if (!user) return null;
     return query(collection(firestore, 'specialties'), where('forClinic', '==', true));
   }, [firestore, user]);
+
   const { data: specialtiesData, isLoading: specialtiesLoading } = useCollection<{id: string, name: string}>(specialtiesQuery);
   
   useEffect(() => {
@@ -220,10 +207,45 @@ export default function ClinicsPage() {
         getDoc(doc(firestore, 'users', user.uid)).then(snap => {
             if(snap.exists()) {
                 setCurrentUserData(snap.data());
+            } else {
+                setClinicsLoading(false);
             }
         });
+    } else if (!isUserLoading) {
+        setClinicsLoading(false);
     }
-  }, [user, firestore]);
+  }, [user, isUserLoading, firestore]);
+  
+  useEffect(() => {
+    if (!currentUserData) return;
+
+    const fetchClinics = async () => {
+        setClinicsLoading(true);
+        const { role, affiliation } = currentUserData;
+        const clinicsCol = collection(firestore, 'clinics');
+        let q;
+
+        if (role === 'central-admin') {
+            q = query(clinicsCol, where('type', '==', 'Clinic'));
+            const snapshot = await getDocs(q);
+            setAllClinics(snapshot.docs.map(d => ({...d.data(), id: d.id } as Clinic)));
+
+        } else if (role === 'clinic-admin' && affiliation) {
+            const docRef = doc(clinicsCol, affiliation);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                setAllClinics([{ ...docSnap.data(), id: docSnap.id } as Clinic]);
+            } else {
+                setAllClinics([]);
+            }
+        } else {
+            setAllClinics([]);
+        }
+        setClinicsLoading(false);
+    };
+
+    fetchClinics();
+  }, [currentUserData, firestore]);
 
   const [filteredClinics, setFilteredClinics] = useState<Clinic[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -426,3 +448,5 @@ export default function ClinicsPage() {
     </>
   )
 }
+
+    
