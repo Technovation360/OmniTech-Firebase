@@ -3,8 +3,8 @@
 
 import { use, useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { getClinicDepartments, getClinicById } from '@/lib/data';
-import type { ClinicDepartment, Clinic } from '@/lib/types';
+import { getClinicGroups as getClinicDepartments, getClinicById } from '@/lib/data';
+import type { ClinicGroup as ClinicDepartment, Clinic } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';

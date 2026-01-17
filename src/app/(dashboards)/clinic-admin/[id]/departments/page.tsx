@@ -19,8 +19,8 @@ import {
   PlusCircle,
   Search,
 } from 'lucide-react';
-import { getClinicDepartments, getClinicById, mockUsers, getCabinsByClinicId } from '@/lib/data';
-import type { Clinic, ClinicDepartment, User, Cabin } from '@/lib/types';
+import { getClinicGroups as getClinicDepartments, getClinicById, mockUsers, getCabinsByClinicId } from '@/lib/data';
+import type { Clinic, ClinicGroup as ClinicDepartment, User, Cabin } from '@/lib/types';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -307,6 +307,7 @@ export default function DepartmentsPage({ params }: { params: Promise<{ id: stri
           id: `dept_${Date.now()}`,
           clinicId: clinic.id,
           name: formData.name,
+          type: 'Doctor',
           tokenInitial: formData.tokenInitial,
           location: clinic.location,
           specialties: [],
