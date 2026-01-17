@@ -32,19 +32,16 @@ export function MultiSelect({
   className,
   placeholder = 'Select options...',
 }: MultiSelectProps) {
-  const [open, setOpen] = React.useState(false);
-
   const handleUnselect = (item: string) => {
     onChange(selected.filter((i) => i !== item));
   };
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
           role="combobox"
-          aria-expanded={open}
           className={cn(
             'w-full justify-between h-auto min-h-10 py-2 px-3',
             className
@@ -70,7 +67,7 @@ export function MultiSelect({
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        handleUnselect(option.value)
+                        handleUnselect(option.value);
                       }}
                     >
                       <X className="h-3 w-3 text-primary-foreground/70 hover:text-primary-foreground" />
@@ -78,7 +75,9 @@ export function MultiSelect({
                   </Badge>
                 ))
             ) : (
-              <span className="text-muted-foreground font-normal">{placeholder}</span>
+              <span className="text-muted-foreground font-normal">
+                {placeholder}
+              </span>
             )}
           </div>
           <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
@@ -86,25 +85,25 @@ export function MultiSelect({
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
         <div className="max-h-64 overflow-auto">
-            {options.map((option) => {
-              const isSelected = selected.includes(option.value);
-              return (
-                <DropdownMenuCheckboxItem
-                  key={option.value}
-                  checked={isSelected}
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    onChange(
-                      isSelected
-                        ? selected.filter((item) => item !== option.value)
-                        : [...selected, option.value]
-                    );
-                  }}
-                >
-                  {option.label}
-                </DropdownMenuCheckboxItem>
-              );
-            })}
+          {options.map((option) => {
+            const isSelected = selected.includes(option.value);
+            return (
+              <DropdownMenuCheckboxItem
+                key={option.value}
+                checked={isSelected}
+                onSelect={(e) => {
+                  e.preventDefault();
+                  onChange(
+                    isSelected
+                      ? selected.filter((item) => item !== option.value)
+                      : [...selected, option.value]
+                  );
+                }}
+              >
+                {option.label}
+              </DropdownMenuCheckboxItem>
+            );
+          })}
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
