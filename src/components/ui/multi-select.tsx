@@ -32,6 +32,7 @@ export function MultiSelect({
   className,
   placeholder = 'Select options...',
 }: MultiSelectProps) {
+
   const handleUnselect = (item: string) => {
     onChange(selected.filter((i) => i !== item));
   };
@@ -58,8 +59,18 @@ export function MultiSelect({
                     className="flex items-center gap-1 font-normal"
                   >
                     {option.label}
-                    <button
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Remove ${option.label}`}
                       className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleUnselect(option.value);
+                        }
+                      }}
                       onMouseDown={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -71,7 +82,7 @@ export function MultiSelect({
                       }}
                     >
                       <X className="h-3 w-3 text-primary-foreground/70 hover:text-primary-foreground" />
-                    </button>
+                    </div>
                   </Badge>
                 ))
             ) : (
