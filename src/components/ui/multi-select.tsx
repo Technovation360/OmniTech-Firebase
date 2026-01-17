@@ -75,12 +75,12 @@ export function MultiSelect({
                         if (e.key === 'Enter') handleUnselect(option.value);
                       }}
                       onMouseDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
+                        //e.preventDefault();
+                       // e.stopPropagation();
                       }}
                       onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
+                       // e.preventDefault();
+                        //e.stopPropagation();
                         handleUnselect(option.value);
                       }}
                     >
@@ -110,8 +110,8 @@ export function MultiSelect({
                   <CommandItem
                     key={option.value}
                     onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
+                      //e.preventDefault();
+                      //e.stopPropagation();
                     }}
                     onSelect={() => {
                       onChange(
