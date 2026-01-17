@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronsUpDown, X } from 'lucide-react';
+import { Check, ChevronsUpDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -46,7 +46,7 @@ export function MultiSelect({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            'w-full justify-between h-auto min-h-10 py-2 px-3 hover:bg-transparent',
+            'w-full justify-between h-auto min-h-10 py-2 px-3',
             className
           )}
         >
@@ -56,9 +56,9 @@ export function MultiSelect({
                 .filter((option) => selected.includes(option.value))
                 .map((option) => (
                   <Badge
-                    variant="secondary"
+                    variant="default"
                     key={option.value}
-                    className="flex items-center gap-1"
+                    className="flex items-center gap-1 font-normal"
                   >
                     {option.label}
                     <button
@@ -68,11 +68,12 @@ export function MultiSelect({
                         e.stopPropagation();
                       }}
                       onClick={(e) => {
+                        e.preventDefault();
                         e.stopPropagation();
                         handleUnselect(option.value)
                       }}
                     >
-                      <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                      <X className="h-3 w-3 text-primary-foreground/70 hover:text-primary-foreground" />
                     </button>
                   </Badge>
                 ))
