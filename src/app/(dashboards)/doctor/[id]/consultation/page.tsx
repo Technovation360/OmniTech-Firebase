@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, use } from 'react';
@@ -178,8 +177,7 @@ function DoctorConsultationDashboard({
       
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
-            <Button>General Medicine <Badge className="ml-2 bg-white text-primary">10</Badge></Button>
-            <Button variant="ghost">Pediatrics <Badge className="ml-2">10</Badge></Button>
+            <Button>{group.name} <Badge className="ml-2 bg-white text-primary">{inQueue}</Badge></Button>
         </div>
         {nextToken && (
             <div className="flex items-center gap-2">
