@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -106,7 +105,16 @@ function DashboardLayoutContent({
   }
 
   const pathname = usePathname();
-  const pageName = pathname.split('/').pop()?.replace('-', ' ') || 'Dashboard';
+  const params = useParams();
+  const segments = pathname.split('/');
+  const lastSegment = segments[segments.length - 1];
+
+  let pageName;
+  if (lastSegment === params.id) {
+    pageName = 'Dashboard';
+  } else {
+    pageName = lastSegment.replace('-', ' ');
+  }
   
   return (
     <>
