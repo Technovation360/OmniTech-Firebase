@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,14 +26,15 @@ function SubmitButton() {
   return <Button type="submit" className="w-full">Get Token</Button>;
 }
 
-export default function RegistrationPage({ params }: { params: { id: string } }) {
+export default function RegistrationPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const { id } = use(params);
   const [state, formAction] = useActionState(registerPatient, null);
   const [clinicGroup, setClinicGroup] = useState<ClinicGroup | null>(null);
 
   useEffect(() => {
-    getClinicGroupById(params.id).then(group => setClinicGroup(group || null));
-  }, [params.id]);
+    getClinicGroupById(id).then(group => setClinicGroup(group || null));
+  }, [id]);
 
   useEffect(() => {
     if (state?.success && state.tokenNumber) {
