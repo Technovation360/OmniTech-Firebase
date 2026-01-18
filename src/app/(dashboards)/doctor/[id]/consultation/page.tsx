@@ -2,13 +2,20 @@
 'use client';
 
 import { useState, useEffect, use, useMemo } from 'react';
-import type { Patient, Group, User } from '@/lib/types';
+import type { Patient, Group, User, PatientHistoryEntry, Consultation } from '@/lib/types';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -21,20 +28,290 @@ import {
   Play,
   Square,
   UserX,
+  History,
+  PhoneCall,
+  FileText,
+  LogOut as LeaveIcon,
+  CheckCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { handlePatientAction } from '@/lib/actions';
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc, query, where } from 'firebase/firestore';
+import { getPatientHistory } from '@/lib/data';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+
 
 type DoctorPageProps = {
   params: { id: string };
 };
 
 type RoomStatus = {
-    name: string;
+    name: string; // Cabin name
     patientId: string | null;
+    status: 'vacant' | 'occupied' | 'post-consultation';
 }
+
+const badgeColors: Record<Patient['status'], string> = {
+  waiting: 'bg-blue-100 text-blue-800',
+  called: 'bg-orange-100 text-orange-800',
+  'in-consultation': 'bg-green-100 text-green-800',
+  'consultation-done': 'bg-gray-100 text-gray-800',
+  'no-show': 'bg-red-100 text-red-800',
+};
+
+
+function VisitHistoryModal({
+  isOpen,
+  onClose,
+  patient,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  patient: Patient | null;
+}) {
+  const [history, setHistory] = useState<PatientHistoryEntry[]>([]);
+  
+  useEffect(() => {
+    if (patient && isOpen) {
+      getPatientHistory(patient.id, patient.clinicId).then(setHistory);
+    } else if (!isOpen) {
+      setHistory([]);
+    }
+  }, [patient, isOpen]);
+
+  if (!patient) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl">
+        <DialogHeader className="p-4 pb-2 border-b">
+          <DialogTitle className="text-base font-bold tracking-normal uppercase">
+            Visit History: {patient.name}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="p-4 max-h-[60vh] overflow-y-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">Token #</TableHead>
+                <TableHead className="text-xs">Group</TableHead>
+                <TableHead className="text-xs">Issued Date/Time</TableHead>
+                <TableHead className="text-xs">Start Time</TableHead>
+                <TableHead className="text-xs">Stop Time</TableHead>
+                <TableHead className="text-xs">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {history.map((item) => (
+                <TableRow key={item.tokenNumber}>
+                  <TableCell className="font-medium text-primary py-2 text-xs">
+                    {item.tokenNumber}
+                  </TableCell>
+                  <TableCell className="py-2 text-xs">{item.groupName}</TableCell>
+                  <TableCell className="py-2 text-xs">
+                    {format(new Date(item.issuedAt), 'P, pp')}
+                  </TableCell>
+                   <TableCell className="py-2 text-xs">
+                    {item.startTime ? format(new Date(item.startTime), 'pp') : '-'}
+                  </TableCell>
+                  <TableCell className="py-2 text-xs">
+                    {item.endTime ? format(new Date(item.endTime), 'pp') : '-'}
+                  </TableCell>
+                  <TableCell className="py-2 text-xs">
+                    <Badge
+                      variant="secondary"
+                      className={cn(
+                        'text-[10px] border-transparent capitalize',
+                        badgeColors[item.status]
+                      )}
+                    >
+                      {item.status.replace('-', ' ')}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+               {history.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-4">
+                        No visit history found.
+                    </TableCell>
+                </TableRow>
+               )}
+            </TableBody>
+          </Table>
+        </div>
+        <DialogFooter className="bg-gray-50 px-4 py-3">
+          <Button onClick={onClose} className="w-full">
+            DONE
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
+function RoomCard({ 
+    cabin, 
+    room, 
+    patient, 
+    onAssign, 
+    onLeave, 
+    onAction,
+    onViewHistory,
+    onCallPatient 
+}: { 
+    cabin: any, 
+    room: RoomStatus, 
+    patient: Patient | null, 
+    onAssign: (roomName: string) => void,
+    onLeave: (roomName: string) => void,
+    onAction: (patientId: string, roomName: string, action: 'start' | 'end' | 'no-show') => void,
+    onViewHistory: (patient: Patient) => void,
+    onCallPatient: (patient: Patient) => void,
+}) {
+    const [noShowEnabled, setNoShowEnabled] = useState(false);
+    const [timer, setTimer] = useState(30);
+
+    useEffect(() => {
+        let timerId: NodeJS.Timeout | undefined;
+        let countdownInterval: NodeJS.Timeout | undefined;
+
+        if (patient && patient.status === 'called') {
+            setNoShowEnabled(false);
+            setTimer(30);
+
+            timerId = setTimeout(() => {
+                setNoShowEnabled(true);
+                if (countdownInterval) {
+                    clearInterval(countdownInterval);
+                }
+            }, 30000);
+
+            countdownInterval = setInterval(() => {
+                setTimer((prev) => {
+                    if (prev > 1) {
+                        return prev - 1;
+                    }
+                    if(countdownInterval) clearInterval(countdownInterval);
+                    return 0;
+                });
+            }, 1000);
+        }
+
+        return () => {
+            if (timerId) clearTimeout(timerId);
+            if (countdownInterval) clearInterval(countdownInterval);
+        };
+    }, [patient]);
+
+
+    if (room.status === 'post-consultation') {
+        return (
+            <Card>
+                <CardHeader className="flex-row items-center justify-between p-3 border-b bg-muted/30 h-[53px]">
+                    <CardTitle className="text-sm font-semibold">{cabin.name.toUpperCase()}</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 h-48 flex flex-col items-center justify-center text-center">
+                    <CheckCircle className="h-10 w-10 text-green-500 mb-2" />
+                    <p className="font-semibold mb-4">Consultation Ended</p>
+                    <Button onClick={() => onAssign(cabin.name)}>Call Next Patient</Button>
+                </CardContent>
+            </Card>
+        );
+    }
+    
+    if (!patient) { // Vacant
+        return (
+             <Card>
+                <CardHeader className="flex-row items-center justify-between p-3 border-b bg-muted/30 h-[53px]">
+                    <CardTitle className="text-sm font-semibold">{cabin.name.toUpperCase()}</CardTitle>
+                    <Button size="xs" className="bg-green-600 hover:bg-green-700 h-7" onClick={() => onAssign(cabin.name)}>ASSIGN</Button>
+                </CardHeader>
+                <CardContent className="p-4 h-48 flex flex-col items-center justify-center text-center">
+                    <div className="p-3 bg-yellow-100 rounded-full mb-2">
+                        <Lock className="h-6 w-6 text-yellow-500" />
+                    </div>
+                    <p className="text-sm font-semibold text-muted-foreground">ROOM VACANT</p>
+                </CardContent>
+            </Card>
+        )
+    }
+
+    // Occupied states
+    return (
+        <Card>
+            <CardHeader className="flex-row items-center justify-between p-3 border-b bg-muted/30 h-[53px]">
+                <CardTitle className="text-sm font-semibold">{cabin.name.toUpperCase()}</CardTitle>
+                <Button variant="destructive" size="xs" className="h-7" onClick={() => onLeave(cabin.name)}>
+                    <LeaveIcon className="mr-1 h-3 w-3" />
+                    Leave
+                </Button>
+            </CardHeader>
+            <CardContent className="p-4 h-48 flex flex-col items-center justify-between text-center">
+                {/* Patient Info */}
+                <div className="text-center">
+                    <p className="font-bold text-4xl text-primary">{patient.tokenNumber}</p>
+                    <p className="font-semibold">{patient.name}</p>
+                    <p className="text-sm text-muted-foreground">{patient.age} / {patient.gender.charAt(0).toUpperCase()}</p>
+                </div>
+                {/* Action buttons */}
+                {patient.status === 'in-consultation' ? (
+                     <div className="grid grid-cols-2 gap-2 w-full">
+                        <Button size="sm" className="bg-red-500 hover:bg-red-600" onClick={() => onAction(patient!.id, cabin.name, 'end')}>
+                            <Square className="mr-2 h-4 w-4"/> End
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => useToast().toast({ title: 'Add Notes', description: 'This would open a notes editor.' })}>
+                            <FileText className="mr-2 h-4 w-4"/> Add Notes
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => onCallPatient(patient)}>
+                            <PhoneCall className="mr-2 h-4 w-4"/> Call Patient
+                        </Button>
+                         <Button size="sm" variant="outline" onClick={() => onViewHistory(patient)}>
+                            <History className="mr-2 h-4 w-4"/> History
+                        </Button>
+                    </div>
+                ) : ( // 'called' status
+                     <div className="grid grid-cols-2 gap-2 w-full">
+                        <Button size="sm" className="" onClick={() => onAction(patient!.id, cabin.name, 'start')}>
+                            <Play className="mr-2 h-4 w-4"/> Start
+                        </Button>
+                        <Button size="sm" variant="outline" disabled={!noShowEnabled} onClick={() => onAction(patient!.id, cabin.name, 'no-show')}>
+                            { !noShowEnabled ? (
+                                <span className="text-xs font-mono w-full text-center">No Show ({timer}s)</span>
+                            ) : (
+                                <><UserX className="mr-2 h-4 w-4 text-destructive"/> No Show</>
+                            )}
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => onCallPatient(patient)}>
+                            <PhoneCall className="mr-2 h-4 w-4"/> Call Patient
+                        </Button>
+                         <Button size="sm" variant="outline" onClick={() => onViewHistory(patient)}>
+                            <History className="mr-2 h-4 w-4"/> History
+                        </Button>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
 
 export default function DoctorConsultationPageLoader({ params }: DoctorPageProps) {
   const { id } = use(params);
@@ -78,87 +355,6 @@ export default function DoctorConsultationPageLoader({ params }: DoctorPageProps
   return <DoctorConsultationDashboard doctorId={id} groups={doctorGroups} allPatients={allPatients || []} />;
 }
 
-function RoomCard({ cabin, room, patient, onAssign, onAction }: { cabin: any, room: RoomStatus | undefined, patient: Patient | null, onAssign: (roomName: string) => void, onAction: (patientId: string, roomName: string, action: 'start' | 'end' | 'no-show') => void }) {
-    const [noShowEnabled, setNoShowEnabled] = useState(false);
-    const [timer, setTimer] = useState(30);
-
-    useEffect(() => {
-        let timerId: NodeJS.Timeout | undefined;
-        let countdownInterval: NodeJS.Timeout | undefined;
-
-        if (patient && patient.status === 'called') {
-            setNoShowEnabled(false);
-            setTimer(30);
-
-            timerId = setTimeout(() => {
-                setNoShowEnabled(true);
-                if (countdownInterval) {
-                    clearInterval(countdownInterval);
-                }
-            }, 30000);
-
-            countdownInterval = setInterval(() => {
-                setTimer((prev) => {
-                    if (prev > 1) {
-                        return prev - 1;
-                    }
-                    if(countdownInterval) clearInterval(countdownInterval);
-                    return 0;
-                });
-            }, 1000);
-        }
-
-        return () => {
-            if (timerId) clearTimeout(timerId);
-            if (countdownInterval) clearInterval(countdownInterval);
-        };
-    }, [patient]);
-
-    return (
-        <Card>
-            <CardHeader className="flex-row items-center justify-between p-3 border-b bg-muted/30">
-                <CardTitle className="text-sm font-semibold">{cabin.name.toUpperCase()}</CardTitle>
-                {!patient && <Button size="xs" className="bg-green-600 hover:bg-green-700 h-7" onClick={() => onAssign(cabin.name)}>ASSIGN</Button>}
-            </CardHeader>
-            <CardContent className="p-4 h-48 flex flex-col items-center justify-center text-center">
-            {!patient ? (
-                <>
-                    <div className="p-3 bg-yellow-100 rounded-full mb-2">
-                        <Lock className="h-6 w-6 text-yellow-500" />
-                    </div>
-                    <p className="text-sm font-semibold text-muted-foreground">ASSIGN ROOM</p>
-                </>
-            ) : (
-                <div className="flex flex-col items-center justify-between h-full w-full">
-                <div className="text-center">
-                        <p className="font-bold text-4xl text-primary">{patient.tokenNumber}</p>
-                        <p className="font-semibold">{patient.name}</p>
-                        <p className="text-sm text-muted-foreground">{patient.age} / {patient.gender.charAt(0).toUpperCase()}</p>
-                </div>
-                <div className="flex items-center gap-2 w-full">
-                    {patient.status !== 'in-consultation' ? (
-                        <Button size="sm" className="flex-1" onClick={() => onAction(patient!.id, cabin.name, 'start')}>
-                            <Play className="mr-2 h-4 w-4"/> Start
-                        </Button>
-                    ) : (
-                        <Button size="sm" className="flex-1 bg-red-500 hover:bg-red-600" onClick={() => onAction(patient!.id, cabin.name, 'end')}>
-                            <Square className="mr-2 h-4 w-4"/> End
-                        </Button>
-                    )}
-                    <Button size="icon" variant="outline" disabled={!noShowEnabled && patient.status === 'called'} onClick={() => onAction(patient!.id, cabin.name, 'no-show')}>
-                        {patient?.status === 'called' && !noShowEnabled ? (
-                           <span className="text-xs font-mono w-4 text-center">{timer}</span>
-                        ) : (
-                           <UserX className="h-4 w-4 text-destructive"/>
-                        )}
-                    </Button>
-                </div>
-                </div>
-            )}
-            </CardContent>
-        </Card>
-    );
-}
 
 function DoctorConsultationDashboard({
   doctorId,
@@ -171,32 +367,33 @@ function DoctorConsultationDashboard({
 }) {
     const [selectedGroupId, setSelectedGroupId] = useState<string>(groups[0]?.id);
     const { toast } = useToast();
+    const [historyPatient, setHistoryPatient] = useState<Patient | null>(null);
 
     const selectedGroup = useMemo(() => groups.find(g => g.id === selectedGroupId), [groups, selectedGroupId]);
     
-    // This state will hold the patients for the currently selected group, used for optimistic UI updates
     const [patients, setPatients] = useState<Patient[]>([]);
-    
     const [rooms, setRooms] = useState<RoomStatus[]>([]);
 
     useEffect(() => {
-        // When allPatients from firestore updates, reset our local patient state
         const patientsForGroup = allPatients.filter(p => p.groupId === selectedGroupId);
         setPatients(patientsForGroup);
 
-        // Also clean up rooms for patients that are no longer active
         if (selectedGroup) {
             setRooms(prevRooms => {
-                return selectedGroup.cabins.map(cabin => {
+                const newRooms = selectedGroup.cabins.map(cabin => {
                     const existingRoom = prevRooms.find(r => r.name === cabin.name);
-                    if (existingRoom && existingRoom.patientId) {
+                    if (existingRoom) {
                         const patientStillActive = patientsForGroup.some(p => p.id === existingRoom.patientId && (p.status === 'called' || p.status === 'in-consultation'));
                         if (patientStillActive) {
+                            return { ...existingRoom, status: 'occupied' };
+                        }
+                         if (existingRoom.status === 'post-consultation') {
                             return existingRoom;
                         }
                     }
-                    return { name: cabin.name, patientId: null };
+                    return { name: cabin.name, patientId: null, status: 'vacant' };
                 });
+                return newRooms;
             });
         }
     }, [allPatients, selectedGroupId, selectedGroup]);
@@ -213,11 +410,9 @@ function DoctorConsultationDashboard({
             return;
         }
 
-        // Optimistic update of local patients state
         setPatients(prev => prev.map(p => p.id === nextPatient.id ? {...p, status: 'called'} : p));
-        setRooms(prev => prev.map(room => room.name === roomName ? { ...room, patientId: nextPatient.id } : room));
+        setRooms(prev => prev.map(room => room.name === roomName ? { ...room, patientId: nextPatient.id, status: 'occupied' } : room));
         
-        // Actual DB update
         handlePatientAction(nextPatient.id, 'call');
         
         toast({
@@ -230,16 +425,14 @@ function DoctorConsultationDashboard({
         const patient = patients.find(p => p.id === patientId);
         if (!patient) return;
         
-        // Optimistic update
         if (action === 'start') {
             setPatients(prev => prev.map(p => p.id === patientId ? { ...p, status: 'in-consultation' } : p));
         } else {
             const newStatus = action === 'end' ? 'consultation-done' : 'no-show';
-            setPatients(prev => prev.map(p => p.id === patientId ? { ...p, status: newStatus } : p));
-            setRooms(prev => prev.map(room => room.name === roomName ? { ...room, patientId: null } : room));
+            setPatients(prev => prev.filter(p => p.id !== patientId)); // Remove from active queue
+            setRooms(prev => prev.map(room => room.name === roomName ? { ...room, patientId: null, status: 'post-consultation' } : room));
         }
         
-        // Actual DB update
         handlePatientAction(patientId, action);
 
         toast({
@@ -248,20 +441,43 @@ function DoctorConsultationDashboard({
         });
     };
 
+    const handleLeaveRoom = (roomName: string) => {
+        const room = rooms.find(r => r.name === roomName);
+        if (!room || !room.patientId) return;
+        const patientId = room.patientId;
+
+        setPatients(prev => prev.map(p => p.id === patientId ? {...p, status: 'waiting'} : p));
+        setRooms(prev => prev.map(r => r.name === roomName ? { ...r, patientId: null, status: 'vacant' } : r));
+
+        handlePatientAction(patientId, 'call-revert'); // A special action to revert status
+        toast({ title: 'Room Vacated', description: 'Patient sent back to the waiting queue.' });
+    }
+
+    const handleCallPatient = (patient: Patient) => {
+        toast({ title: `Calling ${patient.name}`, description: `Re-announcing token ${patient.tokenNumber}.` });
+        // In a real app, this would trigger TTS again.
+    }
+
+    const onViewHistory = (patient: Patient) => {
+        setHistoryPatient(patient);
+    }
+
   const getQueueCountForGroup = (groupId: string) => {
       return allPatients.filter(p => p.groupId === groupId && p.status === 'waiting').length;
   }
 
-  const totalPatients = patients.length;
-  const inQueue = patients.filter(p => p.status === 'waiting').length;
-  const attended = patients.filter(p => p.status === 'consultation-done').length;
-  const noShows = patients.filter(p => p.status === 'no-show').length;
+  const activePatients = patients.filter(p => p.status === 'waiting' || p.status === 'called' || p.status === 'in-consultation');
+  const totalPatients = activePatients.length;
+  const inQueue = activePatients.filter(p => p.status === 'waiting').length;
+  const attendedToday = allPatients.filter(p => p.groupId === selectedGroupId && p.status === 'consultation-done').length;
+  const noShowsToday = allPatients.filter(p => p.groupId === selectedGroupId && p.status === 'no-show').length;
+
 
   const stats = [
-    { title: 'TOTAL PATIENTS', value: totalPatients, icon: Users, color: 'bg-indigo-100 text-indigo-600' },
+    { title: 'TOTAL ACTIVE', value: totalPatients, icon: Users, color: 'bg-indigo-100 text-indigo-600' },
     { title: 'IN QUEUE', value: inQueue, icon: Clock, color: 'bg-yellow-100 text-yellow-600' },
-    { title: 'ATTENDED', value: attended, icon: CheckSquare, color: 'bg-green-100 text-green-600' },
-    { title: 'NO SHOWS', value: noShows, icon: XCircle, color: 'bg-red-100 text-red-600' },
+    { title: 'ATTENDED TODAY', value: attendedToday, icon: CheckSquare, color: 'bg-green-100 text-green-600' },
+    { title: 'NO SHOWS TODAY', value: noShowsToday, icon: XCircle, color: 'bg-red-100 text-red-600' },
   ];
   
   const nextToken = patients.find(p => p.status === 'waiting')?.tokenNumber;
@@ -316,19 +532,23 @@ function DoctorConsultationDashboard({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {selectedGroup.cabins.map(cabin => {
             const room = rooms.find(r => r.name === cabin.name);
-            const patientForRoom = room?.patientId ? patients.find(p => p.id === room.patientId) : null;
+            const patientForRoom = room?.patientId ? allPatients.find(p => p.id === room.patientId) : null;
             return (
                 <RoomCard 
                     key={cabin.id}
                     cabin={cabin}
-                    room={room}
-                    patient={patientForRoom}
+                    room={room!}
+                    patient={patientForRoom || null}
                     onAssign={handleAssignRoom}
+                    onLeave={handleLeaveRoom}
                     onAction={handleRoomAction}
+                    onCallPatient={handleCallPatient}
+                    onViewHistory={onViewHistory}
                 />
             )
         })}
       </div>
+      <VisitHistoryModal isOpen={!!historyPatient} onClose={() => setHistoryPatient(null)} patient={historyPatient} />
     </div>
   );
 }
