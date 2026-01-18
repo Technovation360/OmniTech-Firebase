@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useActionState, useEffect, useState, use } from 'react';
@@ -98,16 +96,16 @@ export default function RegistrationPage({ params }: { params: { id: string } })
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="age">Age</Label>
                     <Input id="age" name="age" type="number" placeholder="e.g., 35" required />
                     {state?.errors?.age && <p className="text-sm text-destructive">{state.errors.age[0]}</p>}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 sm:col-span-2">
                     <Label>Gender</Label>
-                    <RadioGroup name="gender" defaultValue="female" className="flex gap-4 pt-2">
+                    <RadioGroup name="gender" defaultValue="female" className="flex items-center gap-4 h-10">
                         <div className="flex items-center space-x-2">
                             <RadioGroupItem value="male" id="male" />
                             <Label htmlFor="male" className="font-normal">Male</Label>
