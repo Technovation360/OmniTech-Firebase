@@ -1,7 +1,6 @@
-
 'use client';
 
-import { use, useState, useEffect } from 'react';
+import { use, useState, useEffect, useCallback } from 'react';
 import type { Patient, Group, User } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -59,8 +58,8 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
   }, [firestore, groupId]);
   const { data: clinic, isLoading: groupLoading } = useDoc<Group>(groupQuery);
 
-  const getGroupName = () => clinic?.name || 'Unknown';
-  const getDoctorName = () => clinic?.doctors.find(d => d.id === doctorId)?.name || 'Unknown';
+  const getGroupName = useCallback(() => clinic?.name || 'Unknown', [clinic]);
+  const getDoctorName = useCallback(() => clinic?.doctors.find(d => d.id === doctorId)?.name || 'Unknown', [clinic, doctorId]);
 
   useEffect(() => {
     if (!allPatients) {
@@ -102,7 +101,7 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
     } else {
         setFilteredPatients(filteredData);
     }
-  }, [searchQuery, allPatients, sortConfig, clinic, getGroupName, getDoctorName]);
+  }, [searchQuery, allPatients, sortConfig, getGroupName, getDoctorName]);
 
   const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
