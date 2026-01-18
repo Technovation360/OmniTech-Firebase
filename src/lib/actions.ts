@@ -1,11 +1,10 @@
 'use server';
 
 import { z } from 'zod';
-import { addPatient, addConsultation, updatePatientStatus } from './data';
+import { addPatient, addConsultation, updatePatientStatus, getClinicGroupById } from './server-data';
 import { summarizeConsultationNotes } from '@/ai/flows/summarize-consultation-notes';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { getClinicGroupById } from './server-data';
 
 const PatientSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters.'),
