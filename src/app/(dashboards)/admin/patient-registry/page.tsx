@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import {
@@ -41,7 +42,7 @@ import {
 } from '@/components/ui/select';
 import { ArrowUp, ArrowDown, Search, History, PlusCircle, Loader } from 'lucide-react';
 import { getPatientHistory } from '@/lib/data';
-import type { Patient, ClinicGroup, PatientHistoryEntry, Clinic } from '@/lib/types';
+import type { Patient, Group, PatientHistoryEntry, Clinic } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -82,11 +83,11 @@ function VisitHistoryModal({
   const [history, setHistory] = useState<PatientHistoryEntry[]>([]);
   const firestore = useFirestore();
   
-  const clinicsRef = useMemoFirebase(() => {
+  const groupsRef = useMemoFirebase(() => {
     if (!user) return null;
-    return collection(firestore, 'clinics');
+    return collection(firestore, 'groups');
   }, [firestore, user]);
-  const { data: clinicGroups, isLoading } = useCollection<ClinicGroup>(clinicsRef);
+  const { data: groups, isLoading } = useCollection<Group>(groupsRef);
 
   useEffect(() => {
     if (patient) {
@@ -99,7 +100,7 @@ function VisitHistoryModal({
   if (!patient) return null;
   
   const getClinicName = (clinicId: string) => {
-    return clinicGroups?.find(c => c.id === clinicId)?.name || 'Unknown Clinic';
+    return groups?.find(c => c.id === clinicId)?.name || 'Unknown Clinic';
   };
 
   return (
@@ -128,7 +129,7 @@ function VisitHistoryModal({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All</SelectItem>
-                         {clinicGroups?.map(clinic => (
+                         {groups?.map(clinic => (
                           <SelectItem key={clinic.id} value={clinic.id} className="text-xs">{clinic.name}</SelectItem>
                         ))}
                       </SelectContent>
@@ -208,12 +209,12 @@ function VisitHistoryModal({
 function ManualCheckInModal({ 
     isOpen, 
     onClose, 
-    clinicGroups,
+    groups,
     onPatientRegistered,
 } : {
     isOpen: boolean;
     onClose: () => void;
-    clinicGroups: ClinicGroup[];
+    groups: Group[];
     onPatientRegistered: () => void;
 }) {
   const [state, formAction] = useActionState(registerPatient, null);
@@ -251,7 +252,7 @@ function ManualCheckInModal({
                     <SelectValue placeholder="Select a department" />
                   </SelectTrigger>
                   <SelectContent>
-                    {clinicGroups.map((group) => (
+                    {groups.map((group) => (
                       <SelectItem key={group.id} value={group.id}>
                         {group.name} (Dr. {group.doctors.map(d => d.name).join(', ')})
                       </SelectItem>
@@ -317,15 +318,15 @@ export default function PatientRegistryPage() {
   
   const clinicsRef = useMemoFirebase(() => {
     if (!user) return null;
-    return query(collection(firestore, 'clinics'), where('type', '==', 'Clinic'));
+    return query(collection(firestore, 'clinics'));
   }, [firestore, user]);
   const { data: clinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsRef);
   
-  const clinicGroupsRef = useMemoFirebase(() => {
+  const groupsRef = useMemoFirebase(() => {
     if (!user) return null;
-    return query(collection(firestore, 'clinics'), where('type', '==', 'Doctor'));
+    return query(collection(firestore, 'groups'));
   }, [firestore, user]);
-  const { data: clinicGroups, isLoading: groupsLoading } = useCollection<ClinicGroup>(clinicGroupsRef);
+  const { data: groups, isLoading: groupsLoading } = useCollection<Group>(groupsRef);
 
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [sortConfig, setSortConfig] = useState<{
@@ -607,7 +608,7 @@ export default function PatientRegistryPage() {
        <ManualCheckInModal 
         isOpen={isCheckInModalOpen}
         onClose={() => setCheckInModalOpen(false)}
-        clinicGroups={clinicGroups || []}
+        groups={groups || []}
         onPatientRegistered={() => {}}
       />
     </>

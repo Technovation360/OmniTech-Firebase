@@ -53,11 +53,10 @@ export type Clinic = {
 };
 
 // Represents a department or a group within a clinic (e.g. Cardiology)
-export type ClinicGroup = {
+export type Group = {
   id: string;
   clinicId: string;
   name: string;
-  type: 'Doctor'; // Indicates this is a group of doctors/department
   tokenInitial: string;
   location: string;
   specialties: string[];

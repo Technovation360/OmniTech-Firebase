@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, use, useCallback } from 'react';
 import {
@@ -15,7 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import type { Patient, ClinicGroup } from '@/lib/types';
+import type { Patient, Group } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ArrowUp, ArrowDown, Search, Loader } from 'lucide-react';
@@ -51,9 +52,9 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
   const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
 
   const groupsQuery = useMemoFirebase(() => {
-    return query(collection(firestore, 'clinics'), where('clinicId', '==', clinicId), where('type', '==', 'Doctor'));
+    return query(collection(firestore, 'groups'), where('clinicId', '==', clinicId));
   }, [firestore, clinicId]);
-  const { data: clinicGroups, isLoading: groupsLoading } = useCollection<ClinicGroup>(groupsQuery);
+  const { data: groups, isLoading: groupsLoading } = useCollection<Group>(groupsQuery);
 
 
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
@@ -62,12 +63,12 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   
   const getGroupName = useCallback((groupId: string) => {
-    return clinicGroups?.find(g => g.id === groupId)?.name || 'Unknown';
-  }, [clinicGroups]);
+    return groups?.find(g => g.id === groupId)?.name || 'Unknown';
+  }, [groups]);
 
   const getDoctorName = useCallback((groupId: string) => {
-    return clinicGroups?.find(g => g.id === groupId)?.doctors[0].name || 'Unknown';
-  }, [clinicGroups]);
+    return groups?.find(g => g.id === groupId)?.doctors[0].name || 'Unknown';
+  }, [groups]);
 
   useEffect(() => {
     if (!allPatients) {
@@ -119,7 +120,7 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
        setFilteredPatients(sorted);
     }
 
-  }, [searchQuery, allPatients, sortConfig, clinicGroups, selectedGroup, getGroupName, getDoctorName]);
+  }, [searchQuery, allPatients, sortConfig, groups, selectedGroup, getGroupName, getDoctorName]);
 
   const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -150,7 +151,7 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all" className="text-sm">All Groups</SelectItem>
-                    {clinicGroups?.map(group => (
+                    {groups?.map(group => (
                         <SelectItem key={group.id} value={group.id} className="text-sm">{group.name}</SelectItem>
                     ))}
                 </SelectContent>

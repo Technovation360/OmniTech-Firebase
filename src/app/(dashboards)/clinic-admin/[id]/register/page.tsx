@@ -37,7 +37,7 @@ import {
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ArrowUp, ArrowDown, Search, History, PlusCircle, Loader } from 'lucide-react';
 import { getPatientHistory } from '@/lib/data';
-import type { Patient, ClinicGroup, PatientHistoryEntry } from '@/lib/types';
+import type { Patient, Group, PatientHistoryEntry } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -72,14 +72,14 @@ function VisitHistoryModal({
   patient: Patient | null;
 }) {
   const [history, setHistory] = useState<PatientHistoryEntry[]>([]);
-  const [clinicGroups, setClinicGroups] = useState<ClinicGroup[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
 
   useEffect(() => {
     if (patient) {
       getPatientHistory(patient.id).then(setHistory);
     } else {
       setHistory([]);
-      setClinicGroups([]);
+      setGroups([]);
     }
 
   }, [patient]);
@@ -151,12 +151,12 @@ function VisitHistoryModal({
 function ManualCheckInModal({ 
     isOpen, 
     onClose, 
-    clinicGroups,
+    groups,
     onPatientRegistered,
 } : {
     isOpen: boolean;
     onClose: () => void;
-    clinicGroups: ClinicGroup[];
+    groups: Group[];
     onPatientRegistered: () => void;
 }) {
   const [state, formAction] = useActionState(registerPatient, null);
@@ -194,7 +194,7 @@ function ManualCheckInModal({
                     <SelectValue placeholder="Select a department" />
                   </SelectTrigger>
                   <SelectContent>
-                    {clinicGroups.map((group) => (
+                    {groups.map((group) => (
                       <SelectItem key={group.id} value={group.id}>
                         {group.name} (Dr. {group.doctors.map(d => d.name).join(', ')})
                       </SelectItem>
@@ -260,9 +260,9 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
   const { data: allPatients, isLoading: patientsLoading, refetch } = useCollection<Patient>(patientsQuery);
   
   const groupsQuery = useMemoFirebase(() => {
-    return query(collection(firestore, 'clinics'), where('clinicId', '==', clinicId), where('type', '==', 'Doctor'));
+    return query(collection(firestore, 'groups'), where('clinicId', '==', clinicId));
   }, [firestore, clinicId]);
-  const { data: clinicGroups, isLoading: groupsLoading } = useCollection<ClinicGroup>(groupsQuery);
+  const { data: groups, isLoading: groupsLoading } = useCollection<Group>(groupsQuery);
 
 
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
@@ -516,7 +516,7 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
       <ManualCheckInModal 
         isOpen={isCheckInModalOpen}
         onClose={() => setCheckInModalOpen(false)}
-        clinicGroups={clinicGroups || []}
+        groups={groups || []}
         onPatientRegistered={refetch}
       />
     </div>

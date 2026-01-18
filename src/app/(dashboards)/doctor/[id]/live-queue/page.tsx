@@ -2,7 +2,7 @@
 'use client';
 
 import { use, useState, useEffect } from 'react';
-import type { Patient, ClinicGroup, User } from '@/lib/types';
+import type { Patient, Group, User } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -40,10 +40,10 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
 
   const doctorGroupIdQuery = useMemoFirebase(() => {
     if (!doctorUser) return null;
-    return query(collection(firestore, "clinics"), where("type", "==", "Doctor"), where("doctors", "array-contains", { id: doctorId, name: doctorUser.name }));
+    return query(collection(firestore, "groups"), where("doctors", "array-contains", { id: doctorId, name: doctorUser.name }));
   }, [firestore, doctorId, doctorUser]);
 
-  const {data: doctorGroups, isLoading: groupsLoading} = useCollection<ClinicGroup>(doctorGroupIdQuery);
+  const {data: doctorGroups, isLoading: groupsLoading} = useCollection<Group>(doctorGroupIdQuery);
   const groupId = doctorGroups?.[0]?.id;
 
   const patientsQuery = useMemoFirebase(() => {
@@ -53,11 +53,11 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
 
   const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
 
-  const clinicGroupQuery = useMemoFirebase(() => {
+  const groupQuery = useMemoFirebase(() => {
       if (!groupId) return null;
-      return doc(firestore, 'clinics', groupId);
+      return doc(firestore, 'groups', groupId);
   }, [firestore, groupId]);
-  const { data: clinic, isLoading: clinicLoading } = useDoc<ClinicGroup>(clinicGroupQuery);
+  const { data: clinic, isLoading: groupLoading } = useDoc<Group>(groupQuery);
 
   const getGroupName = () => clinic?.name || 'Unknown';
   const getDoctorName = () => clinic?.doctors.find(d => d.id === doctorId)?.name || 'Unknown';
@@ -118,7 +118,7 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
     return <ArrowDown className="ml-2 h-3 w-3" />;
   };
 
-  if (isUserLoading || doctorUserLoading || groupsLoading || patientsLoading || clinicLoading) {
+  if (isUserLoading || doctorUserLoading || groupsLoading || patientsLoading || groupLoading) {
     return <div className="flex justify-center items-center h-full"><Loader className="animate-spin" /></div>;
   }
 

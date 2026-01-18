@@ -56,6 +56,11 @@ service cloud.firestore {
       allow delete: if (isClinicAdmin() && isExistingDoc()) || isAdmin();
     }
     
+    match /groups/{groupId} {
+      allow read: if isSignedIn() || isClinicAdmin() || isAdmin();
+      allow create, update, delete: if isClinicAdmin() || isAdmin();
+    }
+    
     match /cabins/{cabinId} {
       allow read, write: if isAdmin() || isClinicAdmin();
     }

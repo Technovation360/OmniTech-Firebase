@@ -15,7 +15,7 @@ import { initializeServerFirebase } from '@/firebase/server-init';
 
 import type {
   Clinic,
-  ClinicGroup,
+  Group,
   Patient,
   Consultation,
 } from './types';
@@ -28,7 +28,7 @@ const { firestore: db } = initializeServerFirebase();
 // Clinics
 export const getClinics = async (): Promise<Clinic[]> => {
   const clinicsCol = collection(db, 'clinics');
-  const q = query(clinicsCol, where('type', '==', 'Clinic'));
+  const q = query(clinicsCol);
   const snapshot = await getDocs(q);
   const clinics = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Clinic));
   return clinics;
@@ -39,7 +39,7 @@ export const getClinicById = async (
 ): Promise<Clinic | undefined> => {
   const docRef = doc(db, 'clinics', id);
   const docSnap = await getDoc(docRef);
-  if (docSnap.exists() && docSnap.data().type === 'Clinic') {
+  if (docSnap.exists()) {
     return { id: docSnap.id, ...docSnap.data() } as Clinic;
   }
   return undefined;
@@ -62,31 +62,30 @@ export const getPatients = async (): Promise<Patient[]> => {
 // Clinic Groups (Departments)
 export const getClinicGroups = async (
   clinicId?: string
-): Promise<ClinicGroup[]> => {
+): Promise<Group[]> => {
   let q;
   if (clinicId) {
     q = query(
-      collection(db, 'clinics'),
-      where('clinicId', '==', clinicId),
-      where('type', '==', 'Doctor')
+      collection(db, 'groups'),
+      where('clinicId', '==', clinicId)
     );
   } else {
-    q = query(collection(db, 'clinics'), where('type', '==', 'Doctor'));
+    q = query(collection(db, 'groups'));
   }
   const snapshot = await getDocs(q);
   const groups = snapshot.docs.map(
-    doc => ({ id: doc.id, ...doc.data() } as ClinicGroup)
+    doc => ({ id: doc.id, ...doc.data() } as Group)
   );
   return groups;
 };
 
 export const getClinicGroupById = async (
   id: string
-): Promise<ClinicGroup | undefined> => {
-  const docRef = doc(db, 'clinics', id);
+): Promise<Group | undefined> => {
+  const docRef = doc(db, 'groups', id);
   const docSnap = await getDoc(docRef);
   if (docSnap.exists()) {
-    return { id: docSnap.id, ...docSnap.data() } as ClinicGroup;
+    return { id: docSnap.id, ...docSnap.data() } as Group;
   }
   return undefined;
 };
@@ -106,7 +105,7 @@ export const getPatientByToken = async (
 
 export const addPatient = async (
   data: Omit<Patient, 'id' | 'tokenNumber' | 'status' | 'registeredAt'>,
-  clinicGroup: ClinicGroup
+  clinicGroup: Group
 ): Promise<Patient> => {
 
   const prefix = clinicGroup.tokenInitial;

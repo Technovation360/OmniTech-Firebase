@@ -3,7 +3,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { updatePatientStatus } from '@/lib/data';
-import type { Patient, ClinicGroup, Doctor, User } from '@/lib/types';
+import type { Patient, Group, Doctor, User } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -49,10 +49,10 @@ export default function DoctorConsultationPageLoader({ params }: DoctorPageProps
   
   const doctorGroupIdQuery = useMemoFirebase(() => {
     if (!doctorUser) return null;
-    return query(collection(firestore, "clinics"), where("type", "==", "Doctor"), where("doctors", "array-contains", { id: id, name: doctorUser.name }));
+    return query(collection(firestore, "groups"), where("doctors", "array-contains", { id: id, name: doctorUser.name }));
   }, [firestore, id, doctorUser]);
 
-  const {data: doctorGroups, isLoading: groupsLoading} = useCollection<ClinicGroup>(doctorGroupIdQuery);
+  const {data: doctorGroups, isLoading: groupsLoading} = useCollection<Group>(doctorGroupIdQuery);
   const groupId = doctorGroups?.[0]?.id;
 
   const patientsQuery = useMemoFirebase(() => {
@@ -61,13 +61,13 @@ export default function DoctorConsultationPageLoader({ params }: DoctorPageProps
   }, [firestore, groupId]);
   const { data: initialPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
   
-  const clinicGroupQuery = useMemoFirebase(() => {
+  const groupQuery = useMemoFirebase(() => {
     if (!groupId) return null;
-    return doc(firestore, 'clinics', groupId);
+    return doc(firestore, 'groups', groupId);
   }, [firestore, groupId]);
-  const { data: clinicGroup, isLoading: clinicGroupLoading } = useDoc<ClinicGroup>(clinicGroupQuery);
+  const { data: group, isLoading: groupLoading } = useDoc<Group>(groupQuery);
 
-  if (isUserLoading || doctorUserLoading || groupsLoading || patientsLoading || clinicGroupLoading || !clinicGroup || !initialPatients) {
+  if (isUserLoading || doctorUserLoading || groupsLoading || patientsLoading || groupLoading || !group || !initialPatients) {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader className="h-8 w-8 animate-spin" />
@@ -75,20 +75,20 @@ export default function DoctorConsultationPageLoader({ params }: DoctorPageProps
     );
   }
 
-  return <DoctorConsultationDashboard clinicGroup={clinicGroup} initialPatients={initialPatients} />;
+  return <DoctorConsultationDashboard group={group} initialPatients={initialPatients} />;
 }
 
 
 function DoctorConsultationDashboard({
-  clinicGroup,
+  group,
   initialPatients,
 }: {
-  clinicGroup: ClinicGroup;
+  group: Group;
   initialPatients: Patient[];
 }) {
     const [patients, setPatients] = useState(initialPatients);
     const [rooms, setRooms] = useState<RoomStatus[]>(
-        clinicGroup.cabins.map(cabin => ({ name: cabin.name, patient: null }))
+        group.cabins.map(cabin => ({ name: cabin.name, patient: null }))
     );
     const { toast } = useToast();
 

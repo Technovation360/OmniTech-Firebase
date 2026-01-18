@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useActionState, useEffect, useState, use } from 'react';
@@ -16,7 +17,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { registerPatient } from '@/lib/actions';
 import { Loader } from 'lucide-react';
 import { getClinicGroupById, getClinicById } from '@/lib/data';
-import type { ClinicGroup, Clinic } from '@/lib/types';
+import type { Group, Clinic } from '@/lib/types';
 import { Logo } from '@/components/logo';
 import Image from 'next/image';
 
@@ -29,14 +30,14 @@ export default function RegistrationPage({ params }: { params: { id: string } })
   const router = useRouter();
   const { id } = use(params);
   const [state, formAction] = useActionState(registerPatient, null);
-  const [clinicGroup, setClinicGroup] = useState<ClinicGroup | null>(null);
+  const [group, setGroup] = useState<Group | null>(null);
   const [clinic, setClinic] = useState<Clinic | null>(null);
 
   useEffect(() => {
-    getClinicGroupById(id).then(group => {
-        setClinicGroup(group || null)
-        if (group) {
-            getClinicById(group.clinicId).then(clinicData => {
+    getClinicGroupById(id).then(groupData => {
+        setGroup(groupData || null)
+        if (groupData) {
+            getClinicById(groupData.clinicId).then(clinicData => {
                 setClinic(clinicData || null);
             });
         }
@@ -49,7 +50,7 @@ export default function RegistrationPage({ params }: { params: { id: string } })
     }
   }, [state, router]);
 
-  if (!clinicGroup || !clinic) {
+  if (!group || !clinic) {
     return (
       <div className="min-h-screen bg-muted flex items-center justify-center">
         <Loader className="h-8 w-8 animate-spin text-primary" />
@@ -69,14 +70,14 @@ export default function RegistrationPage({ params }: { params: { id: string } })
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>Register for {clinicGroup.name}</CardTitle>
+            <CardTitle>Register for {group.name}</CardTitle>
             <CardDescription>
-              Fill in your details to get a token for {clinicGroup.doctors.map(d => d.name).join(', ')}.
+              Fill in your details to get a token for {group.doctors.map(d => d.name).join(', ')}.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form action={formAction} className="space-y-4">
-              <input type="hidden" name="groupId" value={clinicGroup.id} />
+              <input type="hidden" name="groupId" value={group.id} />
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
                 <Input id="name" name="name" placeholder="e.g., Jane Smith" required />

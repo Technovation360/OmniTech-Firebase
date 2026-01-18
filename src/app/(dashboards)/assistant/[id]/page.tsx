@@ -23,7 +23,7 @@ import {
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { registerPatient } from '@/lib/actions';
-import type { ClinicGroup, User } from '@/lib/types';
+import type { Group, User } from '@/lib/types';
 import { useState, useEffect, useMemo } from 'react';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc, query, where } from 'firebase/firestore';
@@ -50,10 +50,10 @@ export default function AssistantPage() {
 
   const groupsQuery = useMemoFirebase(() => {
       if (!assistantUser) return null;
-      return query(collection(firestore, "clinics"), where("type", "==", "Doctor"), where("assistants", "array-contains", { id: id, name: assistantUser.name }));
+      return query(collection(firestore, "groups"), where("assistants", "array-contains", { id: id, name: assistantUser.name }));
   }, [firestore, id, assistantUser]);
 
-  const { data: clinicGroups, isLoading: groupsLoading } = useCollection<ClinicGroup>(groupsQuery);
+  const { data: groups, isLoading: groupsLoading } = useCollection<Group>(groupsQuery);
   const [state, formAction] = useActionState(registerPatient, null);
 
 
@@ -102,7 +102,7 @@ export default function AssistantPage() {
                     <SelectValue placeholder="Select a department" />
                   </SelectTrigger>
                   <SelectContent>
-                    {clinicGroups?.map((group) => (
+                    {groups?.map((group) => (
                       <SelectItem key={group.id} value={group.id}>
                         {group.name} (Dr. {group.doctors.map(d => d.name).join(', ')})
                       </SelectItem>

@@ -3,7 +3,7 @@
 
 import { use, useState, useEffect } from 'react';
 import { getPatientHistory } from '@/lib/data';
-import type { Patient, ClinicGroup, PatientHistoryEntry, User } from '@/lib/types';
+import type { Patient, Group, PatientHistoryEntry, User } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -77,8 +77,8 @@ function VisitHistoryModal({
   const [history, setHistory] = useState<PatientHistoryEntry[]>([]);
   
   const firestore = useFirestore();
-  const clinicsQuery = useMemoFirebase(() => query(collection(firestore, 'clinics'), where('type', '==', 'Clinic')), [firestore]);
-  const { data: clinics } = useCollection<ClinicGroup>(clinicsQuery);
+  const clinicsQuery = useMemoFirebase(() => query(collection(firestore, 'clinics')), [firestore]);
+  const { data: clinics } = useCollection<Group>(clinicsQuery);
 
 
   useEffect(() => {
@@ -218,10 +218,10 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
 
   const doctorGroupIdQuery = useMemoFirebase(() => {
     if (!doctorUser) return null;
-    return query(collection(firestore, "clinics"), where("type", "==", "Doctor"), where("doctors", "array-contains", { id: doctorId, name: doctorUser.name }));
+    return query(collection(firestore, "groups"), where("doctors", "array-contains", { id: doctorId, name: doctorUser.name }));
   }, [firestore, doctorId, doctorUser]);
 
-  const {data: doctorGroups, isLoading: groupsLoading} = useCollection<ClinicGroup>(doctorGroupIdQuery);
+  const {data: doctorGroups, isLoading: groupsLoading} = useCollection<Group>(doctorGroupIdQuery);
   const groupId = doctorGroups?.[0]?.id;
 
   const patientsQuery = useMemoFirebase(() => {

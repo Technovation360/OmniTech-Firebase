@@ -2,7 +2,7 @@
 'use client';
 
 import { use, useState, useEffect } from 'react';
-import type { Patient, ClinicGroup, Doctor, User } from '@/lib/types';
+import type { Patient, Group, Doctor, User } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -41,10 +41,10 @@ export default function DoctorPageLoader({ params }: DoctorPageProps) {
 
   const doctorGroupIdQuery = useMemoFirebase(() => {
     if (!doctorUser) return null;
-    return query(collection(firestore, "clinics"), where("type", "==", "Doctor"), where("doctors", "array-contains", { id: id, name: doctorUser.name }));
+    return query(collection(firestore, "groups"), where("doctors", "array-contains", { id: id, name: doctorUser.name }));
   }, [firestore, id, doctorUser]);
 
-  const {data: doctorGroups, isLoading: groupsLoading} = useCollection<ClinicGroup>(doctorGroupIdQuery);
+  const {data: doctorGroups, isLoading: groupsLoading} = useCollection<Group>(doctorGroupIdQuery);
   const groupId = doctorGroups?.[0]?.id;
 
   const patientsQuery = useMemoFirebase(() => {
@@ -53,14 +53,14 @@ export default function DoctorPageLoader({ params }: DoctorPageProps) {
   }, [firestore, groupId]);
   const { data: initialPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
   
-  const clinicGroupQuery = useMemoFirebase(() => {
+  const groupQuery = useMemoFirebase(() => {
     if (!groupId) return null;
-    return doc(firestore, 'clinics', groupId);
+    return doc(firestore, 'groups', groupId);
   }, [firestore, groupId]);
-  const { data: clinicGroup, isLoading: clinicGroupLoading } = useDoc<ClinicGroup>(clinicGroupQuery);
+  const { data: group, isLoading: groupLoading } = useDoc<Group>(groupQuery);
 
 
-  if (isUserLoading || doctorUserLoading || groupsLoading || patientsLoading || clinicGroupLoading) {
+  if (isUserLoading || doctorUserLoading || groupsLoading || patientsLoading || groupLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader className="h-8 w-8 animate-spin" />
@@ -68,7 +68,7 @@ export default function DoctorPageLoader({ params }: DoctorPageProps) {
     );
   }
 
-  if (!clinicGroup || !initialPatients) {
+  if (!group || !initialPatients) {
        return (
          <div className="flex items-center justify-center h-full">
             <p>Could not load doctor's dashboard. Ensure doctor is assigned to a group.</p>
@@ -79,7 +79,7 @@ export default function DoctorPageLoader({ params }: DoctorPageProps) {
   return (
     <DoctorDashboard
       doctorId={id}
-      clinicGroup={clinicGroup}
+      group={group}
       initialPatients={initialPatients}
     />
   );
@@ -87,11 +87,11 @@ export default function DoctorPageLoader({ params }: DoctorPageProps) {
 
 function DoctorDashboard({
   doctorId,
-  clinicGroup,
+  group,
   initialPatients,
 }: {
   doctorId: string;
-  clinicGroup: ClinicGroup;
+  group: Group;
   initialPatients: Patient[];
 }) {
 
@@ -108,7 +108,7 @@ function DoctorDashboard({
   ];
 
   const nextToken = initialPatients.find(p => p.status === 'waiting');
-  const doctor = clinicGroup.doctors.find(d => d.id === doctorId);
+  const doctor = group.doctors.find(d => d.id === doctorId);
 
   if (!doctor) {
     return <p>Doctor not found in this group.</p>
@@ -189,7 +189,7 @@ function DoctorDashboard({
               </Button>
               <div className="bg-primary-foreground/20 p-3 rounded-lg">
                 <p className="font-bold text-white">Dr. {doctor.name}</p>
-                <p className="text-xs text-primary-foreground/80">SPECIALTY: {clinicGroup.specialties.join(', ')}</p>
+                <p className="text-xs text-primary-foreground/80">SPECIALTY: {group.specialties.join(', ')}</p>
               </div>
             </CardContent>
             <Stethoscope className="absolute -right-8 -bottom-8 h-40 w-40 text-primary-foreground/10" />

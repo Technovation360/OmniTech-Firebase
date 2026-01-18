@@ -20,7 +20,7 @@ import {
   Search,
   Loader,
 } from 'lucide-react';
-import type { Clinic, ClinicGroup, User, Cabin } from '@/lib/types';
+import type { Clinic, Group, User, Cabin } from '@/lib/types';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -46,7 +46,7 @@ function GroupForm({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  group: ClinicGroup | null;
+  group: Group | null;
   onConfirm: (formData: any) => void;
   doctors: User[];
   assistants: User[];
@@ -195,10 +195,10 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  const [filteredGroups, setFilteredGroups] = useState<ClinicGroup[]>([]);
+  const [filteredGroups, setFilteredGroups] = useState<Group[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [groupToEdit, setGroupToEdit] = useState<ClinicGroup | null>(null);
-  const [groupToDelete, setGroupToDelete] = useState<ClinicGroup | null>(null);
+  const [groupToEdit, setGroupToEdit] = useState<Group | null>(null);
+  const [groupToDelete, setGroupToDelete] = useState<Group | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   const clinicRef = useMemoFirebase(() => doc(firestore, 'clinics', clinicId), [firestore, clinicId]);
@@ -228,9 +228,9 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
   const { data: cabins, isLoading: cabinsLoading } = useCollection<Cabin>(cabinsQuery);
 
   const groupsQuery = useMemoFirebase(() => {
-      return query(collection(firestore, 'clinics'), where('clinicId', '==', clinicId), where('type', '==', 'Doctor'));
+      return query(collection(firestore, 'groups'), where('clinicId', '==', clinicId));
   }, [firestore, clinicId]);
-  const { data: allGroups, isLoading: groupsLoading } = useCollection<ClinicGroup>(groupsQuery);
+  const { data: allGroups, isLoading: groupsLoading } = useCollection<Group>(groupsQuery);
 
   useEffect(() => {
     if (!allGroups) {
@@ -263,7 +263,7 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
     });
   };
 
-  const openEditModal = (group: ClinicGroup) => {
+  const openEditModal = (group: Group) => {
     setGroupToEdit(group);
     setIsModalOpen(true);
   }
@@ -278,7 +278,7 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
     setGroupToEdit(null);
   }
 
-  const openDeleteDialog = (group: ClinicGroup) => {
+  const openDeleteDialog = (group: Group) => {
     setGroupToDelete(group);
   }
 
@@ -288,7 +288,7 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
 
   const handleDeleteConfirm = () => {
     if (groupToDelete) {
-      deleteDocumentNonBlocking(doc(firestore, 'clinics', groupToDelete.id));
+      deleteDocumentNonBlocking(doc(firestore, 'groups', groupToDelete.id));
       closeDeleteDialog();
     }
   }
@@ -313,7 +313,6 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
     const groupData = {
       clinicId: clinic.id,
       name: formData.name,
-      type: 'Doctor',
       tokenInitial: formData.tokenInitial,
       location: clinic.location,
       specialties: [],
@@ -325,9 +324,9 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
     };
 
     if (groupToEdit) {
-      setDocumentNonBlocking(doc(firestore, 'clinics', groupToEdit.id), groupData, { merge: true });
+      setDocumentNonBlocking(doc(firestore, 'groups', groupToEdit.id), groupData, { merge: true });
     } else {
-      addDocumentNonBlocking(collection(firestore, 'clinics'), groupData);
+      addDocumentNonBlocking(collection(firestore, 'groups'), groupData);
     }
     closeModal();
   };

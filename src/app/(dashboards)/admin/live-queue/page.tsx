@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import {
@@ -15,7 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import type { Patient, ClinicGroup, Clinic } from '@/lib/types';
+import type { Patient, Group, Clinic } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ArrowUp, ArrowDown, Search, Loader } from 'lucide-react';
@@ -49,14 +50,14 @@ export default function LiveQueuePage() {
   const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
 
   const clinicsQuery = useMemoFirebase(() => {
-    return query(collection(firestore, 'clinics'), where('type', '==', 'Clinic'));
+    return query(collection(firestore, 'clinics'));
   }, [firestore]);
   const { data: clinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
 
   const groupsQuery = useMemoFirebase(() => {
-    return query(collection(firestore, 'clinics'), where('type', '==', 'Doctor'));
+    return query(collection(firestore, 'groups'));
   }, [firestore]);
-  const { data: clinicGroups, isLoading: groupsLoading } = useCollection<ClinicGroup>(groupsQuery);
+  const { data: groups, isLoading: groupsLoading } = useCollection<Group>(groupsQuery);
 
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'tokenNumber', direction: 'asc' });
@@ -68,12 +69,12 @@ export default function LiveQueuePage() {
   }, [clinics]);
 
   const getGroupName = useCallback((groupId: string) => {
-    return clinicGroups?.find(g => g.id === groupId)?.name || 'Unknown';
-  }, [clinicGroups]);
+    return groups?.find(g => g.id === groupId)?.name || 'Unknown';
+  }, [groups]);
 
   const getDoctorName = useCallback((groupId: string) => {
-      return clinicGroups?.find(c => c.id === groupId)?.doctors[0]?.name || 'Unknown';
-  }, [clinicGroups]);
+      return groups?.find(c => c.id === groupId)?.doctors[0]?.name || 'Unknown';
+  }, [groups]);
 
   useEffect(() => {
     if (!allPatients) {
@@ -112,7 +113,7 @@ export default function LiveQueuePage() {
         setFilteredPatients(sorted);
     }
 
-  }, [searchQuery, allPatients, sortConfig, clinicGroups, clinics, selectedClinic, getClinicName, getGroupName, getDoctorName]);
+  }, [searchQuery, allPatients, sortConfig, groups, clinics, selectedClinic, getClinicName, getGroupName, getDoctorName]);
 
   const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';

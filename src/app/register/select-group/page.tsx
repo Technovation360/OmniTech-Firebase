@@ -13,7 +13,7 @@ import Link from 'next/link';
 import { ChevronRight, Stethoscope, Loader } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { ClinicGroup } from '@/lib/types';
+import { Group } from '@/lib/types';
 import { collection, query, where } from 'firebase/firestore';
 
 
@@ -21,11 +21,11 @@ export default function SelectGroupPage() {
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   
-  const clinicGroupsQuery = useMemoFirebase(() => {
-    return query(collection(firestore, 'clinics'), where('type', '==', 'Doctor'))
+  const groupsQuery = useMemoFirebase(() => {
+    return collection(firestore, 'groups')
   }, [firestore]);
 
-  const { data: clinicGroups, isLoading } = useCollection<ClinicGroup>(clinicGroupsQuery);
+  const { data: groups, isLoading } = useCollection<Group>(groupsQuery);
 
   return (
     <div className="min-h-screen bg-muted flex flex-col items-center justify-center p-4">
@@ -42,7 +42,7 @@ export default function SelectGroupPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {(isLoading || isUserLoading) && <div className="flex justify-center py-4"><Loader className="animate-spin" /></div>}
-            {!isLoading && !isUserLoading && clinicGroups?.map((group) => (
+            {!isLoading && !isUserLoading && groups?.map((group) => (
               <Button asChild key={group.id} variant="outline" className="w-full justify-between h-16 text-left">
                 <Link href={`/register/${group.id}`}>
                     <div className="flex items-center gap-4">
@@ -56,7 +56,7 @@ export default function SelectGroupPage() {
                 </Link>
               </Button>
             ))}
-             {!isLoading && !isUserLoading && clinicGroups?.length === 0 && (
+             {!isLoading && !isUserLoading && groups?.length === 0 && (
                 <p className="text-center text-muted-foreground">No departments available.</p>
              )}
           </CardContent>
