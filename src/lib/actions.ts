@@ -57,6 +57,7 @@ export async function registerPatient(prevState: any, formData: FormData) {
     return { success: true, tokenNumber: newPatient.tokenNumber };
 
   } catch (error) {
+    console.error('Error during patient registration:', error);
     return {
       message: 'An error occurred during registration.',
     };
