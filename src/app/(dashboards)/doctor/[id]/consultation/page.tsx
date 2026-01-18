@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, use, useMemo } from 'react';
@@ -30,7 +31,7 @@ import {
   History,
   PhoneCall,
   FileText,
-  LeaveIcon,
+  LogOut,
   CheckCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -222,6 +223,19 @@ function RoomCard({
     }, [patient]);
 
 
+    if (!room) {
+        return (
+             <Card>
+                <CardHeader className="flex-row items-center justify-between p-3 border-b bg-muted/30 h-[53px]">
+                    <CardTitle className="text-sm font-semibold">{cabin.name.toUpperCase()}</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 h-48 flex items-center justify-center">
+                    <Loader className="animate-spin" />
+                </CardContent>
+            </Card>
+        )
+    }
+    
     if (room.status === 'post-consultation') {
         return (
             <Card>
@@ -260,7 +274,7 @@ function RoomCard({
             <CardHeader className="flex-row items-center justify-between p-3 border-b bg-muted/30 h-[53px]">
                 <CardTitle className="text-sm font-semibold">{cabin.name.toUpperCase()}</CardTitle>
                 <Button variant="destructive" size="xs" className="h-7" onClick={() => onLeave(cabin.name)}>
-                    <LeaveIcon className="mr-1 h-3 w-3" />
+                    <LogOut className="mr-1 h-3 w-3" />
                     Leave
                 </Button>
             </CardHeader>
