@@ -114,12 +114,12 @@ export default function AssistantPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Patient Name</Label>
-                  <Input id="name" name="name" placeholder="e.g., John Doe" required />
+                  <Input id="name" name="name" placeholder="e.g., John Doe" required className="h-7" />
                   {state?.errors?.name && <p className="text-sm text-destructive">{state.errors.name[0]}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="age">Age</Label>
-                  <Input id="age" name="age" type="number" placeholder="e.g., 42" required />
+                  <Input id="age" name="age" type="number" placeholder="e.g., 42" required className="h-7" />
                   {state?.errors?.age && <p className="text-sm text-destructive">{state.errors.age[0]}</p>}
                 </div>
               </div>
@@ -127,12 +127,12 @@ export default function AssistantPage() {
               <div className="grid grid-cols-2 gap-4">
                  <div className="space-y-2">
                     <Label htmlFor="contactNumber">Phone Number</Label>
-                    <Input id="contactNumber" name="contactNumber" placeholder="Optional" />
+                    <Input id="contactNumber" name="contactNumber" placeholder="Optional" className="h-7" />
                     {state?.errors?.contactNumber && <p className="text-sm text-destructive">{state.errors.contactNumber[0]}</p>}
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="emailAddress">Email</Label>
-                    <Input id="emailAddress" name="emailAddress" type="email" placeholder="Optional" />
+                    <Input id="emailAddress" name="emailAddress" type="email" placeholder="Optional" className="h-7" />
                     {state?.errors?.emailAddress && <p className="text-sm text-destructive">{state.errors.emailAddress[0]}</p>}
                 </div>
               </div>
