@@ -1,7 +1,6 @@
-
 'use client';
 
-import { use, useState, useEffect } from 'react';
+import { use, useState, useEffect, useMemo } from 'react';
 import { getPatientHistory } from '@/lib/data';
 import type { Patient, Group, PatientHistoryEntry, User } from '@/lib/types';
 import {
@@ -216,18 +215,18 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
   }, [firestore, doctorId]);
   const { data: doctorUser, isLoading: doctorUserLoading } = useDoc<User>(doctorUserRef);
 
-  const doctorGroupIdQuery = useMemoFirebase(() => {
+  const doctorGroupsQuery = useMemoFirebase(() => {
     if (!doctorUser) return null;
     return query(collection(firestore, "groups"), where("doctors", "array-contains", { id: doctorId, name: doctorUser.name }));
   }, [firestore, doctorId, doctorUser]);
 
-  const {data: doctorGroups, isLoading: groupsLoading} = useCollection<Group>(doctorGroupIdQuery);
-  const groupId = doctorGroups?.[0]?.id;
+  const {data: doctorGroups, isLoading: groupsLoading} = useCollection<Group>(doctorGroupsQuery);
+  const groupIds = useMemo(() => doctorGroups?.map(g => g.id) || [], [doctorGroups]);
 
   const patientsQuery = useMemoFirebase(() => {
-    if (!groupId) return null;
-    return query(collection(firestore, 'patients'), where('groupId', '==', groupId));
-  }, [firestore, groupId]);
+    if (groupIds.length === 0) return null;
+    return query(collection(firestore, 'patients'), where('groupId', 'in', groupIds));
+  }, [firestore, groupIds]);
 
   const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
   
@@ -236,7 +235,7 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
         setFilteredPatients([]);
         return;
     }
-    let filteredData = allPatients;
+    let filteredData = [...allPatients];
 
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
