@@ -113,7 +113,7 @@ export default function LoginPage() {
       
       let affiliationId = firebaseUser.uid; // Default for doctor, assistant etc.
       if (userRole === 'clinic-admin' && userData.affiliation) {
-          const q = query(collection(firestore, "clinics"), where("type", "==", "Clinic"), where("name", "==", userData.affiliation));
+          const q = query(collection(firestore, "clinics"), where("name", "==", userData.affiliation));
           const querySnapshot = await getDocs(q);
           if (!querySnapshot.empty) {
             affiliationId = querySnapshot.docs[0].id;

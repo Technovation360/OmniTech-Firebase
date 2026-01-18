@@ -361,7 +361,7 @@ export default function UsersPage() {
 
   const clinicsQuery = useMemoFirebase(() => {
     if (!authUser) return null;
-    return query(collection(firestore, 'clinics'), where('type', '==', 'Clinic'))
+    return collection(firestore, 'clinics');
   }, [firestore, authUser]);
   const { data: clinicsData, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
   
