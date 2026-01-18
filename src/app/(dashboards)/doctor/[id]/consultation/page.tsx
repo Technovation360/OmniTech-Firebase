@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, use, useMemo } from 'react';
@@ -31,7 +30,7 @@ import {
   History,
   PhoneCall,
   FileText,
-  LogOut as LeaveIcon,
+  LeaveIcon,
   CheckCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -186,6 +185,7 @@ function RoomCard({
     onViewHistory: (patient: Patient) => void,
     onCallPatient: (patient: Patient) => void,
 }) {
+    const { toast } = useToast();
     const [noShowEnabled, setNoShowEnabled] = useState(false);
     const [timer, setTimer] = useState(30);
 
@@ -277,7 +277,7 @@ function RoomCard({
                         <Button size="sm" className="bg-red-500 hover:bg-red-600" onClick={() => onAction(patient!.id, cabin.name, 'end')}>
                             <Square className="mr-2 h-4 w-4"/> End
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => useToast().toast({ title: 'Add Notes', description: 'This would open a notes editor.' })}>
+                        <Button size="sm" variant="outline" onClick={() => toast({ title: 'Add Notes', description: 'This would open a notes editor.' })}>
                             <FileText className="mr-2 h-4 w-4"/> Add Notes
                         </Button>
                         <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-black" onClick={() => onCallPatient(patient)}>
