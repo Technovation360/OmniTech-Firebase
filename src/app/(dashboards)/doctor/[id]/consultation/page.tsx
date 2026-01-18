@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, use, useMemo } from 'react';
@@ -280,7 +279,7 @@ function RoomCard({
                         <Button size="sm" variant="outline" onClick={() => useToast().toast({ title: 'Add Notes', description: 'This would open a notes editor.' })}>
                             <FileText className="mr-2 h-4 w-4"/> Add Notes
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => onCallPatient(patient)}>
+                        <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-black" onClick={() => onCallPatient(patient)}>
                             <PhoneCall className="mr-2 h-4 w-4"/> Call Patient
                         </Button>
                          <Button size="sm" variant="outline" onClick={() => onViewHistory(patient)}>
@@ -289,7 +288,7 @@ function RoomCard({
                     </div>
                 ) : ( // 'called' status
                      <div className="grid grid-cols-2 gap-2 w-full">
-                        <Button size="sm" onClick={() => onAction(patient!.id, cabin.name, 'start')}>
+                        <Button size="sm" className="bg-primary hover:bg-primary/90" onClick={() => onAction(patient!.id, cabin.name, 'start')}>
                             <Play className="mr-2 h-4 w-4"/> Start
                         </Button>
                         <Button size="sm" variant="outline" disabled={!noShowEnabled} onClick={() => onAction(patient!.id, cabin.name, 'no-show')} className={cn(noShowEnabled && 'text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive')}>
@@ -299,7 +298,7 @@ function RoomCard({
                                 <><UserX className="mr-2 h-4 w-4"/> No Show</>
                             )}
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => onCallPatient(patient)}>
+                        <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-black" onClick={() => onCallPatient(patient)}>
                             <PhoneCall className="mr-2 h-4 w-4"/> Call Patient
                         </Button>
                          <Button size="sm" variant="outline" onClick={() => onViewHistory(patient)}>
