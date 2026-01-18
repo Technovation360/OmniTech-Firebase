@@ -27,7 +27,7 @@ import Link from 'next/link';
 import { usePathname, useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 
@@ -107,22 +107,28 @@ function DoctorLayoutContent({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
   const auth = useAuth();
   const router = useRouter();
+  const [pageName, setPageName] = useState('');
+
+  const pathname = usePathname();
+  const params = useParams();
+
+
+  useEffect(() => {
+    const segments = pathname.split('/');
+    const lastSegment = segments[segments.length - 1];
+  
+    let newPageName;
+    if (lastSegment === params.id) {
+      newPageName = 'Dashboard';
+    } else {
+      newPageName = lastSegment.replace('-', ' ');
+    }
+    setPageName(newPageName);
+  }, [pathname, params]);
 
   const handleLogout = async () => {
     await signOut(auth);
     router.push('/');
-  }
-
-  const pathname = usePathname();
-  const params = useParams();
-  const segments = pathname.split('/');
-  const lastSegment = segments[segments.length - 1];
-
-  let pageName;
-  if (lastSegment === params.id) {
-    pageName = 'Dashboard';
-  } else {
-    pageName = lastSegment.replace('-', ' ');
   }
 
   return (
