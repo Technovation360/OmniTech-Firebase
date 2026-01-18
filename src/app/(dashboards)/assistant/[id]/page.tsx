@@ -98,7 +98,7 @@ export default function AssistantPage() {
               <div className="space-y-2">
                 <Label htmlFor="groupId">Clinic Group</Label>
                 <Select name="groupId" required>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-7">
                     <SelectValue placeholder="Select a Group" />
                   </SelectTrigger>
                   <SelectContent>
@@ -165,3 +165,5 @@ export default function AssistantPage() {
     </div>
   );
 }
+
+    
