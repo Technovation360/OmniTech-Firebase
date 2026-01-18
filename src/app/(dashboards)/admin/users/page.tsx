@@ -505,55 +505,6 @@ export default function UsersPage() {
       setIsPasswordModalOpen(false);
       setUserToResetPassword(null);
   }
-
-  const fixUserUids = async () => {
-    if (!authUser) {
-      toast({ variant: 'destructive', title: 'Admin user not signed in.' });
-      return;
-    }
-    
-    toast({
-        title: "Starting UID Fix",
-        description: "Checking user documents for UID synchronization..."
-    });
-
-    try {
-        const querySnapshot = await getDocs(collection(firestore, "users"));
-        const batch = writeBatch(firestore);
-        let changesMade = 0;
-
-        for (const userDoc of querySnapshot.docs) {
-            const userData = userDoc.data() as Omit<User, 'id'> & {id?: string}; // Allow for old data shape
-            const docId = userDoc.id;
-
-            if (userData.uid !== docId) {
-                console.log(`Mismatch for ${userData.email}: DocID ${docId} vs UID ${userData.uid}`);
-                const correctDocRef = doc(firestore, 'users', userData.uid);
-                // Set the data on the correct document, ensuring the 'uid' field is also correct.
-                batch.set(correctDocRef, { ...userData, uid: userData.uid });
-                // Delete the old, incorrectly-keyed document
-                batch.delete(userDoc.ref);
-                changesMade++;
-            } else if (!userData.uid) {
-                // This case handles documents that might not even have a uid field.
-                console.log(`Adding missing UID field for ${userData.email} (DocID: ${docId})`);
-                batch.update(userDoc.ref, { uid: docId });
-                changesMade++;
-            }
-        }
-
-        if (changesMade > 0) {
-            await batch.commit();
-            toast({ title: 'UIDs Fixed', description: `${changesMade} user document(s) were synchronized.` });
-            refetchUsers(); // Re-fetch the user list to update the UI
-        } else {
-            toast({ title: 'No Mismatches Found', description: 'All user UIDs are correctly synchronized.' });
-        }
-    } catch(e: any) {
-        console.error("Error during UID fix: ", e);
-        toast({variant: 'destructive', title: "Error during UID fix.", description: e.message });
-    }
-  };
   
   const handleSort = (key: keyof User) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -592,7 +543,6 @@ export default function UsersPage() {
      <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Platform Users</h1>
         <div className="flex gap-2">
-            <Button onClick={fixUserUids} variant="outline">Fix UIDs</Button>
             <Button onClick={openCreateModal}>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Register User
