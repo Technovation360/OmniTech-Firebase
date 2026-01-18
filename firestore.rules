@@ -57,7 +57,7 @@ service cloud.firestore {
     }
     
     match /groups/{groupId} {
-      allow read: if isSignedIn() || isClinicAdmin() || isAdmin();
+      allow read: if true;
       allow create, update, delete: if isClinicAdmin() || isAdmin();
     }
     
