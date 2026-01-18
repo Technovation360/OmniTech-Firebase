@@ -254,7 +254,7 @@ function ManualCheckInModal({
                   <SelectContent>
                     {groups.map((group) => (
                       <SelectItem key={group.id} value={group.id}>
-                        {group.name} (Dr. {group.doctors.map(d => d.name).join(', ')})
+                        {group.name} ({group.doctors.map(d => `Dr. ${d.name}`).join(', ')})
                       </SelectItem>
                     ))}
                   </SelectContent>
