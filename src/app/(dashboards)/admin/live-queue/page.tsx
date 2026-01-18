@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import {
@@ -45,7 +44,7 @@ export default function LiveQueuePage() {
   const { user, isUserLoading } = useUser();
 
   const patientsQuery = useMemoFirebase(() => {
-    return query(collection(firestore, 'patients'), where('status', 'in', ['waiting', 'called', 'in-consultation']));
+    return query(collection(firestore, 'patients'), where('status', 'in', ['waiting', 'in-consultation']));
   }, [firestore]);
   const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
 

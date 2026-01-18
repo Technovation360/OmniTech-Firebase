@@ -47,7 +47,7 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
 
   const patientsQuery = useMemoFirebase(() => {
     if (!groupId) return null;
-    return query(collection(firestore, 'patients'), where('groupId', '==', groupId), where('status', 'in', ['waiting', 'called', 'in-consultation']));
+    return query(collection(firestore, 'patients'), where('groupId', '==', groupId), where('status', 'in', ['waiting', 'in-consultation']));
   }, [firestore, groupId]);
 
   const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
