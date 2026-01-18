@@ -268,13 +268,3 @@ export const getConsultationsByPatientId = async (
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 };
-
-// Mock data for users - replace with actual user management later
-export const mockUsers: User[] = [
-    { id: 'doc_ashish', uid: 'auth_doc_ashish', name: 'Dr. Ashish', email: 'doc_ashish@omni.com', role: 'doctor', specialty: 'Cardiology', affiliation: 'City Clinic' },
-    { id: 'doc_vijay', uid: 'auth_doc_vijay', name: 'Dr. Vijay', email: 'doc_vijay@omni.com', role: 'doctor', specialty: 'Pediatrics', affiliation: 'Health Center' },
-    { id: 'asst_sunita', uid: 'auth_asst_sunita', name: 'Sunita', email: 'asst_sunita@omni.com', role: 'assistant', affiliation: 'City Clinic' },
-    { id: 'asst_rajesh', uid: 'auth_asst_rajesh', name: 'Rajesh', email: 'asst_rajesh@omni.com', role: 'assistant', affiliation: 'Health Center' },
-    { id: 'disp_main_hall', uid: 'auth_disp_main_hall', name: 'Main Hall Display', email: 'display_main@omni.com', role: 'display', affiliation: 'City Clinic' },
-    { id: 'disp_opd1', uid: 'auth_disp_opd1', name: 'OPD 1 Display', email: 'display_opd1@omni.com', role: 'display', affiliation: 'City Clinic' },
-]
