@@ -247,7 +247,7 @@ function ManualCheckInModal({
           </CardDescription>
         </DialogHeader>
         <form action={formAction}>
-          <div className="px-6 space-y-6">
+          <div className="px-6 space-y-4">
             <div className="space-y-2">
               <Label htmlFor="groupId">Clinic Group</Label>
               <Select name="groupId" required>
@@ -300,6 +300,19 @@ function ManualCheckInModal({
                   </p>
                 )}
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="contactNumber">Phone Number</Label>
+                    <Input id="contactNumber" name="contactNumber" placeholder="Optional" />
+                    {state?.errors?.contactNumber && <p className="text-sm text-destructive">{state.errors.contactNumber[0]}</p>}
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="emailAddress">Email</Label>
+                    <Input id="emailAddress" name="emailAddress" type="email" placeholder="Optional" />
+                    {state?.errors?.emailAddress && <p className="text-sm text-destructive">{state.errors.emailAddress[0]}</p>}
+                </div>
             </div>
 
             <div className="space-y-2">

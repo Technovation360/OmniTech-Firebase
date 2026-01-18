@@ -94,7 +94,7 @@ export default function AssistantPage() {
             <CardDescription>Fill in the details to add a patient to the queue.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form action={formAction} className="space-y-6">
+            <form action={formAction} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="groupId">Clinic Group</Label>
                 <Select name="groupId" required>
@@ -111,17 +111,32 @@ export default function AssistantPage() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="name">Patient Name</Label>
-                <Input id="name" name="name" placeholder="e.g., John Doe" required />
-                {state?.errors?.name && <p className="text-sm text-destructive">{state.errors.name[0]}</p>}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Patient Name</Label>
+                  <Input id="name" name="name" placeholder="e.g., John Doe" required />
+                  {state?.errors?.name && <p className="text-sm text-destructive">{state.errors.name[0]}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="age">Age</Label>
+                  <Input id="age" name="age" type="number" placeholder="e.g., 42" required />
+                  {state?.errors?.age && <p className="text-sm text-destructive">{state.errors.age[0]}</p>}
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="age">Age</Label>
-                <Input id="age" name="age" type="number" placeholder="e.g., 42" required />
-                {state?.errors?.age && <p className="text-sm text-destructive">{state.errors.age[0]}</p>}
+              <div className="grid grid-cols-2 gap-4">
+                 <div className="space-y-2">
+                    <Label htmlFor="contactNumber">Phone Number</Label>
+                    <Input id="contactNumber" name="contactNumber" placeholder="Optional" />
+                    {state?.errors?.contactNumber && <p className="text-sm text-destructive">{state.errors.contactNumber[0]}</p>}
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="emailAddress">Email</Label>
+                    <Input id="emailAddress" name="emailAddress" type="email" placeholder="Optional" />
+                    {state?.errors?.emailAddress && <p className="text-sm text-destructive">{state.errors.emailAddress[0]}</p>}
+                </div>
               </div>
+
 
               <div className="space-y-2">
                 <Label>Gender</Label>
