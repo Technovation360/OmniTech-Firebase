@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -187,7 +186,7 @@ export default function LoginPage() {
         </Card>
 
         <footer className="text-center text-muted-foreground text-sm mt-8">
-            &copy; 2024 Technovation360
+            &copy; 2025 Technovation360
         </footer>
       </div>
     </div>
