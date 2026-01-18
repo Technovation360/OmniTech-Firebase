@@ -111,6 +111,7 @@ function DepartmentForm({
                     onChange={(selected) => handleInputChange('doctorIds', selected)}
                     className="text-xs"
                     placeholder="Select doctors..."
+                    badgeClassName="bg-blue-100 text-blue-800"
                 />
             </div>
             <div className="space-y-1">
@@ -121,6 +122,7 @@ function DepartmentForm({
                     onChange={(selected) => handleInputChange('assistantIds', selected)}
                     className="text-xs"
                     placeholder="Select assistants..."
+                    badgeClassName="bg-yellow-100 text-yellow-800"
                 />
             </div>
              <div className="space-y-1">
@@ -131,6 +133,7 @@ function DepartmentForm({
                     onChange={(selected) => handleInputChange('screenIds', selected)}
                     className="text-xs"
                     placeholder="Select screens..."
+                    badgeClassName="bg-green-100 text-green-800"
                 />
             </div>
             <div className="space-y-1">
@@ -141,6 +144,7 @@ function DepartmentForm({
                     onChange={(selected) => handleInputChange('cabinIds', selected)}
                     className="text-xs"
                     placeholder="Select cabins..."
+                    badgeClassName="bg-purple-100 text-purple-800"
                 />
             </div>
         </div>

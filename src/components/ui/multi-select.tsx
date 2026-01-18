@@ -23,6 +23,7 @@ interface MultiSelectProps {
   onChange: (selected: string[]) => void;
   className?: string;
   placeholder?: string;
+  badgeClassName?: string;
 }
 
 export function MultiSelect({
@@ -31,8 +32,8 @@ export function MultiSelect({
   onChange,
   className,
   placeholder = 'Select options...',
+  badgeClassName,
 }: MultiSelectProps) {
-
   const handleUnselect = (item: string) => {
     onChange(selected.filter((i) => i !== item));
   };
@@ -54,16 +55,19 @@ export function MultiSelect({
                 .filter((option) => selected.includes(option.value))
                 .map((option) => (
                   <Badge
-                    variant="default"
+                    variant="secondary"
                     key={option.value}
-                    className="flex items-center gap-1 font-normal"
+                    className={cn(
+                      'flex items-center gap-1 font-normal',
+                      badgeClassName
+                    )}
                   >
                     {option.label}
                     <div
                       role="button"
                       tabIndex={0}
                       aria-label={`Remove ${option.label}`}
-                      className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
@@ -81,7 +85,7 @@ export function MultiSelect({
                         handleUnselect(option.value);
                       }}
                     >
-                      <X className="h-3 w-3 text-primary-foreground/70 hover:text-primary-foreground" />
+                      <X className="h-3 w-3 text-inherit opacity-70 hover:opacity-100" />
                     </div>
                   </Badge>
                 ))
