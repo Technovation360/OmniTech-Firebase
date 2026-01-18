@@ -1,4 +1,3 @@
-
 'use client';
 
 import { use, useState, useEffect } from 'react';
@@ -34,7 +33,7 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
   const { user, isUserLoading } = useUser();
 
   const doctorGroupIdQuery = useMemoFirebase(() => {
-    return query(collection(firestore, "groups"), where("doctors", "array-contains", { id: doctorId, name: "Dr. Ashish" }));
+    return query(collection(firestore, "clinics"), where("doctors", "array-contains", { id: doctorId, name: "Dr. Ashish" }));
   }, [firestore, doctorId]);
 
   const {data: doctorGroups, isLoading: groupsLoading} = useCollection<ClinicGroup>(doctorGroupIdQuery);
@@ -49,7 +48,7 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
 
   const clinicGroupQuery = useMemoFirebase(() => {
       if (!groupId) return null;
-      return doc(firestore, 'groups', groupId);
+      return doc(firestore, 'clinics', groupId);
   }, [firestore, groupId]);
   const { data: clinic, isLoading: clinicLoading } = useDoc<ClinicGroup>(clinicGroupQuery);
 
@@ -188,7 +187,7 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
                 <TableCell className="p-2 text-xs">{patient.name}</TableCell>
                 <TableCell className="p-2 text-xs">{getGroupName()}</TableCell>
                 <TableCell className="p-2 text-xs">{getDoctorName()}</TableCell>
-                <TableCell className="p-2 text-xs">{format(new Date(patient.registeredAt), 'hh:mm a')}</TableCell>
+                <TableCell className="p-2 text-xs">{format((patient.registeredAt as any).toDate(), 'hh:mm a')}</TableCell>
                 <TableCell className="p-2 text-xs">
                   <Badge variant="secondary" className={cn("capitalize", badgeColors[patient.status])}>
                     {patient.status.replace('-', ' ')}

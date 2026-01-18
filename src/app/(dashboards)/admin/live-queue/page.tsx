@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import {
@@ -109,7 +108,7 @@ export default function LiveQueuePage() {
       });
       setFilteredPatients(sorted);
     } else {
-        const sorted = [...filteredData].sort((a,b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime());
+        const sorted = [...filteredData].sort((a,b) => (a.registeredAt as any).toDate().getTime() - (b.registeredAt as any).toDate().getTime());
         setFilteredPatients(sorted);
     }
 
@@ -212,7 +211,7 @@ export default function LiveQueuePage() {
                 <TableCell className="py-2 px-4 text-xs">{getClinicName(patient.clinicId)}</TableCell>
                 <TableCell className="py-2 px-4 text-xs">{getGroupName(patient.groupId)}</TableCell>
                 <TableCell className="py-2 px-4 text-xs">{getDoctorName(patient.groupId)}</TableCell>
-                <TableCell className="py-2 px-4 text-xs">{format(new Date(patient.registeredAt), 'hh:mm a')}</TableCell>
+                <TableCell className="py-2 px-4 text-xs">{format((patient.registeredAt as any).toDate(), 'hh:mm a')}</TableCell>
                 <TableCell className="py-2 px-4 text-xs">
                    <Badge variant={'secondary'} className={cn("text-[10px] border-transparent capitalize", badgeColors[patient.status])}>
                         {patient.status.replace('-', ' ')}

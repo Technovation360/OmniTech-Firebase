@@ -1,4 +1,3 @@
-
 'use client';
 
 import { use, useState, useEffect } from 'react';
@@ -77,7 +76,7 @@ function VisitHistoryModal({
   const [history, setHistory] = useState<PatientHistoryEntry[]>([]);
   
   const firestore = useFirestore();
-  const clinicsQuery = useMemoFirebase(() => query(collection(firestore, 'groups'), where('type', '==', 'Clinic')), [firestore]);
+  const clinicsQuery = useMemoFirebase(() => query(collection(firestore, 'clinics'), where('type', '==', 'Clinic')), [firestore]);
   const { data: clinics } = useCollection<ClinicGroup>(clinicsQuery);
 
 
@@ -213,7 +212,7 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
 
   const doctorGroupIdQuery = useMemoFirebase(() => {
     // This is not ideal, we should query by doctorId, not hardcoded name
-    return query(collection(firestore, "groups"), where("doctors", "array-contains", { id: doctorId, name: "Dr. Ashish" }));
+    return query(collection(firestore, "clinics"), where("doctors", "array-contains", { id: doctorId, name: "Dr. Ashish" }));
   }, [firestore, doctorId]);
 
   const {data: doctorGroups, isLoading: groupsLoading} = useCollection<ClinicGroup>(doctorGroupIdQuery);
@@ -387,7 +386,7 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
                   <TableCell className="py-2 px-2 text-xs">{patient.contactNumber}</TableCell>
                   <TableCell className="py-2 px-2 text-xs">{patient.emailAddress}</TableCell>
                   <TableCell className="py-2 text-xs">
-                     {format(new Date(patient.registeredAt), 'P, pp')}
+                     {format((patient.registeredAt as any).toDate(), 'P, pp')}
                   </TableCell>
                   <TableCell className="py-2 text-xs">
                     <Button
