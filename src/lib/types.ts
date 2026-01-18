@@ -42,6 +42,7 @@ export type Clinic = {
   id: string;
   name: string;
   location: string;
+  logoUrl?: string;
   phone?: string;
   email?: string;
   address?: string;

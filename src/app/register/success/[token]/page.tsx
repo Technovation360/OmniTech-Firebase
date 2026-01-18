@@ -1,18 +1,27 @@
-import { getPatientByToken } from '@/lib/data';
+import { getPatientByToken, getClinicById } from '@/lib/server-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle2, Ticket } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/logo';
+import Image from 'next/image';
 
 export default async function SuccessPage({ params }: { params: { token: string } }) {
   const patient = await getPatientByToken(params.token);
+  let clinic = null;
+  if (patient) {
+    clinic = await getClinicById(patient.clinicId);
+  }
 
   return (
     <div className="min-h-screen bg-muted flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md mx-auto text-center">
-        <div className="mb-8">
-            <Logo className="justify-center"/>
+        <div className="mb-8 h-10 flex items-center justify-center">
+          {clinic?.logoUrl ? (
+            <Image src={clinic.logoUrl} alt={clinic.name} width={120} height={40} className="object-contain h-10" />
+          ) : (
+            <Logo className="justify-center" />
+          )}
         </div>
         <Card className="shadow-lg">
           <CardHeader>

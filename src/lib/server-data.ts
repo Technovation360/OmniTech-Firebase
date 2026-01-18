@@ -87,3 +87,16 @@ export const getClinicGroupById = async (
   }
   return undefined;
 };
+
+export const getPatientByToken = async (
+  token: string
+): Promise<Patient | undefined> => {
+  const q = query(collection(db, 'patients'), where('tokenNumber', '==', token));
+  const snapshot = await getDocs(q);
+  if (snapshot.empty) {
+    return undefined;
+  }
+  const doc = snapshot.docs[0];
+  const data = doc.data();
+  return { ...data, id: doc.id, registeredAt: (data.registeredAt as Timestamp).toDate().toISOString() } as Patient;
+};

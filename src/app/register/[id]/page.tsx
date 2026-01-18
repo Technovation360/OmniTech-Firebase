@@ -17,9 +17,10 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { registerPatient } from '@/lib/actions';
 import { Loader } from 'lucide-react';
-import { getClinicGroupById } from '@/lib/data';
-import type { ClinicGroup } from '@/lib/types';
+import { getClinicGroupById, getClinicById } from '@/lib/data';
+import type { ClinicGroup, Clinic } from '@/lib/types';
 import { Logo } from '@/components/logo';
+import Image from 'next/image';
 
 function SubmitButton() {
   // `pending` is not available in useActionState, so we can't show a loading state based on it easily without useTransition
@@ -31,9 +32,17 @@ export default function RegistrationPage({ params }: { params: Promise<{ id: str
   const { id } = use(params);
   const [state, formAction] = useActionState(registerPatient, null);
   const [clinicGroup, setClinicGroup] = useState<ClinicGroup | null>(null);
+  const [clinic, setClinic] = useState<Clinic | null>(null);
 
   useEffect(() => {
-    getClinicGroupById(id).then(group => setClinicGroup(group || null));
+    getClinicGroupById(id).then(group => {
+        setClinicGroup(group || null)
+        if (group) {
+            getClinicById(group.clinicId).then(clinicData => {
+                setClinic(clinicData || null);
+            });
+        }
+    });
   }, [id]);
 
   useEffect(() => {
@@ -42,7 +51,7 @@ export default function RegistrationPage({ params }: { params: Promise<{ id: str
     }
   }, [state, router]);
 
-  if (!clinicGroup) {
+  if (!clinicGroup || !clinic) {
     return (
       <div className="min-h-screen bg-muted flex items-center justify-center">
         <Loader className="h-8 w-8 animate-spin text-primary" />
@@ -53,8 +62,12 @@ export default function RegistrationPage({ params }: { params: Promise<{ id: str
   return (
     <div className="min-h-screen bg-muted flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md mx-auto">
-        <div className="text-center mb-8">
-            <Logo className="justify-center"/>
+        <div className="text-center mb-8 h-10 flex items-center justify-center">
+          {clinic.logoUrl ? (
+              <Image src={clinic.logoUrl} alt={clinic.name} width={120} height={40} className="object-contain h-10" />
+          ) : (
+              <Logo className="justify-center"/>
+          )}
         </div>
         <Card>
           <CardHeader>
