@@ -23,10 +23,10 @@ import {
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { registerPatient } from '@/lib/actions';
-import type { ClinicGroup } from '@/lib/types';
+import type { ClinicGroup, User } from '@/lib/types';
 import { useState, useEffect, useMemo } from 'react';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { collection, doc, query, where } from 'firebase/firestore';
 import { Loader } from 'lucide-react';
 
 
@@ -43,9 +43,15 @@ export default function AssistantPage() {
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   
-  const groupsQuery = useMemoFirebase(() => {
-      return query(collection(firestore, "groups"), where("assistants", "array-contains", { id: id, name: "Sunita" }));
+  const assistantUserRef = useMemoFirebase(() => {
+    return doc(firestore, 'users', id);
   }, [firestore, id]);
+  const { data: assistantUser, isLoading: assistantUserLoading } = useDoc<User>(assistantUserRef);
+
+  const groupsQuery = useMemoFirebase(() => {
+      if (!assistantUser) return null;
+      return query(collection(firestore, "clinics"), where("type", "==", "Doctor"), where("assistants", "array-contains", { id: id, name: assistantUser.name }));
+  }, [firestore, id, assistantUser]);
 
   const { data: clinicGroups, isLoading: groupsLoading } = useCollection<ClinicGroup>(groupsQuery);
   const [state, formAction] = useActionState(registerPatient, null);
@@ -67,7 +73,7 @@ export default function AssistantPage() {
     }
   }, [state, toast, router]);
 
-  if (isUserLoading || groupsLoading) {
+  if (isUserLoading || assistantUserLoading || groupsLoading) {
       return (
           <div className="flex h-full w-full items-center justify-center">
               <Loader className="h-8 w-8 animate-spin" />

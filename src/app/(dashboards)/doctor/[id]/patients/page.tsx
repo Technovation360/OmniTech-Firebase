@@ -1,8 +1,9 @@
+
 'use client';
 
 import { use, useState, useEffect } from 'react';
 import { getPatientHistory } from '@/lib/data';
-import type { Patient, ClinicGroup, PatientHistoryEntry } from '@/lib/types';
+import type { Patient, ClinicGroup, PatientHistoryEntry, User } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -45,8 +46,8 @@ import {
 import { ArrowUp, ArrowDown, Search, History, Loader } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { collection, doc, query, where } from 'firebase/firestore';
 
 
 const badgeColors: Record<Patient['status'], string> = {
@@ -210,10 +211,15 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
 
-  const doctorGroupIdQuery = useMemoFirebase(() => {
-    // This is not ideal, we should query by doctorId, not hardcoded name
-    return query(collection(firestore, "clinics"), where("doctors", "array-contains", { id: doctorId, name: "Dr. Ashish" }));
+  const doctorUserRef = useMemoFirebase(() => {
+    return doc(firestore, 'users', doctorId);
   }, [firestore, doctorId]);
+  const { data: doctorUser, isLoading: doctorUserLoading } = useDoc<User>(doctorUserRef);
+
+  const doctorGroupIdQuery = useMemoFirebase(() => {
+    if (!doctorUser) return null;
+    return query(collection(firestore, "clinics"), where("type", "==", "Doctor"), where("doctors", "array-contains", { id: doctorId, name: doctorUser.name }));
+  }, [firestore, doctorId, doctorUser]);
 
   const {data: doctorGroups, isLoading: groupsLoading} = useCollection<ClinicGroup>(doctorGroupIdQuery);
   const groupId = doctorGroups?.[0]?.id;
@@ -279,7 +285,7 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
     setSelectedPatient(null);
   };
 
-  const isLoading = isUserLoading || groupsLoading || patientsLoading;
+  const isLoading = isUserLoading || doctorUserLoading || groupsLoading || patientsLoading;
 
   return (
     <>

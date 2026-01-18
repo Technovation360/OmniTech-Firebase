@@ -1,7 +1,8 @@
+
 'use client';
 
 import { use, useState, useEffect } from 'react';
-import type { Patient, ClinicGroup } from '@/lib/types';
+import type { Patient, ClinicGroup, User } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -32,9 +33,15 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
 
-  const doctorGroupIdQuery = useMemoFirebase(() => {
-    return query(collection(firestore, "clinics"), where("doctors", "array-contains", { id: doctorId, name: "Dr. Ashish" }));
+  const doctorUserRef = useMemoFirebase(() => {
+    return doc(firestore, 'users', doctorId);
   }, [firestore, doctorId]);
+  const { data: doctorUser, isLoading: doctorUserLoading } = useDoc<User>(doctorUserRef);
+
+  const doctorGroupIdQuery = useMemoFirebase(() => {
+    if (!doctorUser) return null;
+    return query(collection(firestore, "clinics"), where("type", "==", "Doctor"), where("doctors", "array-contains", { id: doctorId, name: doctorUser.name }));
+  }, [firestore, doctorId, doctorUser]);
 
   const {data: doctorGroups, isLoading: groupsLoading} = useCollection<ClinicGroup>(doctorGroupIdQuery);
   const groupId = doctorGroups?.[0]?.id;
@@ -53,7 +60,7 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
   const { data: clinic, isLoading: clinicLoading } = useDoc<ClinicGroup>(clinicGroupQuery);
 
   const getGroupName = () => clinic?.name || 'Unknown';
-  const getDoctorName = () => clinic?.doctors[0]?.name || 'Unknown';
+  const getDoctorName = () => clinic?.doctors.find(d => d.id === doctorId)?.name || 'Unknown';
 
   useEffect(() => {
     if (!allPatients) {
@@ -95,7 +102,7 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
     } else {
         setFilteredPatients(filteredData);
     }
-  }, [searchQuery, allPatients, sortConfig, clinic]);
+  }, [searchQuery, allPatients, sortConfig, clinic, getGroupName, getDoctorName]);
 
   const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -111,7 +118,7 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
     return <ArrowDown className="ml-2 h-3 w-3" />;
   };
 
-  if (isUserLoading || groupsLoading || patientsLoading || clinicLoading) {
+  if (isUserLoading || doctorUserLoading || groupsLoading || patientsLoading || clinicLoading) {
     return <div className="flex justify-center items-center h-full"><Loader className="animate-spin" /></div>;
   }
 

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { updatePatientStatus } from '@/lib/data';
-import type { Patient, ClinicGroup, Doctor } from '@/lib/types';
+import type { Patient, ClinicGroup, Doctor, User } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -19,7 +19,6 @@ import {
   XCircle,
   Loader,
   Lock,
-  User,
   Play,
   Square,
   UserX,
@@ -43,9 +42,15 @@ export default function DoctorConsultationPageLoader({ params }: DoctorPageProps
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   
-  const doctorGroupIdQuery = useMemoFirebase(() => {
-    return query(collection(firestore, "groups"), where("doctors", "array-contains", { id: id, name: "Dr. Ashish" }));
+  const doctorUserRef = useMemoFirebase(() => {
+    return doc(firestore, 'users', id);
   }, [firestore, id]);
+  const { data: doctorUser, isLoading: doctorUserLoading } = useDoc<User>(doctorUserRef);
+  
+  const doctorGroupIdQuery = useMemoFirebase(() => {
+    if (!doctorUser) return null;
+    return query(collection(firestore, "clinics"), where("type", "==", "Doctor"), where("doctors", "array-contains", { id: id, name: doctorUser.name }));
+  }, [firestore, id, doctorUser]);
 
   const {data: doctorGroups, isLoading: groupsLoading} = useCollection<ClinicGroup>(doctorGroupIdQuery);
   const groupId = doctorGroups?.[0]?.id;
@@ -58,11 +63,11 @@ export default function DoctorConsultationPageLoader({ params }: DoctorPageProps
   
   const clinicGroupQuery = useMemoFirebase(() => {
     if (!groupId) return null;
-    return doc(firestore, 'groups', groupId);
+    return doc(firestore, 'clinics', groupId);
   }, [firestore, groupId]);
   const { data: clinicGroup, isLoading: clinicGroupLoading } = useDoc<ClinicGroup>(clinicGroupQuery);
 
-  if (isUserLoading || groupsLoading || patientsLoading || clinicGroupLoading || !clinicGroup || !initialPatients) {
+  if (isUserLoading || doctorUserLoading || groupsLoading || patientsLoading || clinicGroupLoading || !clinicGroup || !initialPatients) {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader className="h-8 w-8 animate-spin" />
@@ -109,7 +114,7 @@ function DoctorConsultationDashboard({
         
         toast({
             title: "Patient Assigned",
-            description: `${nextPatient.name} has been assigned to ${roomName}.`,
+            description: `A patient has been assigned to ${roomName}.`,
         });
     };
     

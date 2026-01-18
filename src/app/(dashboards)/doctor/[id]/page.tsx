@@ -2,7 +2,7 @@
 'use client';
 
 import { use, useState, useEffect } from 'react';
-import type { Patient, ClinicGroup, Doctor } from '@/lib/types';
+import type { Patient, ClinicGroup, Doctor, User } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -34,9 +34,15 @@ export default function DoctorPageLoader({ params }: DoctorPageProps) {
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
 
-  const doctorGroupIdQuery = useMemoFirebase(() => {
-    return query(collection(firestore, "groups"), where("doctors", "array-contains", { id: id, name: "Dr. Ashish" }));
+  const doctorUserRef = useMemoFirebase(() => {
+    return doc(firestore, 'users', id);
   }, [firestore, id]);
+  const { data: doctorUser, isLoading: doctorUserLoading } = useDoc<User>(doctorUserRef);
+
+  const doctorGroupIdQuery = useMemoFirebase(() => {
+    if (!doctorUser) return null;
+    return query(collection(firestore, "clinics"), where("type", "==", "Doctor"), where("doctors", "array-contains", { id: id, name: doctorUser.name }));
+  }, [firestore, id, doctorUser]);
 
   const {data: doctorGroups, isLoading: groupsLoading} = useCollection<ClinicGroup>(doctorGroupIdQuery);
   const groupId = doctorGroups?.[0]?.id;
@@ -49,12 +55,12 @@ export default function DoctorPageLoader({ params }: DoctorPageProps) {
   
   const clinicGroupQuery = useMemoFirebase(() => {
     if (!groupId) return null;
-    return doc(firestore, 'groups', groupId);
+    return doc(firestore, 'clinics', groupId);
   }, [firestore, groupId]);
   const { data: clinicGroup, isLoading: clinicGroupLoading } = useDoc<ClinicGroup>(clinicGroupQuery);
 
 
-  if (isUserLoading || groupsLoading || patientsLoading || clinicGroupLoading) {
+  if (isUserLoading || doctorUserLoading || groupsLoading || patientsLoading || clinicGroupLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader className="h-8 w-8 animate-spin" />
@@ -65,13 +71,14 @@ export default function DoctorPageLoader({ params }: DoctorPageProps) {
   if (!clinicGroup || !initialPatients) {
        return (
          <div className="flex items-center justify-center h-full">
-            <p>Could not load doctor's dashboard.</p>
+            <p>Could not load doctor's dashboard. Ensure doctor is assigned to a group.</p>
         </div>
        )
   }
 
   return (
     <DoctorDashboard
+      doctorId={id}
       clinicGroup={clinicGroup}
       initialPatients={initialPatients}
     />
@@ -79,9 +86,11 @@ export default function DoctorPageLoader({ params }: DoctorPageProps) {
 }
 
 function DoctorDashboard({
+  doctorId,
   clinicGroup,
   initialPatients,
 }: {
+  doctorId: string;
   clinicGroup: ClinicGroup;
   initialPatients: Patient[];
 }) {
@@ -99,7 +108,11 @@ function DoctorDashboard({
   ];
 
   const nextToken = initialPatients.find(p => p.status === 'waiting');
-  const doctor = clinicGroup.doctors[0];
+  const doctor = clinicGroup.doctors.find(d => d.id === doctorId);
+
+  if (!doctor) {
+    return <p>Doctor not found in this group.</p>
+  }
 
   return (
     <div className="space-y-6">
