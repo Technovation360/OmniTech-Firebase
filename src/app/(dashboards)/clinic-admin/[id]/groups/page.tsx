@@ -401,7 +401,7 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
                                 </div>
                                 <div className="col-span-3 p-4 flex items-center justify-center gap-1">
                                     <Button variant="outline" size="icon-xs" asChild>
-                                        <Link href={`/register/${group.id}`} target="_blank">
+                                        <Link href={`/register/${group.id}`}>
                                             <ExternalLink className="h-4 w-4"/>
                                         </Link>
                                     </Button>

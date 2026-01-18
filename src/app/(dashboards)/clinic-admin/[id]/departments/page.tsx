@@ -19,8 +19,8 @@ import {
   PlusCircle,
   Search,
 } from 'lucide-react';
-import { getClinicGroups as getClinicDepartments, getClinicById, mockUsers, getCabinsByClinicId } from '@/lib/data';
-import type { Clinic, ClinicGroup as ClinicDepartment, User, Cabin } from '@/lib/types';
+import { getClinicGroups, getClinicById, mockUsers, getCabinsByClinicId } from '@/lib/data';
+import type { Clinic, ClinicGroup, User, Cabin } from '@/lib/types';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -43,7 +43,7 @@ function DepartmentForm({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  department: ClinicDepartment | null;
+  department: ClinicGroup | null;
   onConfirm: (formData: any) => void;
   doctors: User[];
   assistants: User[];
@@ -186,12 +186,12 @@ function DeleteDepartmentDialog({
 export default function DepartmentsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: clinicId } = use(params);
   const [clinic, setClinic] = useState<Clinic | null>(null);
-  const [allDepartments, setAllDepartments] = useState<ClinicDepartment[]>([]);
-  const [filteredDepartments, setFilteredDepartments] = useState<ClinicDepartment[]>([]);
+  const [allDepartments, setAllDepartments] = useState<ClinicGroup[]>([]);
+  const [filteredDepartments, setFilteredDepartments] = useState<ClinicGroup[]>([]);
   const { toast } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [departmentToEdit, setDepartmentToEdit] = useState<ClinicDepartment | null>(null);
-  const [departmentToDelete, setDepartmentToDelete] = useState<ClinicDepartment | null>(null);
+  const [departmentToEdit, setDepartmentToEdit] = useState<ClinicGroup | null>(null);
+  const [departmentToDelete, setDepartmentToDelete] = useState<ClinicGroup | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [cabins, setCabins] = useState<Cabin[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -205,7 +205,7 @@ export default function DepartmentsPage({ params }: { params: Promise<{ id: stri
       }
     });
 
-    getClinicDepartments(clinicId).then(setAllDepartments);
+    getClinicGroups(clinicId).then(setAllDepartments);
   }, [clinicId]);
 
   useEffect(() => {
@@ -243,7 +243,7 @@ export default function DepartmentsPage({ params }: { params: Promise<{ id: stri
     });
   };
 
-  const openEditModal = (department: ClinicDepartment) => {
+  const openEditModal = (department: ClinicGroup) => {
     setDepartmentToEdit(department);
     setIsModalOpen(true);
   }
@@ -258,7 +258,7 @@ export default function DepartmentsPage({ params }: { params: Promise<{ id: stri
     setDepartmentToEdit(null);
   }
 
-  const openDeleteDialog = (department: ClinicDepartment) => {
+  const openDeleteDialog = (department: ClinicGroup) => {
     setDepartmentToDelete(department);
   }
 
@@ -303,7 +303,7 @@ export default function DepartmentsPage({ params }: { params: Promise<{ id: stri
       } : g));
     } else {
       // Add new department
-        const newDepartment: ClinicDepartment = {
+        const newDepartment: ClinicGroup = {
           id: `dept_${Date.now()}`,
           clinicId: clinic.id,
           name: formData.name,
@@ -389,7 +389,7 @@ export default function DepartmentsPage({ params }: { params: Promise<{ id: stri
                                 </div>
                                 <div className="col-span-3 p-4 flex items-center justify-center gap-1">
                                     <Button variant="outline" size="icon-xs" asChild>
-                                        <Link href={`/register/${department.id}`} target="_blank">
+                                        <Link href={`/register/${department.id}`}>
                                             <ExternalLink className="h-4 w-4"/>
                                         </Link>
                                     </Button>
