@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, use, useMemo } from 'react';
@@ -282,7 +283,7 @@ function RoomCard({
                         <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-black" onClick={() => onCallPatient(patient)}>
                             <PhoneCall className="mr-2 h-4 w-4"/> Call Patient
                         </Button>
-                         <Button size="sm" variant="outline" onClick={() => onViewHistory(patient)}>
+                         <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onViewHistory(patient)}>
                             <History className="mr-2 h-4 w-4"/> History
                         </Button>
                     </div>
@@ -301,7 +302,7 @@ function RoomCard({
                         <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-black" onClick={() => onCallPatient(patient)}>
                             <PhoneCall className="mr-2 h-4 w-4"/> Call Patient
                         </Button>
-                         <Button size="sm" variant="outline" onClick={() => onViewHistory(patient)}>
+                         <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onViewHistory(patient)}>
                             <History className="mr-2 h-4 w-4"/> History
                         </Button>
                     </div>
