@@ -186,31 +186,6 @@ export default function LoginPage() {
           </CardContent>
         </Card>
 
-        <Card className="mt-6">
-            <CardHeader>
-                <CardTitle className="text-lg">Sample Credentials</CardTitle>
-                <CardDescription>Use "password" as the password for all sample accounts.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Role</TableHead>
-                            <TableHead>Email</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {sampleCredentials.map((cred) => (
-                            <TableRow key={cred.email}>
-                                <TableCell className="font-medium py-2 text-xs">{cred.role}</TableCell>
-                                <TableCell className="py-2 text-xs">{cred.email}</TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
-        
         <footer className="text-center text-muted-foreground text-sm mt-8">
             &copy; 2024 OMNITOKEN
         </footer>
