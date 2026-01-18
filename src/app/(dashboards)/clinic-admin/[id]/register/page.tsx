@@ -191,7 +191,7 @@ function ManualCheckInModal({
               <Label htmlFor="groupId">Clinic Group</Label>
               <Select name="groupId" required>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a department" />
+                  <SelectValue placeholder="Select a Group" />
                 </SelectTrigger>
                 <SelectContent>
                   {groups.map((group) => (
