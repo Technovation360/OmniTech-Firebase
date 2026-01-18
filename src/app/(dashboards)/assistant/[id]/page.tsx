@@ -96,7 +96,7 @@ export default function AssistantPage() {
           <CardContent>
             <form action={formAction} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="groupId">Clinic Department</Label>
+                <Label htmlFor="groupId">Clinic Group</Label>
                 <Select name="groupId" required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a department" />
@@ -150,3 +150,5 @@ export default function AssistantPage() {
     </div>
   );
 }
+
+    

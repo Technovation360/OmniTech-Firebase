@@ -188,7 +188,7 @@ function ManualCheckInModal({
         <form action={formAction}>
           <div className="px-6 space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="groupId">Clinic Department</Label>
+              <Label htmlFor="groupId">Clinic Group</Label>
               <Select name="groupId" required>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a department" />
@@ -554,3 +554,5 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
     </div>
   );
 }
+
+    
