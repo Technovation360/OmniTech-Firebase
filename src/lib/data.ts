@@ -162,43 +162,84 @@ export const getPatientsByGroupId = async (
 
 export const getPatientHistory = async (
   patientId: string,
-  clinics?: Clinic[]
+  clinicId?: string
 ): Promise<PatientHistoryEntry[]> => {
-  
-  const consultationsQuery = query(collection(db, 'consultations'), where('patientId', '==', patientId));
-  const consultationsSnapshot = await getDocs(consultationsQuery);
-  const patientConsultations = consultationsSnapshot.docs.map(doc => doc.data() as Consultation);
+  const patientDocRef = doc(db, 'patients', patientId);
+  const patientDocSnap = await getDoc(patientDocRef);
+  if (!patientDocSnap.exists()) {
+    return [];
+  }
+  const currentPatientData = patientDocSnap.data() as Patient;
 
-  const tokensQuery = query(collection(db, 'clinics'), where('type', '==', 'Token'), where('patientId', '==', patientId));
-  const tokensSnapshot = await getDocs(tokensQuery);
-  
-  const historyPromises = tokensSnapshot.docs.map(async (tokenDoc) => {
-    const tokenData = tokenDoc.data();
-    const groupDoc = await getDoc(doc(db, 'groups', tokenData.groupId));
-    const groupData = groupDoc.data() as Group;
-    
+  let patientHistoryQuery;
+
+  // Base queries to find the person
+  const queries: any[] = [];
+  if (currentPatientData.contactNumber) {
+    queries.push(where('contactNumber', '==', currentPatientData.contactNumber));
+  } else if (currentPatientData.emailAddress) {
+    queries.push(where('emailAddress', '==', currentPatientData.emailAddress));
+  } else {
+    // If no unique identifier, just use the current patient doc ID
+    queries.push(where('__name__', '==', patientId));
+  }
+
+  // Add clinic filter if provided
+  if (clinicId) {
+    queries.push(where('clinicId', '==', clinicId));
+  }
+
+  patientHistoryQuery = query(collection(db, 'patients'), ...queries);
+
+  const patientVisitsSnapshot = await getDocs(patientHistoryQuery);
+  if (patientVisitsSnapshot.empty) {
+    return [];
+  }
+
+  const patientVisits = patientVisitsSnapshot.docs.map(
+    (d) => ({ ...d.data(), id: d.id } as Patient)
+  );
+
+  const historyPromises = patientVisits.map(async (visit) => {
+    const consultationsQuery = query(
+      collection(db, 'consultations'),
+      where('patientId', '==', visit.id)
+    );
+    const consultationsSnapshot = await getDocs(consultationsQuery);
+    const consultation = consultationsSnapshot.docs.length > 0
+      ? (consultationsSnapshot.docs[0].data() as Consultation)
+      : undefined;
+
+    const groupDoc = await getDoc(doc(db, 'groups', visit.groupId));
+    const groupData = groupDoc.exists() ? (groupDoc.data() as Group) : null;
+
     let clinicName = 'Unknown Clinic';
-    if(clinics) {
-        const clinic = clinics.find(c => c.id === groupData.clinicId);
-        if(clinic) clinicName = clinic.name;
-    } else {
-        const clinicDoc = await getDoc(doc(db, 'clinics', groupData.clinicId));
-        if(clinicDoc.exists()) clinicName = (clinicDoc.data() as Clinic).name;
+    if (groupData) {
+      const clinicDoc = await getDoc(doc(db, 'clinics', groupData.clinicId));
+      if (clinicDoc.exists()) {
+        clinicName = (clinicDoc.data() as Clinic).name;
+      }
     }
 
-
-    const consultation = patientConsultations.find(c => c.id === tokenData.consultationId);
+    const registeredAt =
+      (visit.registeredAt as any) instanceof Timestamp
+        ? (visit.registeredAt as any).toDate().toISOString()
+        : visit.registeredAt;
 
     return {
-      tokenNumber: tokenData.tokenNumber,
+      tokenNumber: visit.tokenNumber,
       clinicName: clinicName,
-      groupName: groupData.name,
-      doctorName: groupData.doctors[0]?.name || 'N/A',
-      issuedAt: (tokenData.generationTime as Timestamp).toDate().toISOString(),
-      startTime: consultation ? new Date(new Date(consultation.date).getTime() - 10 * 60000).toISOString() : undefined,
+      groupName: groupData?.name || 'N/A',
+      doctorName: groupData?.doctors[0]?.name || 'N/A',
+      issuedAt: registeredAt,
+      startTime: consultation?.date
+        ? new Date(
+            new Date(consultation.date).getTime() - 10 * 60000
+          ).toISOString()
+        : undefined,
       endTime: consultation?.date,
-      status: 'consultation-done', // This is a simplification
-    }
+      status: visit.status,
+    } as PatientHistoryEntry;
   });
 
   const history = await Promise.all(historyPromises);
@@ -228,12 +269,6 @@ export const getQueueInfoByScreenId = async (screenId: string, allGroups: Group[
             ...calledPatient,
             cabinName: groupForScreen?.cabins[0]?.name || 'Consultation Room',
         }
-
-        // This setTimeout is problematic. It's a client-side pattern in a file that's
-        // being used on the server. The update logic should be handled by an explicit user action (e.g., doctor pressing a button).
-        // setTimeout(() => {
-        //     updatePatientStatus(calledPatient.id, 'in-consultation');
-        // }, 15000); 
     }
 
     return {

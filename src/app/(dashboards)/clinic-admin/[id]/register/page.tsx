@@ -72,17 +72,14 @@ function VisitHistoryModal({
   patient: Patient | null;
 }) {
   const [history, setHistory] = useState<PatientHistoryEntry[]>([]);
-  const [groups, setGroups] = useState<Group[]>([]);
 
   useEffect(() => {
     if (patient) {
-      getPatientHistory(patient.id).then(setHistory);
+      getPatientHistory(patient.id, patient.clinicId).then(setHistory);
     } else {
       setHistory([]);
-      setGroups([]);
     }
-
-  }, [patient]);
+  }, [patient, isOpen]);
 
   if (!patient) return null;
 

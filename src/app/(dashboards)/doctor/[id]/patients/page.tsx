@@ -1,3 +1,4 @@
+
 'use client';
 
 import { use, useState, useEffect, useMemo } from 'react';
@@ -75,24 +76,15 @@ function VisitHistoryModal({
 }) {
   const [history, setHistory] = useState<PatientHistoryEntry[]>([]);
   
-  const firestore = useFirestore();
-  const clinicsQuery = useMemoFirebase(() => query(collection(firestore, 'clinics')), [firestore]);
-  const { data: clinics } = useCollection<Group>(clinicsQuery);
-
-
   useEffect(() => {
-    if (patient && clinics) {
-      getPatientHistory(patient.id, clinics).then(setHistory);
+    if (patient) {
+      getPatientHistory(patient.id, patient.clinicId).then(setHistory);
     } else {
       setHistory([]);
     }
-  }, [patient, clinics, isOpen]);
+  }, [patient, isOpen]);
 
   if (!patient) return null;
-  
-  const getClinicName = (clinicId: string) => {
-    return clinics?.find(c => c.id === clinicId)?.name || 'Unknown Clinic';
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -103,47 +95,6 @@ function VisitHistoryModal({
           </DialogTitle>
         </DialogHeader>
         <div className="p-4">
-          <Accordion type="single" collapsible className="w-full mb-4">
-            <AccordionItem value="item-1">
-              <AccordionTrigger className="text-xs font-semibold bg-gray-50 px-4 rounded-md">
-                ADVANCED VISIT SEARCH
-              </AccordionTrigger>
-              <AccordionContent className="p-4 border rounded-b-md">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="space-y-1">
-                    <Label htmlFor="clinic" className="text-[10px]">
-                      CLINIC
-                    </Label>
-                    <Select>
-                      <SelectTrigger className="h-7 text-xs">
-                        <SelectValue placeholder="All" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
-                         {clinics?.map(clinic => (
-                          <SelectItem key={clinic.id} value={clinic.id} className="text-xs">{clinic.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="from-date" className="text-[10px]">
-                      FROM DATE
-                    </Label>
-                    <Input id="from-date" type="date" className="h-7 text-xs" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="to-date" className="text-[10px]">
-                      TO DATE
-                    </Label>
-                    <Input id="to-date" type="date" className="h-7 text-xs" />
-                  </div>
-                  <Button className="self-end h-7">Search</Button>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-
           <Table>
             <TableHeader>
               <TableRow>
