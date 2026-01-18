@@ -532,12 +532,13 @@ function DoctorConsultationDashboard({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {selectedGroup.cabins.map(cabin => {
             const room = rooms.find(r => r.name === cabin.name);
+            if (!room) return null;
             const patientForRoom = room?.patientId ? allPatients.find(p => p.id === room.patientId) : null;
             return (
                 <RoomCard 
                     key={cabin.id}
                     cabin={cabin}
-                    room={room!}
+                    room={room}
                     patient={patientForRoom || null}
                     onAssign={handleAssignRoom}
                     onLeave={handleLeaveRoom}
