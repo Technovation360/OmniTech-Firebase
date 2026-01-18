@@ -1,4 +1,3 @@
-
 'use server';
 
 import { z } from 'zod';
@@ -13,9 +12,8 @@ const PatientSchema = z.object({
   age: z.coerce.number().min(0, 'Age must be a positive number.'),
   gender: z.enum(['male', 'female', 'other']),
   groupId: z.string(),
-  // These are not on the form, but let's add them to the schema for future use, with defaults.
-  contactNumber: z.string().optional().default(''),
-  emailAddress: z.string().email().optional().default(''),
+  contactNumber: z.string().optional(),
+  emailAddress: z.string().email("Please enter a valid email.").or(z.literal('')).optional(),
 });
 
 export async function registerPatient(prevState: any, formData: FormData) {
@@ -24,6 +22,8 @@ export async function registerPatient(prevState: any, formData: FormData) {
     age: formData.get('age'),
     gender: formData.get('gender'),
     groupId: formData.get('groupId'),
+    contactNumber: formData.get('contactNumber'),
+    emailAddress: formData.get('emailAddress'),
   });
 
   if (!validatedFields.success) {
@@ -40,7 +40,12 @@ export async function registerPatient(prevState: any, formData: FormData) {
     }
     
     const newPatient = await addPatient({
-        ...validatedFields.data,
+        name: validatedFields.data.name,
+        age: validatedFields.data.age,
+        gender: validatedFields.data.gender,
+        groupId: validatedFields.data.groupId,
+        contactNumber: validatedFields.data.contactNumber || '',
+        emailAddress: validatedFields.data.emailAddress || '',
         clinicId: group.clinicId,
     }, group);
     

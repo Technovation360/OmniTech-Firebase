@@ -27,7 +27,7 @@ function SubmitButton() {
   return <Button type="submit" className="w-full">Get Token</Button>;
 }
 
-export default function RegistrationPage({ params }: { params: Promise<{ id: string }> }) {
+export default function RegistrationPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { id } = use(params);
   const [state, formAction] = useActionState(registerPatient, null);
@@ -77,7 +77,7 @@ export default function RegistrationPage({ params }: { params: Promise<{ id: str
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form action={formAction} className="space-y-6">
+            <form action={formAction} className="space-y-4">
               <input type="hidden" name="groupId" value={clinicGroup.id} />
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
@@ -85,36 +85,53 @@ export default function RegistrationPage({ params }: { params: Promise<{ id: str
                 {state?.errors?.name && <p className="text-sm text-destructive">{state.errors.name[0]}</p>}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="age">Age</Label>
-                <Input id="age" name="age" type="number" placeholder="e.g., 35" required />
-                {state?.errors?.age && <p className="text-sm text-destructive">{state.errors.age[0]}</p>}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="contactNumber">Phone Number</Label>
+                    <Input id="contactNumber" name="contactNumber" type="tel" placeholder="Optional" />
+                    {state?.errors?.contactNumber && <p className="text-sm text-destructive">{state.errors.contactNumber[0]}</p>}
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="emailAddress">Email Address</Label>
+                    <Input id="emailAddress" name="emailAddress" type="email" placeholder="Optional" />
+                    {state?.errors?.emailAddress && <p className="text-sm text-destructive">{state.errors.emailAddress[0]}</p>}
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>Gender</Label>
-                <RadioGroup name="gender" defaultValue="female" className="flex gap-4">
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="male" id="male" />
-                    <Label htmlFor="male">Male</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="female" id="female" />
-                    <Label htmlFor="female">Female</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="other" id="other" />
-                    <Label htmlFor="other">Other</Label>
-                  </div>
-                </RadioGroup>
-                {state?.errors?.gender && <p className="text-sm text-destructive">{state.errors.gender[0]}</p>}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="age">Age</Label>
+                    <Input id="age" name="age" type="number" placeholder="e.g., 35" required />
+                    {state?.errors?.age && <p className="text-sm text-destructive">{state.errors.age[0]}</p>}
+                </div>
+
+                <div className="space-y-2">
+                    <Label>Gender</Label>
+                    <RadioGroup name="gender" defaultValue="female" className="flex gap-4 pt-2">
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="male" id="male" />
+                            <Label htmlFor="male" className="font-normal">Male</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="female" id="female" />
+                            <Label htmlFor="female" className="font-normal">Female</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="other" id="other" />
+                            <Label htmlFor="other" className="font-normal">Other</Label>
+                        </div>
+                    </RadioGroup>
+                    {state?.errors?.gender && <p className="text-sm text-destructive">{state.errors.gender[0]}</p>}
+                </div>
               </div>
 
               {state?.message && !state.success && (
                 <p className="text-sm text-destructive text-center">{state.message}</p>
               )}
-
-              <SubmitButton />
+              
+              <div className="pt-2">
+                <SubmitButton />
+              </div>
             </form>
           </CardContent>
         </Card>
