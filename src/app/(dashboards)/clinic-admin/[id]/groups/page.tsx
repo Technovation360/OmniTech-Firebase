@@ -326,7 +326,7 @@ export default function GroupsPage({ params }: { params: { id: string } }) {
     if (groupToEdit) {
       setDocumentNonBlocking(doc(firestore, 'groups', groupToEdit.id), groupData, { merge: true });
     } else {
-      addDocumentNonBlocking(collection(firestore, 'groups'), groupData);
+      addDocumentNonBlocking(collection(firestore, 'groups'), { ...groupData, lastTokenNumber: 100 });
     }
     closeModal();
   };

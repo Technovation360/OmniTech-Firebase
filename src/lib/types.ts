@@ -65,6 +65,7 @@ export type Group = {
   assistants: Assistant[];
   cabins: Cabin[];
   screens: Screen[];
+  lastTokenNumber?: number;
 };
 
 export type Advertisement = {

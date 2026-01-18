@@ -10,6 +10,7 @@ import {
   Timestamp,
   addDoc,
   updateDoc,
+  runTransaction,
 } from 'firebase/firestore';
 import { initializeServerFirebase } from '@/firebase/server-init';
 
@@ -107,30 +108,52 @@ export const addPatient = async (
   data: Omit<Patient, 'id' | 'tokenNumber' | 'status' | 'registeredAt'>,
   clinicGroup: Group
 ): Promise<Patient> => {
+  const groupRef = doc(db, 'groups', clinicGroup.id);
 
-  const prefix = clinicGroup.tokenInitial;
+  try {
+    const newPatientData = await runTransaction(db, async (transaction) => {
+      const groupDoc = await transaction.get(groupRef);
+      if (!groupDoc.exists()) {
+        throw new Error('Group document does not exist!');
+      }
 
-  const patientsInGroupQuery = query(collection(db, 'patients'), where('groupId', '==', data.groupId));
-  const patientsInGroupSnapshot = await getDocs(patientsInGroupQuery);
-  const lastToken = patientsInGroupSnapshot.docs
-    .map(doc => parseInt(doc.data().tokenNumber.replace(prefix, ''), 10))
-    .filter(num => !isNaN(num))
-    .sort((a, b) => b - a)[0] || 100;
-  
-  const newPatientData = {
-    ...data,
-    tokenNumber: `${prefix}${lastToken + 1}`,
-    status: 'waiting',
-    registeredAt: Timestamp.now(),
-  };
+      const groupData = groupDoc.data();
+      const prefix = groupData.tokenInitial;
+      // Get the current token number from the group, default to 100 if not present
+      const currentToken = groupData.lastTokenNumber || 100;
+      const newToken = currentToken + 1;
 
-  const docRef = await addDoc(collection(db, 'patients'), newPatientData);
+      const newPatientDocRef = doc(collection(db, 'patients'));
 
-  return {
-    ...newPatientData,
-    id: docRef.id,
-    registeredAt: newPatientData.registeredAt.toDate().toISOString(),
-  } as Patient;
+      const patientData = {
+        ...data,
+        tokenNumber: `${prefix}${newToken}`,
+        status: 'waiting' as const,
+        registeredAt: Timestamp.now(),
+      };
+
+      // Create the new patient document
+      transaction.set(newPatientDocRef, patientData);
+
+      // Update the group with the new token number.
+      transaction.update(groupRef, { lastTokenNumber: newToken });
+
+      return {
+        ...patientData,
+        id: newPatientDocRef.id,
+      };
+    });
+
+    return {
+      ...newPatientData,
+      registeredAt: (newPatientData.registeredAt as Timestamp)
+        .toDate()
+        .toISOString(),
+    } as Patient;
+  } catch (error) {
+    console.error('Token generation transaction failed: ', error);
+    throw new Error('Failed to generate a unique token. Please try again.');
+  }
 };
 
 
