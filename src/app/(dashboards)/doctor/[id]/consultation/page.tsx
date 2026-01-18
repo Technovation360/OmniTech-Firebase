@@ -289,14 +289,14 @@ function RoomCard({
                     </div>
                 ) : ( // 'called' status
                      <div className="grid grid-cols-2 gap-2 w-full">
-                        <Button size="sm" className="" onClick={() => onAction(patient!.id, cabin.name, 'start')}>
+                        <Button size="sm" onClick={() => onAction(patient!.id, cabin.name, 'start')}>
                             <Play className="mr-2 h-4 w-4"/> Start
                         </Button>
-                        <Button size="sm" variant="outline" disabled={!noShowEnabled} onClick={() => onAction(patient!.id, cabin.name, 'no-show')}>
+                        <Button size="sm" variant="outline" disabled={!noShowEnabled} onClick={() => onAction(patient!.id, cabin.name, 'no-show')} className={cn(noShowEnabled && 'text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive')}>
                             { !noShowEnabled ? (
                                 <span className="text-xs font-mono w-full text-center">No Show ({timer}s)</span>
                             ) : (
-                                <><UserX className="mr-2 h-4 w-4 text-destructive"/> No Show</>
+                                <><UserX className="mr-2 h-4 w-4"/> No Show</>
                             )}
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => onCallPatient(patient)}>
