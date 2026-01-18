@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, use, useMemo } from 'react';
@@ -32,7 +33,7 @@ type DoctorPageProps = {
 
 type RoomStatus = {
     name: string;
-    patient: Patient | null;
+    patientId: string | null;
 }
 
 export default function DoctorConsultationPageLoader({ params }: DoctorPageProps) {
@@ -74,14 +75,97 @@ export default function DoctorConsultationPageLoader({ params }: DoctorPageProps
        )
   }
 
-  return <DoctorConsultationDashboard groups={doctorGroups} allPatients={allPatients || []} />;
+  return <DoctorConsultationDashboard doctorId={id} groups={doctorGroups} allPatients={allPatients || []} />;
 }
 
+function RoomCard({ cabin, room, patient, onAssign, onAction }: { cabin: any, room: RoomStatus | undefined, patient: Patient | null, onAssign: (roomName: string) => void, onAction: (patientId: string, roomName: string, action: 'start' | 'end' | 'no-show') => void }) {
+    const [noShowEnabled, setNoShowEnabled] = useState(false);
+    const [timer, setTimer] = useState(30);
+
+    useEffect(() => {
+        let timerId: NodeJS.Timeout | undefined;
+        let countdownInterval: NodeJS.Timeout | undefined;
+
+        if (patient && patient.status === 'called') {
+            setNoShowEnabled(false);
+            setTimer(30);
+
+            timerId = setTimeout(() => {
+                setNoShowEnabled(true);
+                if (countdownInterval) {
+                    clearInterval(countdownInterval);
+                }
+            }, 30000);
+
+            countdownInterval = setInterval(() => {
+                setTimer((prev) => {
+                    if (prev > 1) {
+                        return prev - 1;
+                    }
+                    if(countdownInterval) clearInterval(countdownInterval);
+                    return 0;
+                });
+            }, 1000);
+        }
+
+        return () => {
+            if (timerId) clearTimeout(timerId);
+            if (countdownInterval) clearInterval(countdownInterval);
+        };
+    }, [patient]);
+
+    return (
+        <Card>
+            <CardHeader className="flex-row items-center justify-between p-3 border-b bg-muted/30">
+                <CardTitle className="text-sm font-semibold">{cabin.name.toUpperCase()}</CardTitle>
+                {!patient && <Button size="xs" className="bg-green-600 hover:bg-green-700 h-7" onClick={() => onAssign(cabin.name)}>ASSIGN</Button>}
+            </CardHeader>
+            <CardContent className="p-4 h-48 flex flex-col items-center justify-center text-center">
+            {!patient ? (
+                <>
+                    <div className="p-3 bg-yellow-100 rounded-full mb-2">
+                        <Lock className="h-6 w-6 text-yellow-500" />
+                    </div>
+                    <p className="text-sm font-semibold text-muted-foreground">ASSIGN ROOM</p>
+                </>
+            ) : (
+                <div className="flex flex-col items-center justify-between h-full w-full">
+                <div className="text-center">
+                        <p className="font-bold text-4xl text-primary">{patient.tokenNumber}</p>
+                        <p className="font-semibold">{patient.name}</p>
+                        <p className="text-sm text-muted-foreground">{patient.age} / {patient.gender.charAt(0).toUpperCase()}</p>
+                </div>
+                <div className="flex items-center gap-2 w-full">
+                    {patient.status !== 'in-consultation' ? (
+                        <Button size="sm" className="flex-1" onClick={() => onAction(patient!.id, cabin.name, 'start')}>
+                            <Play className="mr-2 h-4 w-4"/> Start
+                        </Button>
+                    ) : (
+                        <Button size="sm" className="flex-1 bg-red-500 hover:bg-red-600" onClick={() => onAction(patient!.id, cabin.name, 'end')}>
+                            <Square className="mr-2 h-4 w-4"/> End
+                        </Button>
+                    )}
+                    <Button size="icon" variant="outline" disabled={!noShowEnabled && patient.status === 'called'} onClick={() => onAction(patient!.id, cabin.name, 'no-show')}>
+                        {patient?.status === 'called' && !noShowEnabled ? (
+                           <span className="text-xs font-mono w-4 text-center">{timer}</span>
+                        ) : (
+                           <UserX className="h-4 w-4 text-destructive"/>
+                        )}
+                    </Button>
+                </div>
+                </div>
+            )}
+            </CardContent>
+        </Card>
+    );
+}
 
 function DoctorConsultationDashboard({
+  doctorId,
   groups,
   allPatients,
 }: {
+  doctorId: string,
   groups: Group[];
   allPatients: Patient[];
 }) {
@@ -90,29 +174,32 @@ function DoctorConsultationDashboard({
 
     const selectedGroup = useMemo(() => groups.find(g => g.id === selectedGroupId), [groups, selectedGroupId]);
     
-    // This state will hold the patients for the currently selected group
+    // This state will hold the patients for the currently selected group, used for optimistic UI updates
     const [patients, setPatients] = useState<Patient[]>([]);
     
-    // This state holds all room assignments across all groups, but we only display rooms for the selected group
     const [rooms, setRooms] = useState<RoomStatus[]>([]);
 
-     useEffect(() => {
-        const newPatientsForGroup = allPatients.filter(p => p.groupId === selectedGroupId);
-        setPatients(newPatientsForGroup);
+    useEffect(() => {
+        // When allPatients from firestore updates, reset our local patient state
+        const patientsForGroup = allPatients.filter(p => p.groupId === selectedGroupId);
+        setPatients(patientsForGroup);
 
+        // Also clean up rooms for patients that are no longer active
         if (selectedGroup) {
-            // Only update/set rooms for the selected group
             setRooms(prevRooms => {
-                const existingRoomsForGroup = prevRooms.filter(r => selectedGroup.cabins.some(c => c.name === r.name));
-                const newCabins = selectedGroup.cabins.filter(c => !existingRoomsForGroup.some(er => er.name === c.name));
-                
-                return [
-                    ...existingRoomsForGroup,
-                    ...newCabins.map(cabin => ({ name: cabin.name, patient: null }))
-                ];
+                return selectedGroup.cabins.map(cabin => {
+                    const existingRoom = prevRooms.find(r => r.name === cabin.name);
+                    if (existingRoom && existingRoom.patientId) {
+                        const patientStillActive = patientsForGroup.some(p => p.id === existingRoom.patientId && (p.status === 'called' || p.status === 'in-consultation'));
+                        if (patientStillActive) {
+                            return existingRoom;
+                        }
+                    }
+                    return { name: cabin.name, patientId: null };
+                });
             });
         }
-    }, [selectedGroupId, allPatients, groups, selectedGroup]);
+    }, [allPatients, selectedGroupId, selectedGroup]);
 
 
     const handleAssignRoom = (roomName: string) => {
@@ -126,10 +213,11 @@ function DoctorConsultationDashboard({
             return;
         }
 
-        setRooms(prevRooms => prevRooms.map(room => room.name === roomName ? { ...room, patient: nextPatient } : room));
-        // Update local patient state for immediate UI feedback
-        setPatients(prevPatients => prevPatients.map(p => p.id === nextPatient.id ? { ...p, status: 'called' } : p));
-
+        // Optimistic update of local patients state
+        setPatients(prev => prev.map(p => p.id === nextPatient.id ? {...p, status: 'called'} : p));
+        setRooms(prev => prev.map(room => room.name === roomName ? { ...room, patientId: nextPatient.id } : room));
+        
+        // Actual DB update
         handlePatientAction(nextPatient.id, 'call');
         
         toast({
@@ -139,21 +227,24 @@ function DoctorConsultationDashboard({
     };
     
     const handleRoomAction = (patientId: string, roomName: string, action: 'start' | 'end' | 'no-show') => {
-        handlePatientAction(patientId, action);
+        const patient = patients.find(p => p.id === patientId);
+        if (!patient) return;
         
-        const patient = allPatients.find(p => p.id === patientId);
-        
+        // Optimistic update
         if (action === 'start') {
             setPatients(prev => prev.map(p => p.id === patientId ? { ...p, status: 'in-consultation' } : p));
         } else {
-            setRooms(prev => prev.map(room => room.name === roomName ? { ...room, patient: null } : room));
             const newStatus = action === 'end' ? 'consultation-done' : 'no-show';
             setPatients(prev => prev.map(p => p.id === patientId ? { ...p, status: newStatus } : p));
+            setRooms(prev => prev.map(room => room.name === roomName ? { ...room, patientId: null } : room));
         }
+        
+        // Actual DB update
+        handlePatientAction(patientId, action);
 
         toast({
             title: `Action: ${action.charAt(0).toUpperCase() + action.slice(1)}`,
-            description: `Patient ${patient?.name} status updated.`,
+            description: `Patient ${patient.name} status updated.`,
         });
     };
 
@@ -182,7 +273,6 @@ function DoctorConsultationDashboard({
         </div>
     )
   }
-
 
   return (
     <div className="space-y-6">
@@ -226,45 +316,16 @@ function DoctorConsultationDashboard({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {selectedGroup.cabins.map(cabin => {
             const room = rooms.find(r => r.name === cabin.name);
+            const patientForRoom = room?.patientId ? patients.find(p => p.id === room.patientId) : null;
             return (
-                 <Card key={cabin.id}>
-                    <CardHeader className="flex-row items-center justify-between p-3 border-b bg-muted/30">
-                        <CardTitle className="text-sm font-semibold">{cabin.name.toUpperCase()}</CardTitle>
-                        {!room?.patient && <Button size="xs" className="bg-green-600 hover:bg-green-700 h-7" onClick={() => handleAssignRoom(cabin.name)}>ASSIGN</Button>}
-                    </CardHeader>
-                    <CardContent className="p-4 h-48 flex flex-col items-center justify-center text-center">
-                    {!room?.patient ? (
-                        <>
-                            <div className="p-3 bg-yellow-100 rounded-full mb-2">
-                                <Lock className="h-6 w-6 text-yellow-500" />
-                            </div>
-                            <p className="text-sm font-semibold text-muted-foreground">ASSIGN ROOM</p>
-                        </>
-                    ) : (
-                        <div className="flex flex-col items-center justify-between h-full w-full">
-                        <div className="text-center">
-                                <p className="font-bold text-4xl text-primary">{room.patient.tokenNumber}</p>
-                                <p className="font-semibold">{room.patient.name}</p>
-                                <p className="text-sm text-muted-foreground">{room.patient.age} / {room.patient.gender.charAt(0).toUpperCase()}</p>
-                        </div>
-                        <div className="flex items-center gap-2 w-full">
-                            {room.patient.status !== 'in-consultation' ? (
-                                <Button size="sm" className="flex-1" onClick={() => handleRoomAction(room.patient!.id, cabin.name, 'start')}>
-                                    <Play className="mr-2 h-4 w-4"/> Start
-                                </Button>
-                            ) : (
-                                <Button size="sm" className="flex-1 bg-red-500 hover:bg-red-600" onClick={() => handleRoomAction(room.patient!.id, cabin.name, 'end')}>
-                                    <Square className="mr-2 h-4 w-4"/> End
-                                </Button>
-                            )}
-                            <Button size="icon" variant="outline" onClick={() => handleRoomAction(room.patient!.id, cabin.name, 'no-show')}>
-                                <UserX className="h-4 w-4 text-destructive"/>
-                            </Button>
-                        </div>
-                        </div>
-                    )}
-                    </CardContent>
-                </Card>
+                <RoomCard 
+                    key={cabin.id}
+                    cabin={cabin}
+                    room={room}
+                    patient={patientForRoom}
+                    onAssign={handleAssignRoom}
+                    onAction={handleRoomAction}
+                />
             )
         })}
       </div>
