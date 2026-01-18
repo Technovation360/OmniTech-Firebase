@@ -206,16 +206,16 @@ function VisitHistoryModal({
   );
 }
 
-function ManualCheckInModal({ 
-    isOpen, 
-    onClose, 
-    groups,
-    onPatientRegistered,
-} : {
-    isOpen: boolean;
-    onClose: () => void;
-    groups: Group[];
-    onPatientRegistered: () => void;
+function ManualCheckInModal({
+  isOpen,
+  onClose,
+  groups,
+  onPatientRegistered,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  groups: Group[];
+  onPatientRegistered: () => void;
 }) {
   const [state, formAction] = useActionState(registerPatient, null);
   const { toast } = useToast();
@@ -238,71 +238,106 @@ function ManualCheckInModal({
   }, [state, toast, onClose, onPatientRegistered]);
 
   return (
-     <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Manual Patient Check-in</DialogTitle>
-            <CardDescription>Fill in the details to add a patient to the queue.</CardDescription>
-          </DialogHeader>
-          <form action={formAction} className="space-y-6 p-4">
-               <div className="space-y-2">
-                <Label htmlFor="groupId">Clinic Department</Label>
-                <Select name="groupId" required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {groups.map((group) => (
-                      <SelectItem key={group.id} value={group.id}>
-                        {group.name} ({group.doctors.map(d => `Dr. ${d.name}`).join(', ')})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                 {state?.errors?.groupId && <p className="text-sm text-destructive">{state.errors.groupId[0]}</p>}
-              </div>
-                
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label htmlFor="name">Patient Name</Label>
-                    <Input id="name" name="name" placeholder="e.g., John Doe" required />
-                    {state?.errors?.name && <p className="text-sm text-destructive">{state.errors.name[0]}</p>}
-                </div>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-lg p-0">
+        <DialogHeader className="p-6 pb-4">
+          <DialogTitle>Manual Patient Check-in</DialogTitle>
+          <CardDescription>
+            Fill in the details to add a patient to the queue.
+          </CardDescription>
+        </DialogHeader>
+        <form action={formAction}>
+          <div className="px-6 space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="groupId">Clinic Department</Label>
+              <Select name="groupId" required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {groups.map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name} ({group.doctors.map((d) => `Dr. ${d.name}`).join(', ')})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {state?.errors?.groupId && (
+                <p className="text-sm text-destructive">
+                  {state.errors.groupId[0]}
+                </p>
+              )}
+            </div>
 
-                <div className="space-y-2">
-                    <Label htmlFor="age">Age</Label>
-                    <Input id="age" name="age" type="number" placeholder="e.g., 42" required />
-                    {state?.errors?.age && <p className="text-sm text-destructive">{state.errors.age[0]}</p>}
-                </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Patient Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  placeholder="e.g., John Doe"
+                  required
+                />
+                {state?.errors?.name && (
+                  <p className="text-sm text-destructive">
+                    {state.errors.name[0]}
+                  </p>
+                )}
               </div>
-
 
               <div className="space-y-2">
-                <Label>Gender</Label>
-                <RadioGroup name="gender" defaultValue="male" className="flex gap-4">
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="male" id="male" />
-                    <Label htmlFor="male">Male</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="female" id="female" />
-                    <Label htmlFor="female">Female</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="other" id="other" />
-                    <Label htmlFor="other">Other</Label>
-                  </div>
-                </RadioGroup>
-                {state?.errors?.gender && <p className="text-sm text-destructive">{state.errors.gender[0]}</p>}
+                <Label htmlFor="age">Age</Label>
+                <Input
+                  id="age"
+                  name="age"
+                  type="number"
+                  placeholder="e.g., 42"
+                  required
+                />
+                {state?.errors?.age && (
+                  <p className="text-sm text-destructive">
+                    {state.errors.age[0]}
+                  </p>
+                )}
               </div>
-              
-              <DialogFooter>
-                <Button variant="outline" onClick={onClose}>Cancel</Button>
-                <Button type="submit">Register Patient</Button>
-              </DialogFooter>
-            </form>
-        </DialogContent>
-      </Dialog>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Gender</Label>
+              <RadioGroup
+                name="gender"
+                defaultValue="male"
+                className="flex gap-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="male" id="male" />
+                  <Label htmlFor="male">Male</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="female" id="female" />
+                  <Label htmlFor="female">Female</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="other" id="other" />
+                  <Label htmlFor="other">Other</Label>
+                </div>
+              </RadioGroup>
+              {state?.errors?.gender && (
+                <p className="text-sm text-destructive">
+                  {state.errors.gender[0]}
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter className="bg-muted/50 px-6 py-4 mt-6 rounded-b-lg">
+            <Button variant="outline" type="button" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit">Register Patient</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
