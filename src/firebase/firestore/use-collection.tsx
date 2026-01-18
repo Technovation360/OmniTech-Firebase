@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Query,
   onSnapshot,
@@ -64,9 +63,9 @@ export function useCollection<T = any>(
   const [error, setError] = useState<FirestoreError | Error | null>(null);
   const [refetchIndex, setRefetchIndex] = useState(0);
 
-  const refetch = () => {
+  const refetch = useCallback(() => {
     setRefetchIndex(prev => prev + 1);
-  };
+  }, []);
 
   useEffect(() => {
     if (!memoizedTargetRefOrQuery) {

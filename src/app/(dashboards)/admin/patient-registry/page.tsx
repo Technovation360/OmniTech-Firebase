@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   CardContent,
@@ -362,7 +362,7 @@ export default function PatientRegistryPage() {
     if (!user) return null;
     return collection(firestore, 'patients');
   }, [firestore, user]);
-  const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsRef);
+  const { data: allPatients, isLoading: patientsLoading, refetch } = useCollection<Patient>(patientsRef);
   
   const clinicsRef = useMemoFirebase(() => {
     if (!user) return null;
@@ -387,6 +387,14 @@ export default function PatientRegistryPage() {
   const [selectedClinic, setSelectedClinic] = useState<string>('all');
   const { toast } = useToast();
   
+  const closeCheckInModal = useCallback(() => {
+    setCheckInModalOpen(false);
+  }, []);
+
+  const onPatientRegistered = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
   useEffect(() => {
     if (!allPatients) {
         setFilteredPatients([]);
@@ -655,9 +663,9 @@ export default function PatientRegistryPage() {
       />
        <ManualCheckInModal 
         isOpen={isCheckInModalOpen}
-        onClose={() => setCheckInModalOpen(false)}
+        onClose={closeCheckInModal}
         groups={groups || []}
-        onPatientRegistered={() => {}}
+        onPatientRegistered={onPatientRegistered}
       />
     </>
   );

@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useCallback } from 'react';
 import {
   Card,
   CardContent,
@@ -320,6 +320,10 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
   const [isCheckInModalOpen, setCheckInModalOpen] = useState(false);
   const { toast } = useToast();
 
+  const closeCheckInModal = useCallback(() => {
+    setCheckInModalOpen(false);
+  }, []);
+
   useEffect(() => {
     if (!allPatients) {
         setFilteredPatients([]);
@@ -560,7 +564,7 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
       />
       <ManualCheckInModal 
         isOpen={isCheckInModalOpen}
-        onClose={() => setCheckInModalOpen(false)}
+        onClose={closeCheckInModal}
         groups={groups || []}
         onPatientRegistered={refetch}
       />
