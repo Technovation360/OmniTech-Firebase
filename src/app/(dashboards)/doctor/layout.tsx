@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -114,6 +113,18 @@ function DoctorLayoutContent({ children }: { children: React.ReactNode }) {
     router.push('/');
   }
 
+  const pathname = usePathname();
+  const params = useParams();
+  const segments = pathname.split('/');
+  const lastSegment = segments[segments.length - 1];
+
+  let pageName;
+  if (lastSegment === params.id) {
+    pageName = 'Dashboard';
+  } else {
+    pageName = lastSegment.replace('-', ' ');
+  }
+
   return (
     <>
       <DoctorSidebar />
@@ -127,7 +138,7 @@ function DoctorLayoutContent({ children }: { children: React.ReactNode }) {
                     <Button variant="secondary" size="icon" className="h-8 w-8 bg-white text-primary hover:bg-white/90 hidden md:flex" onClick={toggleSidebar}>
                         <ChevronLeft className="h-5 w-5 opacity-80 transition-transform duration-300" data-state={state} style={{ transform: state === 'collapsed' ? 'rotate(180deg)' : 'rotate(0deg)' }}/>
                     </Button>
-                    <span className="text-sm font-medium">Home / Overview</span>
+                    <span className="text-sm font-medium capitalize">Home / {pageName}</span>
                 </div>
             </div>
           
