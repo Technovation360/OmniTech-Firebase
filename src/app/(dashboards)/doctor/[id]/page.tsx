@@ -107,7 +107,11 @@ function DoctorDashboard({
     { title: 'NO SHOWS', value: noShows, icon: XCircle, color: 'bg-red-100 text-red-600' },
   ];
 
-  const nextToken = initialPatients.find(p => p.status === 'waiting');
+  const waitingPatients = initialPatients.filter(p => p.status === 'waiting');
+  const nextToken = waitingPatients.length > 0
+    ? [...waitingPatients].sort((a, b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime())[0]
+    : undefined;
+  
   const doctor = group.doctors.find(d => d.id === doctorId);
 
   if (!doctor) {

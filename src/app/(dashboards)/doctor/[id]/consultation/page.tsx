@@ -133,7 +133,7 @@ function ManualCheckInModal({
                 <SelectContent>
                   {groups.map((group) => (
                     <SelectItem key={group.id} value={group.id}>
-                      {group.name} ({group.doctors.map((d) => `Dr. ${d.name}`).join(', ')})
+                      {group.name} ({group.doctors.map(d => `Dr. ${d.name}`).join(', ')})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -594,7 +594,7 @@ function DoctorConsultationDashboard({
         }
 
         // Sort by registration time to get the next patient in sequence
-        const nextPatient = waitingPatients.sort((a, b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime())[0];
+        const nextPatient = [...waitingPatients].sort((a, b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime())[0];
         
         setPatients(prev => prev.map(p => p.id === nextPatient.id ? {...p, status: 'calling'} : p));
         setRooms(prev => prev.map(room => room.name === roomName ? { ...room, patientId: nextPatient.id, status: 'occupied' } : room));
@@ -668,7 +668,7 @@ function DoctorConsultationDashboard({
   ];
   
   const nextToken = waitingPatients.length > 0
-    ? waitingPatients.sort((a, b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime())[0].tokenNumber
+    ? [...waitingPatients].sort((a, b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime())[0].tokenNumber
     : undefined;
 
   if (!selectedGroup) {
