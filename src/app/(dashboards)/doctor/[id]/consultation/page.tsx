@@ -35,6 +35,7 @@ import {
   LogOut,
   CheckCircle,
   PlusCircle,
+  Stethoscope,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { handlePatientAction, registerPatient } from '@/lib/actions';
@@ -70,7 +71,7 @@ type DoctorPageProps = {
 type RoomStatus = {
     name: string; // Cabin name
     patientId: string | null;
-    status: 'vacant' | 'occupied' | 'post-consultation';
+    status: 'vacant' | 'occupied' | 'post-consultation' | 'doctor-assigned';
 }
 
 const badgeColors: Record<Patient['status'], string> = {
@@ -328,7 +329,8 @@ function RoomCard({
     cabin, 
     room, 
     patient, 
-    onAssign, 
+    onAssignDoctor,
+    onCallNext,
     onLeave, 
     onAction,
     onViewHistory,
@@ -338,7 +340,8 @@ function RoomCard({
     cabin: any, 
     room: RoomStatus, 
     patient: Patient | null, 
-    onAssign: (roomName: string) => void,
+    onAssignDoctor: (roomName: string) => void,
+    onCallNext: (roomName: string) => void,
     onLeave: (roomName: string) => void,
     onAction: (patientId: string, roomName: string, action: 'start' | 'end' | 'no-show') => void,
     onViewHistory: (patient: Patient) => void,
@@ -394,6 +397,50 @@ function RoomCard({
             </Card>
         )
     }
+
+    if (room.status === 'vacant') {
+        return (
+             <Card>
+                <CardHeader className="flex-row items-center justify-between p-3 border-b bg-muted/30 h-[53px]">
+                    <CardTitle className="text-sm font-semibold">{cabin.name.toUpperCase()}</CardTitle>
+                    <Button size="xs" className="bg-green-600 hover:bg-green-700 h-7" onClick={() => onAssignDoctor(cabin.name)}>
+                        <PlusCircle className="mr-1 h-3 w-3" />
+                        Assign
+                    </Button>
+                </CardHeader>
+                <CardContent className="p-4 h-48 flex flex-col items-center justify-center text-center">
+                    <div className="p-3 bg-yellow-100 rounded-full mb-2">
+                        <Lock className="h-6 w-6 text-yellow-500" />
+                    </div>
+                    <p className="text-sm font-semibold text-muted-foreground">ROOM VACANT</p>
+                </CardContent>
+            </Card>
+        )
+    }
+
+    if (room.status === 'doctor-assigned') {
+        return (
+           <Card>
+               <CardHeader className="flex-row items-center justify-between p-3 border-b bg-muted/30 h-[53px]">
+                   <CardTitle className="text-sm font-semibold">{cabin.name.toUpperCase()}</CardTitle>
+                    <Button variant="destructive" size="xs" className="h-7" onClick={() => onMakeVacant(cabin.name)}>
+                       <LogOut className="mr-1 h-3 w-3" />
+                       Leave
+                   </Button>
+               </CardHeader>
+               <CardContent className="p-4 h-48 flex flex-col items-center justify-center text-center">
+                    <div className="p-3 bg-blue-100 rounded-full mb-2">
+                       <Stethoscope className="h-6 w-6 text-blue-500" />
+                   </div>
+                   <p className="text-sm font-semibold text-muted-foreground mb-4">ROOM ASSIGNED</p>
+                   <Button size="sm" onClick={() => onCallNext(cabin.name)}>
+                       <PhoneCall className="mr-2 h-4 w-4"/>
+                       Call Patient
+                   </Button>
+               </CardContent>
+           </Card>
+       );
+    }
     
     if (room.status === 'post-consultation') {
         return (
@@ -405,7 +452,7 @@ function RoomCard({
                     <CheckCircle className="h-10 w-10 text-green-500 mb-2" />
                     <p className="font-semibold mb-4">Consultation Ended</p>
                     <div className="flex flex-col gap-2 w-full">
-                        <Button onClick={() => onAssign(cabin.name)}>Assign</Button>
+                        <Button onClick={() => onCallNext(cabin.name)}>Assign</Button>
                         <Button variant="outline" onClick={() => onMakeVacant(cabin.name)}>Leave Room</Button>
                     </div>
                 </CardContent>
@@ -413,21 +460,18 @@ function RoomCard({
         );
     }
     
-    if (!patient) { // Vacant
+    if (!patient) { // Occupied but patient data is missing, should not happen.
         return (
-             <Card>
+            <Card>
                 <CardHeader className="flex-row items-center justify-between p-3 border-b bg-muted/30 h-[53px]">
                     <CardTitle className="text-sm font-semibold">{cabin.name.toUpperCase()}</CardTitle>
-                    <Button size="xs" className="bg-green-600 hover:bg-green-700 h-7" onClick={() => onAssign(cabin.name)}>
-                        <PlusCircle className="mr-1 h-3 w-3" />
-                        Assign
+                     <Button variant="destructive" size="xs" className="h-7" onClick={() => onMakeVacant(cabin.name)}>
+                       <LogOut className="mr-1 h-3 w-3" />
+                       Leave
                     </Button>
                 </CardHeader>
-                <CardContent className="p-4 h-48 flex flex-col items-center justify-center text-center">
-                    <div className="p-3 bg-yellow-100 rounded-full mb-2">
-                        <Lock className="h-6 w-6 text-yellow-500" />
-                    </div>
-                    <p className="text-sm font-semibold text-muted-foreground">ROOM VACANT</p>
+                <CardContent className="p-4 h-48 flex items-center justify-center">
+                    <Loader className="animate-spin text-muted-foreground" />
                 </CardContent>
             </Card>
         )
@@ -578,7 +622,7 @@ function DoctorConsultationDashboard({
                         if (patientStillActive) {
                             return { ...existingRoom, status: 'occupied' };
                         }
-                         if (existingRoom.status === 'post-consultation') {
+                         if (existingRoom.status === 'post-consultation' || existingRoom.status === 'doctor-assigned') {
                             return existingRoom;
                         }
                     }
@@ -589,6 +633,10 @@ function DoctorConsultationDashboard({
         }
     }, [allPatients, selectedGroupId, selectedGroup]);
 
+    const handleAssignDoctorToRoom = (roomName: string) => {
+        setRooms(prev => prev.map(room => room.name === roomName ? { ...room, patientId: null, status: 'doctor-assigned' } : room));
+        toast({ title: 'Room Assigned', description: `${roomName} is now ready to call patients.` });
+    };
 
     const handleCallNextPatient = (roomName: string) => {
         const waitingPatients = patients.filter(p => p.status === 'waiting').sort((a, b) => (a.registeredAt as any).toDate().getTime() - (b.registeredAt as any).toDate().getTime());
@@ -747,7 +795,8 @@ function DoctorConsultationDashboard({
                     cabin={cabin}
                     room={room}
                     patient={patientForRoom || null}
-                    onAssign={handleCallNextPatient}
+                    onAssignDoctor={handleAssignDoctorToRoom}
+                    onCallNext={handleCallNextPatient}
                     onLeave={handleLeaveRoom}
                     onAction={handleRoomAction}
                     onCallPatient={handleCallPatient}
@@ -767,5 +816,3 @@ function DoctorConsultationDashboard({
     </div>
   );
 }
-
-    
