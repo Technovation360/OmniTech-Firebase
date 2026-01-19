@@ -98,7 +98,7 @@ export const getCabinsByClinicId = async (
 
 // Patients
 export const getAllPatients = async (): Promise<Patient[]> => {
-  const patientsCol = collection(db, 'patients');
+  const patientsCol = collection(db, 'patient_transactions');
   const snapshot = await getDocs(patientsCol);
   const patients = snapshot.docs.map(doc => {
     const data = doc.data();
@@ -114,7 +114,7 @@ export const getAllPatients = async (): Promise<Patient[]> => {
 export const getPatientByToken = async (
   token: string
 ): Promise<Patient | undefined> => {
-  const q = query(collection(db, 'patients'), where('tokenNumber', '==', token));
+  const q = query(collection(db, 'patient_transactions'), where('tokenNumber', '==', token));
   const snapshot = await getDocs(q);
   if (snapshot.empty) {
     return undefined;
@@ -128,7 +128,7 @@ export const getPatientsByClinicId = async (
   clinicId: string
 ): Promise<Patient[]> => {
   const q = query(
-    collection(db, 'patients'),
+    collection(db, 'patient_transactions'),
     where('clinicId', '==', clinicId)
   );
   const snapshot = await getDocs(q);
@@ -146,7 +146,7 @@ export const getPatientsByClinicId = async (
 export const getPatientsByGroupId = async (
   groupId: string
 ): Promise<Patient[]> => {
-  const q = query(collection(db, 'patients'), where('groupId', '==', groupId));
+  const q = query(collection(db, 'patient_transactions'), where('groupId', '==', groupId));
   const snapshot = await getDocs(q);
     const patients = snapshot.docs.map(doc => {
     const data = doc.data();
@@ -160,15 +160,15 @@ export const getPatientsByGroupId = async (
 };
 
 export const getPatientHistory = async (
-  patientId: string,
+  patientId: string, // transactionId
   clinicId?: string
 ): Promise<PatientHistoryEntry[]> => {
-  const patientDocRef = doc(db, 'patients', patientId);
-  const patientDocSnap = await getDoc(patientDocRef);
-  if (!patientDocSnap.exists()) {
+  const transactionDocRef = doc(db, 'patient_transactions', patientId);
+  const transactionDocSnap = await getDoc(transactionDocRef);
+  if (!transactionDocSnap.exists()) {
     return [];
   }
-  const currentPatientData = patientDocSnap.data() as Patient;
+  const currentPatientData = transactionDocSnap.data() as Patient;
 
   let patientHistoryQuery;
 
@@ -176,11 +176,8 @@ export const getPatientHistory = async (
   const queries: any[] = [];
   if (currentPatientData.contactNumber) {
     queries.push(where('contactNumber', '==', currentPatientData.contactNumber));
-  } else if (currentPatientData.emailAddress) {
-    queries.push(where('emailAddress', '==', currentPatientData.emailAddress));
   } else {
-    // If no unique identifier, just use the current patient doc ID
-    queries.push(where('__name__', '==', patientId));
+    return []; // No unique identifier to find history
   }
 
   // Add clinic filter if provided
@@ -188,7 +185,7 @@ export const getPatientHistory = async (
     queries.push(where('clinicId', '==', clinicId));
   }
 
-  patientHistoryQuery = query(collection(db, 'patients'), ...queries);
+  patientHistoryQuery = query(collection(db, 'patient_transactions'), ...queries);
 
   const patientVisitsSnapshot = await getDocs(patientHistoryQuery);
   if (patientVisitsSnapshot.empty) {

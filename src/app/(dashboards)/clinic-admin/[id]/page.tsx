@@ -23,7 +23,7 @@ function InsightsTab({ clinicId }: { clinicId: string }) {
     const firestore = useFirestore();
 
     const patientsQuery = useMemoFirebase(() => {
-        return query(collection(firestore, 'patients'), where('clinicId', '==', clinicId));
+        return query(collection(firestore, 'patient_transactions'), where('clinicId', '==', clinicId));
     }, [firestore, clinicId]);
 
     const { data: patients, isLoading } = useCollection<Patient>(patientsQuery);
@@ -47,7 +47,7 @@ function InsightsTab({ clinicId }: { clinicId: string }) {
     }
 
     const totalPatients = patients?.length || 0;
-    const inWaiting = patients?.filter(p => p.status === 'waiting' || p.status === 'called').length || 0;
+    const inWaiting = patients?.filter(p => p.status === 'waiting' || p.status === 'calling').length || 0;
     const attended = patients?.filter(p => p.status === 'consultation-done').length || 0;
     const skipped = patients?.filter(p => p.status === 'no-show').length || 0;
 

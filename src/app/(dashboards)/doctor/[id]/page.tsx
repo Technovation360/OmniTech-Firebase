@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, doc, query, where } from 'firebase/firestore';
+import { collection, doc, query, where, Timestamp } from 'firebase/firestore';
 
 
 type DoctorPageProps = {
@@ -49,7 +49,7 @@ export default function DoctorPageLoader({ params }: DoctorPageProps) {
 
   const patientsQuery = useMemoFirebase(() => {
     if (!groupId) return null;
-    return query(collection(firestore, 'patients'), where('groupId', '==', groupId));
+    return query(collection(firestore, 'patient_transactions'), where('groupId', '==', groupId));
   }, [firestore, groupId]);
   const { data: initialPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
   
@@ -109,7 +109,7 @@ function DoctorDashboard({
 
   const waitingPatients = initialPatients.filter(p => p.status === 'waiting');
   const nextToken = waitingPatients.length > 0
-    ? [...waitingPatients].sort((a, b) => (a.registeredAt as any).toDate().getTime() - (b.registeredAt as any).toDate().getTime())[0]
+    ? [...waitingPatients].sort((a, b) => ((a.registeredAt as any) as Timestamp).toMillis() - ((b.registeredAt as any) as Timestamp).toMillis())[0]
     : undefined;
   
   const doctor = group.doctors.find(d => d.id === doctorId);

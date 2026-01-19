@@ -46,7 +46,7 @@ import { ArrowUp, ArrowDown, Search, History, Loader } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, doc, query, where } from 'firebase/firestore';
+import { collection, doc, query, where, Timestamp } from 'firebase/firestore';
 
 
 const badgeColors: Record<Patient['status'], string> = {
@@ -175,7 +175,7 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
 
   const patientsQuery = useMemoFirebase(() => {
     if (groupIds.length === 0) return null;
-    return query(collection(firestore, 'patients'), where('groupId', 'in', groupIds));
+    return query(collection(firestore, 'patient_transactions'), where('groupId', 'in', groupIds));
   }, [firestore, groupIds]);
 
   const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
@@ -341,7 +341,7 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
                   <TableCell className="py-2 px-2 text-xs">{patient.contactNumber}</TableCell>
                   <TableCell className="py-2 px-2 text-xs">{patient.emailAddress}</TableCell>
                   <TableCell className="py-2 text-xs">
-                     {format((patient.registeredAt as any).toDate(), 'P, pp')}
+                     {format(((patient.registeredAt as any) as Timestamp).toDate(), 'P, pp')}
                   </TableCell>
                   <TableCell className="py-2 text-xs">
                     <Button

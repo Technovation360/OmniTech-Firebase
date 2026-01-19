@@ -8,6 +8,7 @@ import {
   FirestoreError,
   QuerySnapshot,
   CollectionReference,
+  Timestamp,
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -36,6 +37,17 @@ export interface InternalQuery extends Query<DocumentData> {
       toString(): string;
     }
   }
+}
+
+const processDoc = (doc: DocumentData) => {
+    const data = doc.data();
+    // Convert all Timestamps to ISO strings
+    for (const key in data) {
+        if (data[key] instanceof Timestamp) {
+            data[key] = data[key].toDate().toISOString();
+        }
+    }
+    return { ...data, id: doc.id };
 }
 
 /**
@@ -84,7 +96,7 @@ export function useCollection<T = any>(
       (snapshot: QuerySnapshot<DocumentData>) => {
         const results: ResultItemType[] = [];
         for (const doc of snapshot.docs) {
-          results.push({ ...(doc.data() as T), id: doc.id });
+          results.push(processDoc(doc) as ResultItemType);
         }
         setData(results);
         setError(null);

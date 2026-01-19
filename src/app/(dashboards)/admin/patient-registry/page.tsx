@@ -50,7 +50,7 @@ import { registerPatient } from '@/lib/actions';
 import { useActionState } from 'react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, Timestamp } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 
 
@@ -362,7 +362,7 @@ export default function PatientRegistryPage() {
 
   const patientsRef = useMemoFirebase(() => {
     if (!user) return null;
-    return collection(firestore, 'patients');
+    return collection(firestore, 'patient_transactions');
   }, [firestore, user]);
   const { data: allPatients, isLoading: patientsLoading, refetch } = useCollection<Patient>(patientsRef);
   
@@ -628,7 +628,7 @@ export default function PatientRegistryPage() {
                   <TableCell className="py-2 text-xs">{patient.contactNumber}</TableCell>
                   <TableCell className="py-2 text-xs">{patient.emailAddress}</TableCell>
                   <TableCell className="py-2 text-xs">
-                     {format((patient.registeredAt as any).toDate(), 'P, pp')}
+                     {format(((patient.registeredAt as any) as Timestamp).toDate(), 'P, pp')}
                   </TableCell>
                   <TableCell className="py-2 text-xs text-center">
                      <Button size="xs" onClick={() => handleGenerateToken(patient)}>GENERATE</Button>

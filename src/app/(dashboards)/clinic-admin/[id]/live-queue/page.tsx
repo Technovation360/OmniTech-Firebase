@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, Timestamp } from 'firebase/firestore';
 
 const badgeColors: Record<Patient['status'], string> = {
     'waiting': "bg-blue-100 text-blue-800",
@@ -46,7 +46,7 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
   const { user, isUserLoading } = useUser();
 
   const patientsQuery = useMemoFirebase(() => {
-    return query(collection(firestore, 'patients'), where('clinicId', '==', clinicId), where('status', 'in', ['waiting', 'consulting']));
+    return query(collection(firestore, 'patient_transactions'), where('clinicId', '==', clinicId), where('status', 'in', ['waiting', 'consulting']));
   }, [firestore, clinicId]);
   const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
 
@@ -103,6 +103,10 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
                 aVal = getDoctorName(a.groupId);
                 bVal = getDoctorName(b.groupId);
                 break;
+            case 'registeredAt':
+                 aVal = (a.registeredAt as any)?.seconds || 0;
+                 bVal = (b.registeredAt as any)?.seconds || 0;
+                 break;
             default:
                 aVal = a[sortConfig.key as keyof Patient];
                 bVal = b[sortConfig.key as keyof Patient];
@@ -115,7 +119,7 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
       });
       setFilteredPatients(sorted);
     } else {
-       const sorted = [...filteredData].sort((a,b) => (a.registeredAt as any).toDate().getTime() - (b.registeredAt as any).toDate().getTime());
+       const sorted = [...filteredData].sort((a,b) => ((a.registeredAt as any) as Timestamp).toMillis() - ((b.registeredAt as any) as Timestamp).toMillis());
        setFilteredPatients(sorted);
     }
 
@@ -205,7 +209,7 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
                   <TableCell className="py-2 px-4 text-xs">{patient.name}</TableCell>
                   <TableCell className="py-2 px-4 text-xs">{getGroupName(patient.groupId)}</TableCell>
                   <TableCell className="py-2 px-4 text-xs">{getDoctorName(patient.groupId)}</TableCell>
-                  <TableCell className="py-2 px-4 text-xs">{format((patient.registeredAt as any).toDate(), 'hh:mm a')}</TableCell>
+                  <TableCell className="py-2 px-4 text-xs">{format(((patient.registeredAt as any) as Timestamp).toDate(), 'hh:mm a')}</TableCell>
                   <TableCell className="py-2 px-4 text-xs">
                     <Badge variant={'secondary'} className={cn("text-[10px] border-transparent capitalize", badgeColors[patient.status])}>
                           {patient.status.replace('-', ' ')}

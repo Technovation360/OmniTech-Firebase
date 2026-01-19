@@ -40,7 +40,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { handlePatientAction, registerPatient } from '@/lib/actions';
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc, query, where } from 'firebase/firestore';
+import { collection, doc, query, where, Timestamp } from 'firebase/firestore';
 import { getPatientHistory } from '@/lib/data';
 import {
   Table,
@@ -403,16 +403,16 @@ function RoomCard({
              <Card>
                 <CardHeader className="flex-row items-center justify-between p-3 border-b bg-muted/30 h-[53px]">
                     <CardTitle className="text-sm font-semibold">{cabin.name.toUpperCase()}</CardTitle>
-                    <Button size="xs" className="bg-green-600 hover:bg-green-700 h-7" onClick={() => onAssignDoctor(cabin.name)}>
-                        <PlusCircle className="mr-1 h-3 w-3" />
-                        Assign
-                    </Button>
                 </CardHeader>
                 <CardContent className="p-4 h-48 flex flex-col items-center justify-center text-center">
                     <div className="p-3 bg-yellow-100 rounded-full mb-2">
                         <Lock className="h-6 w-6 text-yellow-500" />
                     </div>
-                    <p className="text-sm font-semibold text-muted-foreground">ROOM VACANT</p>
+                    <p className="text-sm font-semibold text-muted-foreground mb-4">ROOM VACANT</p>
+                    <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => onAssignDoctor(cabin.name)}>
+                        <PlusCircle className="mr-1 h-3 w-3" />
+                        Assign
+                    </Button>
                 </CardContent>
             </Card>
         )
@@ -555,7 +555,7 @@ export default function DoctorConsultationPageLoader({ params }: DoctorPageProps
 
   const patientsQuery = useMemoFirebase(() => {
     if (groupIds.length === 0) return null;
-    return query(collection(firestore, 'patients'), where('groupId', 'in', groupIds));
+    return query(collection(firestore, 'patient_transactions'), where('groupId', 'in', groupIds));
   }, [firestore, groupIds]);
   const { data: allPatients, isLoading: patientsLoading, refetch } = useCollection<Patient>(patientsQuery);
   
@@ -639,7 +639,7 @@ function DoctorConsultationDashboard({
     };
 
     const handleCallNextPatient = (roomName: string) => {
-        const waitingPatients = patients.filter(p => p.status === 'waiting').sort((a, b) => (a.registeredAt as any).toDate().getTime() - (b.registeredAt as any).toDate().getTime());
+        const waitingPatients = patients.filter(p => p.status === 'waiting').sort((a, b) => ((a.registeredAt as any) as Timestamp).toMillis() - ((b.registeredAt as any) as Timestamp).toMillis());
         if (waitingPatients.length === 0) {
             toast({
                 variant: 'destructive',
@@ -728,7 +728,7 @@ function DoctorConsultationDashboard({
   ];
   
   const nextToken = waitingPatients.length > 0
-    ? [...waitingPatients].sort((a, b) => (a.registeredAt as any).toDate().getTime() - (b.registeredAt as any).toDate().getTime())[0].tokenNumber
+    ? [...waitingPatients].sort((a, b) => ((a.registeredAt as any) as Timestamp).toMillis() - ((b.registeredAt as any) as Timestamp).toMillis())[0].tokenNumber
     : undefined;
 
   if (!selectedGroup) {

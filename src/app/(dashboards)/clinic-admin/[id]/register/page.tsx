@@ -44,7 +44,7 @@ import { useToast } from '@/hooks/use-toast';
 import { registerPatient } from '@/lib/actions';
 import { useActionState } from 'react';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, Timestamp } from 'firebase/firestore';
 
 
 const badgeColors: Record<Patient['status'], string> = {
@@ -302,7 +302,7 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
   const { user, isUserLoading } = useUser();
 
   const patientsQuery = useMemoFirebase(() => {
-    return query(collection(firestore, 'patients'), where('clinicId', '==', clinicId));
+    return query(collection(firestore, 'patient_transactions'), where('clinicId', '==', clinicId));
   }, [firestore, clinicId]);
   const { data: allPatients, isLoading: patientsLoading, refetch } = useCollection<Patient>(patientsQuery);
   
@@ -534,7 +534,7 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
                   <TableCell className="py-2 text-xs">{patient.contactNumber}</TableCell>
                   <TableCell className="py-2 text-xs">{patient.emailAddress || '-'}</TableCell>
                   <TableCell className="py-2 text-xs">
-                     {patient.registeredAt ? format((patient.registeredAt as any).toDate(), 'P, pp') : ''}
+                     {patient.registeredAt ? format(((patient.registeredAt as any) as Timestamp).toDate(), 'P, pp') : ''}
                   </TableCell>
                   <TableCell className="py-2 text-xs text-center">
                      <Button size="xs" onClick={() => handleGenerateToken(patient)}>GENERATE</Button>

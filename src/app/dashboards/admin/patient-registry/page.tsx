@@ -42,7 +42,7 @@ import {
 } from '@/components/ui/select';
 import { ArrowUp, ArrowDown, Search, History, PlusCircle, Loader } from 'lucide-react';
 import { getPatientHistory } from '@/lib/data';
-import type { Patient, ClinicGroup, PatientHistoryEntry, Clinic } from '@/lib/types';
+import type { Patient, Group, PatientHistoryEntry, Clinic } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -50,7 +50,8 @@ import { registerPatient } from '@/lib/actions';
 import { useActionState } from 'react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where, User } from 'firebase/firestore';
+import { collection, query, where, Timestamp } from 'firebase/firestore';
+import type { User } from 'firebase/auth';
 
 
 const badgeColors: Record<Patient['status'], string> = {
@@ -85,7 +86,7 @@ function VisitHistoryModal({
   const clinicsRef = useMemoFirebase(() => {
     return collection(firestore, 'groups');
   }, [firestore]);
-  const { data: clinicGroups, isLoading } = useCollection<ClinicGroup>(clinicsRef);
+  const { data: clinicGroups, isLoading } = useCollection<Group>(clinicsRef);
 
   useEffect(() => {
     if (patient) {
@@ -212,7 +213,7 @@ function ManualCheckInModal({
 } : {
     isOpen: boolean;
     onClose: () => void;
-    clinicGroups: ClinicGroup[];
+    clinicGroups: Group[];
     onPatientRegistered: () => void;
 }) {
   const [state, formAction] = useActionState(registerPatient, null);
@@ -309,7 +310,7 @@ export default function PatientRegistryPage() {
   const { user, isUserLoading } = useUser();
 
   const patientsRef = useMemoFirebase(() => {
-    return collection(firestore, 'patients');
+    return collection(firestore, 'patient_transactions');
   }, [firestore]);
   const { data: allPatients, isLoading: patientsLoading, refetch: fetchPatients } = useCollection<Patient>(patientsRef);
   
@@ -321,7 +322,7 @@ export default function PatientRegistryPage() {
   const clinicGroupsRef = useMemoFirebase(() => {
     return query(collection(firestore, 'groups'), where('type', '==', 'Doctor'));
   }, [firestore]);
-  const { data: clinicGroups, isLoading: groupsLoading } = useCollection<ClinicGroup>(clinicGroupsRef);
+  const { data: clinicGroups, isLoading: groupsLoading } = useCollection<Group>(clinicGroupsRef);
 
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [sortConfig, setSortConfig] = useState<{
@@ -560,7 +561,7 @@ export default function PatientRegistryPage() {
                   <TableCell className="py-2 text-xs">{patient.contactNumber}</TableCell>
                   <TableCell className="py-2 text-xs">{patient.emailAddress}</TableCell>
                   <TableCell className="py-2 text-xs">
-                     {format(new Date(patient.registeredAt), 'P, pp')}
+                     {format(((patient.registeredAt as any) as Timestamp).toDate(), 'P, pp')}
                   </TableCell>
                   <TableCell className="py-2 text-xs text-center">
                      <Button size="xs" onClick={() => handleGenerateToken(patient)}>GENERATE</Button>
@@ -605,5 +606,4 @@ export default function PatientRegistryPage() {
     </>
   );
 }
-
     

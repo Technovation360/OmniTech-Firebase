@@ -1,101 +1,42 @@
 
 {
   "entities": {
-    "Patient": {
+    "PatientMaster": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Patient",
+      "title": "PatientMaster",
       "type": "object",
-      "description": "Represents a patient registered in the clinic system.",
+      "description": "Represents a patient's master record with demographic information.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Patient entity."
-        },
-        "firstName": {
-          "type": "string",
-          "description": "Patient's first name."
-        },
-        "lastName": {
-          "type": "string",
-          "description": "Patient's last name."
-        },
-        "dateOfBirth": {
-          "type": "string",
-          "description": "Patient's date of birth.",
-          "format": "date-time"
-        },
-        "gender": {
-          "type": "string",
-          "description": "Patient's gender."
-        },
-        "contactNumber": {
-          "type": "string",
-          "description": "Patient's contact phone number."
-        },
-        "email": {
-          "type": "string",
-          "description": "Patient's email address.",
-          "format": "email"
-        },
-        "registrationDate": {
-          "type": "string",
-          "description": "Date and time when the patient registered.",
-          "format": "date-time"
-        },
-        "groupId": {
-          "type": "string",
-          "description": "Reference to Group. (Relationship: Group 1:N Patient)"
-        }
+        "id": { "type": "string", "description": "Unique identifier for the patient master record." },
+        "name": { "type": "string", "description": "Patient's full name." },
+        "age": { "type": "number", "description": "Patient's age." },
+        "gender": { "type": "string", "enum": ["male", "female", "other"], "description": "Patient's gender." },
+        "contactNumber": { "type": "string", "description": "Patient's contact phone number." },
+        "emailAddress": { "type": "string", "format": "email", "description": "Patient's email address." }
       },
-      "required": [
-        "id",
-        "firstName",
-        "lastName",
-        "dateOfBirth",
-        "gender",
-        "contactNumber",
-        "registrationDate",
-        "groupId"
-      ]
+      "required": ["id", "name", "age", "gender", "contactNumber"]
     },
-    "Token": {
+    "PatientTransaction": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Token",
+      "title": "PatientTransaction",
       "type": "object",
-      "description": "Represents a token assigned to a patient for their visit.",
+      "description": "Represents a single transactional visit for a patient, with denormalized patient data for easier querying.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Token entity."
-        },
-        "tokenNumber": {
-          "type": "string",
-          "description": "The unique token number."
-        },
-        "patientId": {
-          "type": "string",
-          "description": "Reference to Patient. (Relationship: Patient 1:N Token)"
-        },
-        "generationTime": {
-          "type": "string",
-          "description": "Date and time when the token was generated.",
-          "format": "date-time"
-        },
-        "consultationId": {
-          "type": "string",
-          "description": "Reference to Consultation. (Relationship: Consultation 1:1 Token)"
-        },
-        "assistantId": {
-          "type": "string",
-          "description": "Reference to Assistant. (Relationship: Assistant 1:N Token). Nullable because token may be created by patient"
-        }
+        "id": { "type": "string", "description": "Unique identifier for the patient transaction." },
+        "patientMasterId": { "type": "string", "description": "Reference to the PatientMaster record." },
+        "name": { "type": "string", "description": "Patient's full name (denormalized)." },
+        "age": { "type": "number", "description": "Patient's age (denormalized)." },
+        "gender": { "type": "string", "enum": ["male", "female", "other"], "description": "Patient's gender (denormalized)." },
+        "contactNumber": { "type": "string", "description": "Patient's contact phone number (denormalized)." },
+        "emailAddress": { "type": "string", "format": "email", "description": "Patient's email address (denormalized)." },
+        "clinicId": { "type": "string", "description": "The ID of the clinic for this transaction." },
+        "groupId": { "type": "string", "description": "The ID of the group for this transaction." },
+        "cabinId": { "type": "string", "description": "The ID of the cabin assigned for consultation." },
+        "tokenNumber": { "type": "string", "description": "The token number for this visit." },
+        "status": { "type": "string", "enum": ["waiting", "calling", "consulting", "no-show", "consultation-done"], "description": "The current status of the patient in the queue." },
+        "registeredAt": { "type": "string", "format": "date-time", "description": "Timestamp when the token was generated." }
       },
-      "required": [
-        "id",
-        "tokenNumber",
-        "patientId",
-        "generationTime"
-      ]
+      "required": ["id", "patientMasterId", "name", "age", "gender", "contactNumber", "clinicId", "groupId", "tokenNumber", "status", "registeredAt"]
     },
     "Consultation": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -582,43 +523,21 @@
         }
       },
       {
-        "path": "/clinics/{clinicId}/patients/{patientId}",
+        "path": "/patient_master/{patientMasterId}",
         "definition": {
-          "entityName": "Patient",
-          "schema": {
-            "$ref": "#/backend/entities/Patient"
-          },
-          "description": "Stores patient data registered under a specific clinic group.",
-          "params": [
-            {
-              "name": "clinicId",
-              "description": "The unique ID of the clinic group."
-            },
-            {
-              "name": "patientId",
-              "description": "The unique ID of the patient."
-            }
-          ]
+          "entityName": "PatientMaster",
+          "schema": { "$ref": "#/backend/entities/PatientMaster" },
+          "description": "Stores patient master demographic data. Document ID is the patient master ID.",
+          "params": [{ "name": "patientMasterId", "description": "The unique ID of the patient master record." }]
         }
       },
       {
-        "path": "/clinics/{clinicId}/tokens/{tokenId}",
+        "path": "/patient_transactions/{patientTransactionId}",
         "definition": {
-          "entityName": "Token",
-          "schema": {
-            "$ref": "#/backend/entities/Token"
-          },
-          "description": "Stores tokens generated for patients, denormalized with clinicId for easier querying. Includes denormalized 'clinicId' for authorization independence.",
-          "params": [
-            {
-              "name": "clinicId",
-              "description": "The unique ID of the clinic group."
-            },
-            {
-              "name": "tokenId",
-              "description": "The unique ID of the token."
-            }
-          ]
+          "entityName": "PatientTransaction",
+          "schema": { "$ref": "#/backend/entities/PatientTransaction" },
+          "description": "Stores individual patient visit/transaction records. Document ID is the transaction ID.",
+          "params": [{ "name": "patientTransactionId", "description": "The unique ID of the patient transaction." }]
         }
       },
        {
@@ -753,4 +672,3 @@
     "reasoning": "The Firestore structure is designed to ensure security, scalability, and ease of debugging, following the principles of Authorization Independence, Clarity of Intent, DBAC (Database-Based Access Control), and QAPs (Rules are not Filters). Authorization Independence is achieved through denormalization, where necessary authorization data is duplicated within documents to avoid relying on `get()` calls in security rules. Structural Segregation ensures that each collection has a homogeneous security posture.\n\nThe structure uses path-based ownership for user-related data (e.g., `/users/{userId}/...`) and membership maps for collaborative data. Global roles are managed through dedicated collections (e.g., `/roles_admin/{uid}`).  The design incorporates explicit state modeling using a `status` field and enforces radical consistency with semantic naming conventions.\n\nTo support the core features, the following approach is considered:\n\n*   **QR Code Patient Registration & Token Generation:** Patients are registered under a specific `Clinic` after scanning a QR code. A `Token` is generated and linked to the patient and group. The group ID is denormalized into the `Token` document to allow filtering by screens.\n*   **Queue Display & Doctor Call Notification:** The queue display uses a combination of patients and group information. The `groupId` on the `Patient` and `Token` records are used to filter displayed tokens per each `Screen`.\n*   **Consultation Management:** Consultations are linked to doctors and patients. AI summaries are stored in the consultation document.\n*   **Assistant Token Creation:** Assistants can create tokens under a specific group on behalf of patients.\n*   **Clinic Group Management:** Groups are created to represent screens, cabins, doctors, and assistants.  These groups and its id are crucial for queue management and display.\n*   **Advertising Management:** Advertisements are managed through an admin portal and associated with campaigns and groups. Impressions are tracked to measure advertisement performance.\n\nThis design supports the required QAPs by using structural segregation and membership models, ensuring that list operations can be securely performed based on user roles and group memberships."
   }
 }
-

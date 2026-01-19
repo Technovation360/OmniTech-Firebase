@@ -11,6 +11,7 @@ import {
   addDoc,
   updateDoc,
   runTransaction,
+  setDoc,
 } from 'firebase/firestore';
 import { initializeServerFirebase } from '@/firebase/server-init';
 
@@ -19,6 +20,7 @@ import type {
   Group,
   Patient,
   Consultation,
+  PatientMaster,
 } from './types';
 
 const { firestore: db } = initializeServerFirebase();
@@ -47,7 +49,7 @@ export const getClinicById = async (
 };
 
 export const getPatients = async (): Promise<Patient[]> => {
-  const patientsCol = collection(db, 'patients');
+  const patientsCol = collection(db, 'patient_transactions');
   const snapshot = await getDocs(patientsCol);
   const patients = snapshot.docs.map(doc => {
     const data = doc.data();
@@ -94,7 +96,7 @@ export const getClinicGroupById = async (
 export const getPatientByToken = async (
   token: string
 ): Promise<Patient | undefined> => {
-  const q = query(collection(db, 'patients'), where('tokenNumber', '==', token));
+  const q = query(collection(db, 'patient_transactions'), where('tokenNumber', '==', token));
   const snapshot = await getDocs(q);
   if (snapshot.empty) {
     return undefined;
@@ -105,13 +107,47 @@ export const getPatientByToken = async (
 };
 
 export const addPatient = async (
-  data: Omit<Patient, 'id' | 'tokenNumber' | 'status' | 'registeredAt'>,
+  data: Omit<Patient, 'id' | 'patientMasterId' | 'tokenNumber' | 'status' | 'registeredAt'>,
   clinicGroup: Group
 ): Promise<Patient> => {
+
+  const patientMasterCol = collection(db, 'patient_master');
+  const q = query(patientMasterCol, where('contactNumber', '==', data.contactNumber));
+  const masterSnapshot = await getDocs(q);
+
+  let patientMasterId: string;
+  let patientMasterData: Omit<PatientMaster, 'id'>;
+
+  if (masterSnapshot.empty) {
+    // Create new patient master
+    const newMasterDocRef = doc(patientMasterCol);
+    patientMasterId = newMasterDocRef.id;
+    patientMasterData = {
+      name: data.name,
+      age: data.age,
+      gender: data.gender,
+      contactNumber: data.contactNumber,
+      emailAddress: data.emailAddress,
+    };
+    await setDoc(newMasterDocRef, patientMasterData);
+  } else {
+    // Patient master exists, update it
+    const masterDoc = masterSnapshot.docs[0];
+    patientMasterId = masterDoc.id;
+     patientMasterData = {
+      name: data.name,
+      age: data.age,
+      gender: data.gender,
+      contactNumber: data.contactNumber,
+      emailAddress: data.emailAddress,
+    };
+    await updateDoc(masterDoc.ref, patientMasterData);
+  }
+  
   const groupRef = doc(db, 'groups', clinicGroup.id);
 
   try {
-    const newPatientData = await runTransaction(db, async (transaction) => {
+    const newTransactionData = await runTransaction(db, async (transaction) => {
       const groupDoc = await transaction.get(groupRef);
       if (!groupDoc.exists()) {
         throw new Error('Group document does not exist!');
@@ -119,36 +155,31 @@ export const addPatient = async (
 
       const groupData = groupDoc.data();
       const prefix = groupData.tokenInitial;
-      // Get the current token number from the group, default to 100 if not present
       const currentToken = groupData.lastTokenNumber || 100;
       const newToken = currentToken + 1;
 
-      const newPatientDocRef = doc(collection(db, 'patients'));
+      const newTransactionDocRef = doc(collection(db, 'patient_transactions'));
 
-      const patientData = {
+      const transactionData = {
         ...data,
+        patientMasterId,
         tokenNumber: `${prefix}${newToken}`,
         status: 'waiting' as const,
         registeredAt: Timestamp.now(),
       };
 
-      // Create the new patient document
-      transaction.set(newPatientDocRef, patientData);
-
-      // Update the group with the new token number.
+      transaction.set(newTransactionDocRef, transactionData);
       transaction.update(groupRef, { lastTokenNumber: newToken });
 
       return {
-        ...patientData,
-        id: newPatientDocRef.id,
+        id: newTransactionDocRef.id,
+        ...transactionData,
       };
     });
 
     return {
-      ...newPatientData,
-      registeredAt: (newPatientData.registeredAt as Timestamp)
-        .toDate()
-        .toISOString(),
+      ...newTransactionData,
+      registeredAt: (newTransactionData.registeredAt as Timestamp).toDate().toISOString(),
     } as Patient;
   } catch (error) {
     console.error('Token generation transaction failed: ', error);
@@ -161,7 +192,7 @@ export const updatePatientStatus = async (
   patientId: string,
   status: Patient['status']
 ): Promise<Patient | undefined> => {
-  const patientRef = doc(db, 'patients', patientId);
+  const patientRef = doc(db, 'patient_transactions', patientId);
   await updateDoc(patientRef, { status });
   const updatedDoc = await getDoc(patientRef);
     if (!updatedDoc.exists()) return undefined;

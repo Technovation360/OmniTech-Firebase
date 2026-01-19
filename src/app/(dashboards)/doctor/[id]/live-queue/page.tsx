@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, doc, query, where } from 'firebase/firestore';
+import { collection, doc, query, where, Timestamp } from 'firebase/firestore';
 
 
 const badgeColors: Record<Patient['status'], string> = {
@@ -47,7 +47,7 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
 
   const patientsQuery = useMemoFirebase(() => {
     if (!groupId) return null;
-    return query(collection(firestore, 'patients'), where('groupId', '==', groupId), where('status', 'in', ['waiting', 'consulting']));
+    return query(collection(firestore, 'patient_transactions'), where('groupId', '==', groupId), where('status', 'in', ['waiting', 'consulting']));
   }, [firestore, groupId]);
 
   const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
@@ -193,7 +193,7 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
                 <TableCell className="p-2 text-xs">{patient.name}</TableCell>
                 <TableCell className="p-2 text-xs">{getGroupName()}</TableCell>
                 <TableCell className="p-2 text-xs">{getDoctorName()}</TableCell>
-                <TableCell className="p-2 text-xs">{format((patient.registeredAt as any).toDate(), 'hh:mm a')}</TableCell>
+                <TableCell className="p-2 text-xs">{format(((patient.registeredAt as any) as Timestamp).toDate(), 'hh:mm a')}</TableCell>
                 <TableCell className="p-2 text-xs">
                   <Badge variant="secondary" className={cn("capitalize", badgeColors[patient.status])}>
                     {patient.status.replace('-', ' ')}

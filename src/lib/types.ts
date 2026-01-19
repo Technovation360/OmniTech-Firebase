@@ -1,7 +1,17 @@
 import type { UserRole } from './roles';
 
-export type Patient = {
+export type PatientMaster = {
   id: string;
+  name: string;
+  age: number;
+  gender: 'male' | 'female' | 'other';
+  contactNumber: string;
+  emailAddress: string;
+};
+
+export type PatientTransaction = {
+  id: string; // transaction id
+  patientMasterId: string;
   name: string;
   age: number;
   gender: 'male' | 'female' | 'other';
@@ -9,10 +19,14 @@ export type Patient = {
   emailAddress: string;
   tokenNumber: string;
   status: 'waiting' | 'calling' | 'consulting' | 'no-show' | 'consultation-done';
-  groupId: string; // The ID of the group (e.g. Cardiology Department) within a clinic
+  groupId: string;
   clinicId: string;
   registeredAt: string; // ISO 8601 date string
+  cabinId?: string;
 };
+
+// Kept for backward compatibility in UI components
+export type Patient = PatientTransaction;
 
 export type Doctor = {
   id: string;

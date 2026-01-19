@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, Timestamp } from 'firebase/firestore';
 
 const badgeColors: Record<Patient['status'], string> = {
     'waiting': "bg-blue-100 text-blue-800",
@@ -44,7 +44,7 @@ export default function LiveQueuePage() {
   const { user, isUserLoading } = useUser();
 
   const patientsQuery = useMemoFirebase(() => {
-    return query(collection(firestore, 'patients'), where('status', 'in', ['waiting', 'consulting']));
+    return query(collection(firestore, 'patient_transactions'), where('status', 'in', ['waiting', 'consulting']));
   }, [firestore]);
   const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
 
@@ -108,7 +108,7 @@ export default function LiveQueuePage() {
       });
       setFilteredPatients(sorted);
     } else {
-        const sorted = [...filteredData].sort((a,b) => (a.registeredAt as any).toDate().getTime() - (b.registeredAt as any).toDate().getTime());
+        const sorted = [...filteredData].sort((a,b) => ((a.registeredAt as any) as Timestamp).toMillis() - ((b.registeredAt as any) as Timestamp).toMillis());
         setFilteredPatients(sorted);
     }
 
@@ -211,7 +211,7 @@ export default function LiveQueuePage() {
                 <TableCell className="py-2 px-4 text-xs">{getClinicName(patient.clinicId)}</TableCell>
                 <TableCell className="py-2 px-4 text-xs">{getGroupName(patient.groupId)}</TableCell>
                 <TableCell className="py-2 px-4 text-xs">{getDoctorName(patient.groupId)}</TableCell>
-                <TableCell className="py-2 px-4 text-xs">{format((patient.registeredAt as any).toDate(), 'hh:mm a')}</TableCell>
+                <TableCell className="py-2 px-4 text-xs">{format(((patient.registeredAt as any) as Timestamp).toDate(), 'hh:mm a')}</TableCell>
                 <TableCell className="py-2 px-4 text-xs">
                    <Badge variant={'secondary'} className={cn("text-[10px] border-transparent capitalize", badgeColors[patient.status])}>
                         {patient.status.replace('-', ' ')}
