@@ -74,11 +74,11 @@ type RoomStatus = {
 }
 
 const badgeColors: Record<Patient['status'], string> = {
-  waiting: 'bg-blue-100 text-blue-800',
-  calling: 'bg-orange-100 text-orange-800',
-  consulting: 'bg-green-100 text-green-800',
-  'consultation-done': 'bg-gray-100 text-gray-800',
-  'no-show': 'bg-red-100 text-red-800',
+  'waiting': "bg-blue-100 text-blue-800",
+  'calling': "bg-orange-100 text-orange-800",
+  'consulting': "bg-green-100 text-green-800",
+  'consultation-done': "bg-gray-100 text-gray-800",
+  'no-show': "bg-red-100 text-red-800",
 };
 
 
@@ -332,7 +332,8 @@ function RoomCard({
     onLeave, 
     onAction,
     onViewHistory,
-    onCallPatient 
+    onCallPatient,
+    onMakeVacant,
 }: { 
     cabin: any, 
     room: RoomStatus, 
@@ -342,6 +343,7 @@ function RoomCard({
     onAction: (patientId: string, roomName: string, action: 'start' | 'end' | 'no-show') => void,
     onViewHistory: (patient: Patient) => void,
     onCallPatient: (patient: Patient) => void,
+    onMakeVacant: (roomName: string) => void,
 }) {
     const { toast } = useToast();
     const [noShowEnabled, setNoShowEnabled] = useState(false);
@@ -402,7 +404,10 @@ function RoomCard({
                 <CardContent className="p-4 h-48 flex flex-col items-center justify-center text-center">
                     <CheckCircle className="h-10 w-10 text-green-500 mb-2" />
                     <p className="font-semibold mb-4">Consultation Ended</p>
-                    <Button onClick={() => onAssign(cabin.name)}>Call Next Patient</Button>
+                    <div className="flex flex-col gap-2 w-full">
+                        <Button onClick={() => onAssign(cabin.name)}>Call Next</Button>
+                        <Button variant="outline" onClick={() => onMakeVacant(cabin.name)}>Leave Room</Button>
+                    </div>
                 </CardContent>
             </Card>
         );
@@ -413,7 +418,10 @@ function RoomCard({
              <Card>
                 <CardHeader className="flex-row items-center justify-between p-3 border-b bg-muted/30 h-[53px]">
                     <CardTitle className="text-sm font-semibold">{cabin.name.toUpperCase()}</CardTitle>
-                    <Button size="xs" className="bg-green-600 hover:bg-green-700 h-7" onClick={() => onAssign(cabin.name)}>ASSIGN</Button>
+                    <Button size="xs" className="bg-green-600 hover:bg-green-700 h-7" onClick={() => onAssign(cabin.name)}>
+                        <PlusCircle className="mr-1 h-3 w-3" />
+                        Call Next
+                    </Button>
                 </CardHeader>
                 <CardContent className="p-4 h-48 flex flex-col items-center justify-center text-center">
                     <div className="p-3 bg-yellow-100 rounded-full mb-2">
@@ -582,7 +590,7 @@ function DoctorConsultationDashboard({
     }, [allPatients, selectedGroupId, selectedGroup]);
 
 
-    const handleAssignRoom = (roomName: string) => {
+    const handleCallNextPatient = (roomName: string) => {
         const waitingPatients = patients.filter(p => p.status === 'waiting').sort((a, b) => (a.registeredAt as any).toDate().getTime() - (b.registeredAt as any).toDate().getTime());
         if (waitingPatients.length === 0) {
             toast({
@@ -593,7 +601,6 @@ function DoctorConsultationDashboard({
             return;
         }
 
-        // Sort by registration time to get the next patient in sequence
         const nextPatient = waitingPatients[0];
         
         setPatients(prev => prev.map(p => p.id === nextPatient.id ? {...p, status: 'calling'} : p));
@@ -605,6 +612,11 @@ function DoctorConsultationDashboard({
             title: "Patient Assigned",
             description: `${nextPatient.name} has been assigned to ${roomName}.`,
         });
+    };
+
+    const handleMakeRoomVacant = (roomName: string) => {
+        setRooms(prev => prev.map(room => room.name === roomName ? { ...room, patientId: null, status: 'vacant' } : room));
+        toast({ title: 'Room Vacated', description: `${roomName} is now available.` });
     };
     
     const handleRoomAction = (patientId: string, roomName: string, action: 'start' | 'end' | 'no-show') => {
@@ -735,11 +747,12 @@ function DoctorConsultationDashboard({
                     cabin={cabin}
                     room={room}
                     patient={patientForRoom || null}
-                    onAssign={handleAssignRoom}
+                    onAssign={handleCallNextPatient}
                     onLeave={handleLeaveRoom}
                     onAction={handleRoomAction}
                     onCallPatient={handleCallPatient}
                     onViewHistory={onViewHistory}
+                    onMakeVacant={handleMakeRoomVacant}
                 />
             )
         })}
