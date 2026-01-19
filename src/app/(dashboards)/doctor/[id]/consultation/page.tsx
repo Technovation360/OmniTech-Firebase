@@ -639,7 +639,7 @@ function DoctorConsultationDashboard({
     };
 
     const handleCallNextPatient = (roomName: string) => {
-        const waitingPatients = patients.filter(p => p.status === 'waiting').sort((a, b) => ((a.registeredAt as any) as Timestamp).toMillis() - ((b.registeredAt as any) as Timestamp).toMillis());
+        const waitingPatients = patients.filter(p => p.status === 'waiting').sort((a, b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime());
         if (waitingPatients.length === 0) {
             toast({
                 variant: 'destructive',
@@ -728,7 +728,7 @@ function DoctorConsultationDashboard({
   ];
   
   const nextToken = waitingPatients.length > 0
-    ? [...waitingPatients].sort((a, b) => ((a.registeredAt as any) as Timestamp).toMillis() - ((b.registeredAt as any) as Timestamp).toMillis())[0].tokenNumber
+    ? [...waitingPatients].sort((a, b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime())[0].tokenNumber
     : undefined;
 
   if (!selectedGroup) {

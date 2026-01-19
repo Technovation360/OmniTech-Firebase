@@ -109,7 +109,7 @@ function DoctorDashboard({
 
   const waitingPatients = initialPatients.filter(p => p.status === 'waiting');
   const nextToken = waitingPatients.length > 0
-    ? [...waitingPatients].sort((a, b) => ((a.registeredAt as any) as Timestamp).toMillis() - ((b.registeredAt as any) as Timestamp).toMillis())[0]
+    ? [...waitingPatients].sort((a, b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime())[0]
     : undefined;
   
   const doctor = group.doctors.find(d => d.id === doctorId);
