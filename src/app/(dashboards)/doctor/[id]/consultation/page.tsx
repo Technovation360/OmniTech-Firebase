@@ -405,7 +405,7 @@ function RoomCard({
                     <CheckCircle className="h-10 w-10 text-green-500 mb-2" />
                     <p className="font-semibold mb-4">Consultation Ended</p>
                     <div className="flex flex-col gap-2 w-full">
-                        <Button onClick={() => onAssign(cabin.name)}>Call Next</Button>
+                        <Button onClick={() => onAssign(cabin.name)}>Assign</Button>
                         <Button variant="outline" onClick={() => onMakeVacant(cabin.name)}>Leave Room</Button>
                     </div>
                 </CardContent>
@@ -420,7 +420,7 @@ function RoomCard({
                     <CardTitle className="text-sm font-semibold">{cabin.name.toUpperCase()}</CardTitle>
                     <Button size="xs" className="bg-green-600 hover:bg-green-700 h-7" onClick={() => onAssign(cabin.name)}>
                         <PlusCircle className="mr-1 h-3 w-3" />
-                        Call Next
+                        Assign
                     </Button>
                 </CardHeader>
                 <CardContent className="p-4 h-48 flex flex-col items-center justify-center text-center">
@@ -767,3 +767,5 @@ function DoctorConsultationDashboard({
     </div>
   );
 }
+
+    
