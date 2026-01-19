@@ -96,7 +96,7 @@ function DoctorDashboard({
 }) {
 
   const totalPatients = initialPatients.length;
-  const inQueue = initialPatients.filter(p => p.status === 'waiting' || p.status === 'called').length;
+  const inQueue = initialPatients.filter(p => p.status === 'waiting' || p.status === 'calling').length;
   const attended = initialPatients.filter(p => p.status === 'consultation-done').length;
   const noShows = initialPatients.filter(p => p.status === 'no-show').length;
 
@@ -109,7 +109,7 @@ function DoctorDashboard({
 
   const waitingPatients = initialPatients.filter(p => p.status === 'waiting');
   const nextToken = waitingPatients.length > 0
-    ? [...waitingPatients].sort((a, b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime())[0]
+    ? [...waitingPatients].sort((a, b) => (a.registeredAt as any).toDate().getTime() - (b.registeredAt as any).toDate().getTime())[0]
     : undefined;
   
   const doctor = group.doctors.find(d => d.id === doctorId);
