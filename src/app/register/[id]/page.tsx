@@ -87,7 +87,7 @@ export default function RegistrationPage({ params }: { params: { id: string } })
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="contactNumber">Phone Number</Label>
-                    <Input id="contactNumber" name="contactNumber" type="tel" placeholder="Optional" />
+                    <Input id="contactNumber" name="contactNumber" type="tel" placeholder="e.g., 9876543210" required />
                     {state?.errors?.contactNumber && <p className="text-sm text-destructive">{state.errors.contactNumber[0]}</p>}
                 </div>
                  <div className="space-y-2">

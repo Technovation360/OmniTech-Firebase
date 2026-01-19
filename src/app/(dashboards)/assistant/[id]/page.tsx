@@ -127,7 +127,7 @@ export default function AssistantPage() {
               <div className="grid grid-cols-2 gap-4">
                  <div className="space-y-2">
                     <Label htmlFor="contactNumber">Phone Number</Label>
-                    <Input id="contactNumber" name="contactNumber" placeholder="Optional" className="h-7" />
+                    <Input id="contactNumber" name="contactNumber" placeholder="e.g., 9876543210" required className="h-7" />
                     {state?.errors?.contactNumber && <p className="text-sm text-destructive">{state.errors.contactNumber[0]}</p>}
                 </div>
                  <div className="space-y-2">

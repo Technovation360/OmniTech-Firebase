@@ -100,7 +100,7 @@ function ManualCheckInModal({
     if (state?.success && state.tokenNumber) {
       toast({
         title: 'Patient Registered',
-        description: `Token number ${state.tokenNumber} has been assigned.`,
+        description: \`Token number ${state.tokenNumber} has been assigned.\`,
       });
       onPatientRegistered();
       onClose();
@@ -133,7 +133,7 @@ function ManualCheckInModal({
                 <SelectContent>
                   {groups.map((group) => (
                     <SelectItem key={group.id} value={group.id}>
-                      {group.name} ({group.doctors.map(d => `Dr. ${d.name}`).join(', ')})
+                      {group.name} ({group.doctors.map(d => \`Dr. ${d.name}\`).join(', ')})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -183,7 +183,7 @@ function ManualCheckInModal({
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="contactNumber">Phone Number</Label>
-                    <Input id="contactNumber" name="contactNumber" placeholder="Optional" className="h-7" />
+                    <Input id="contactNumber" name="contactNumber" placeholder="e.g., 9876543210" required className="h-7" />
                     {state?.errors?.contactNumber && <p className="text-sm text-destructive">{state.errors.contactNumber[0]}</p>}
                 </div>
                 <div className="space-y-2">
@@ -583,7 +583,7 @@ function DoctorConsultationDashboard({
 
 
     const handleAssignRoom = (roomName: string) => {
-        const waitingPatients = patients.filter(p => p.status === 'waiting');
+        const waitingPatients = patients.filter(p => p.status === 'waiting').sort((a, b) => (a.registeredAt as any).toDate().getTime() - (b.registeredAt as any).toDate().getTime());
         if (waitingPatients.length === 0) {
             toast({
                 variant: 'destructive',
@@ -594,7 +594,7 @@ function DoctorConsultationDashboard({
         }
 
         // Sort by registration time to get the next patient in sequence
-        const nextPatient = [...waitingPatients].sort((a, b) => (a.registeredAt as any).toDate().getTime() - (b.registeredAt as any).toDate().getTime())[0];
+        const nextPatient = waitingPatients[0];
         
         setPatients(prev => prev.map(p => p.id === nextPatient.id ? {...p, status: 'calling'} : p));
         setRooms(prev => prev.map(room => room.name === roomName ? { ...room, patientId: nextPatient.id, status: 'occupied' } : room));
@@ -622,8 +622,8 @@ function DoctorConsultationDashboard({
         handlePatientAction(patientId, action);
 
         toast({
-            title: `Action: ${action.charAt(0).toUpperCase() + action.slice(1)}`,
-            description: `Patient ${patient.name} status updated.`,
+            title: \`Action: ${action.charAt(0).toUpperCase() + action.slice(1)}\`,
+            description: \`Patient ${patient.name} status updated.\`,
         });
     };
 
@@ -640,7 +640,7 @@ function DoctorConsultationDashboard({
     }
 
     const handleCallPatient = (patient: Patient) => {
-        toast({ title: `Calling ${patient.name}`, description: `Re-announcing token ${patient.tokenNumber}.` });
+        toast({ title: \`Calling ${patient.name}\`, description: \`Re-announcing token ${patient.tokenNumber}.\` });
         // In a real app, this would trigger TTS again.
     }
 
@@ -685,7 +685,7 @@ function DoctorConsultationDashboard({
         {stats.map((stat) => (
           <Card key={stat.title}>
             <CardContent className="p-4 flex items-center gap-4">
-              <div className={`p-3 rounded-lg ${stat.color}`}>
+              <div className={\`p-3 rounded-lg ${stat.color}\`}>
                 <stat.icon className="h-6 w-6" />
               </div>
               <div>

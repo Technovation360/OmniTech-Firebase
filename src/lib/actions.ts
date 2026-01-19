@@ -11,7 +11,7 @@ const PatientSchema = z.object({
   age: z.coerce.number().min(0, 'Age must be a positive number.'),
   gender: z.enum(['male', 'female', 'other']),
   groupId: z.string(),
-  contactNumber: z.string().optional(),
+  contactNumber: z.string().min(1, "Phone number is required."),
   emailAddress: z.string().email("Please enter a valid email.").or(z.literal('')).optional(),
 });
 
@@ -43,7 +43,7 @@ export async function registerPatient(prevState: any, formData: FormData) {
         age: validatedFields.data.age,
         gender: validatedFields.data.gender,
         groupId: validatedFields.data.groupId,
-        contactNumber: validatedFields.data.contactNumber || '',
+        contactNumber: validatedFields.data.contactNumber,
         emailAddress: validatedFields.data.emailAddress || '',
         clinicId: group.clinicId,
     }, group);

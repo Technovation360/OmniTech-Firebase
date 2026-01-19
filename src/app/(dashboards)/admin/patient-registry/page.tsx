@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import {
@@ -223,7 +224,7 @@ function ManualCheckInModal({
     if (state?.success && state.tokenNumber) {
       toast({
         title: 'Patient Registered',
-        description: `Token number ${state.tokenNumber} has been assigned.`,
+        description: \`Token number ${state.tokenNumber} has been assigned.\`,
       });
       onPatientRegistered();
       onClose();
@@ -256,7 +257,7 @@ function ManualCheckInModal({
                 <SelectContent>
                   {groups.map((group) => (
                     <SelectItem key={group.id} value={group.id}>
-                      {group.name} ({group.doctors.map((d) => `Dr. ${d.name}`).join(', ')})
+                      {group.name} ({group.doctors.map((d) => \`Dr. ${d.name}\`).join(', ')})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -306,7 +307,7 @@ function ManualCheckInModal({
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="contactNumber">Phone Number</Label>
-                    <Input id="contactNumber" name="contactNumber" placeholder="Optional" className="h-7" />
+                    <Input id="contactNumber" name="contactNumber" placeholder="e.g., 9876543210" required className="h-7" />
                     {state?.errors?.contactNumber && <p className="text-sm text-destructive">{state.errors.contactNumber[0]}</p>}
                 </div>
                 <div className="space-y-2">
@@ -459,7 +460,7 @@ export default function PatientRegistryPage() {
     if (!patient.groupId) {
          toast({
             title: "Error",
-            description: `Could not determine the group for ${patient.name}. Please use manual check-in.`
+            description: \`Could not determine the group for \${patient.name}. Please use manual check-in.\`
         });
         return;
     }
@@ -469,13 +470,14 @@ export default function PatientRegistryPage() {
     formData.append('age', patient.age.toString());
     formData.append('gender', patient.gender);
     formData.append('groupId', patient.groupId);
+    formData.append('contactNumber', patient.contactNumber);
 
     const result = await registerPatient(null, formData);
 
     if (result.success) {
         toast({
             title: "Token Generated",
-            description: `New token ${result.tokenNumber} generated for ${patient.name}.`
+            description: \`New token \${result.tokenNumber} generated for \${patient.name}.\`
         });
     } else {
          toast({
