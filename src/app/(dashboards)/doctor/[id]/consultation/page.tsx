@@ -414,8 +414,8 @@ function DoctorConsultationDashboard({
 
 
     const handleAssignRoom = (roomName: string) => {
-        const nextPatient = patients.find(p => p.status === 'waiting');
-        if (!nextPatient) {
+        const waitingPatients = patients.filter(p => p.status === 'waiting');
+        if (waitingPatients.length === 0) {
             toast({
                 variant: 'destructive',
                 title: "No patients in queue",
@@ -424,6 +424,9 @@ function DoctorConsultationDashboard({
             return;
         }
 
+        // Sort by registration time to get the next patient in sequence
+        const nextPatient = waitingPatients.sort((a, b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime())[0];
+        
         setPatients(prev => prev.map(p => p.id === nextPatient.id ? {...p, status: 'called'} : p));
         setRooms(prev => prev.map(room => room.name === roomName ? { ...room, patientId: nextPatient.id, status: 'occupied' } : room));
         
@@ -482,7 +485,8 @@ function DoctorConsultationDashboard({
 
   const activePatients = patients.filter(p => p.status === 'waiting' || p.status === 'called' || p.status === 'in-consultation');
   const totalPatients = activePatients.length;
-  const inQueue = activePatients.filter(p => p.status === 'waiting').length;
+  const waitingPatients = patients.filter(p => p.status === 'waiting');
+  const inQueue = waitingPatients.length;
   const attendedToday = allPatients.filter(p => p.groupId === selectedGroupId && p.status === 'consultation-done').length;
   const noShowsToday = allPatients.filter(p => p.groupId === selectedGroupId && p.status === 'no-show').length;
 
@@ -494,7 +498,9 @@ function DoctorConsultationDashboard({
     { title: 'NO SHOWS TODAY', value: noShowsToday, icon: XCircle, color: 'bg-red-100 text-red-600' },
   ];
   
-  const nextToken = patients.find(p => p.status === 'waiting')?.tokenNumber;
+  const nextToken = waitingPatients.length > 0
+    ? waitingPatients.sort((a, b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime())[0].tokenNumber
+    : undefined;
 
   if (!selectedGroup) {
     return (
