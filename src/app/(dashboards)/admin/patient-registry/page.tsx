@@ -224,7 +224,7 @@ function ManualCheckInModal({
     if (state?.success && state.tokenNumber) {
       toast({
         title: 'Patient Registered',
-        description: \`Token number ${state.tokenNumber} has been assigned.\`,
+        description: `Token number ${state.tokenNumber} has been assigned.`,
       });
       onPatientRegistered();
       onClose();
@@ -257,7 +257,7 @@ function ManualCheckInModal({
                 <SelectContent>
                   {groups.map((group) => (
                     <SelectItem key={group.id} value={group.id}>
-                      {group.name} ({group.doctors.map((d) => \`Dr. ${d.name}\`).join(', ')})
+                      {group.name} ({group.doctors.map((d) => `Dr. ${d.name}`).join(', ')})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -460,7 +460,7 @@ export default function PatientRegistryPage() {
     if (!patient.groupId) {
          toast({
             title: "Error",
-            description: \`Could not determine the group for \${patient.name}. Please use manual check-in.\`
+            description: `Could not determine the group for ${patient.name}. Please use manual check-in.`
         });
         return;
     }
@@ -477,7 +477,7 @@ export default function PatientRegistryPage() {
     if (result.success) {
         toast({
             title: "Token Generated",
-            description: \`New token \${result.tokenNumber} generated for \${patient.name}.\`
+            description: `New token ${result.tokenNumber} generated for ${patient.name}.`
         });
     } else {
          toast({

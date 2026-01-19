@@ -100,7 +100,7 @@ function ManualCheckInModal({
     if (state?.success && state.tokenNumber) {
       toast({
         title: 'Patient Registered',
-        description: \`Token number ${state.tokenNumber} has been assigned.\`,
+        description: `Token number ${state.tokenNumber} has been assigned.`,
       });
       onPatientRegistered();
       onClose();
@@ -133,7 +133,7 @@ function ManualCheckInModal({
                 <SelectContent>
                   {groups.map((group) => (
                     <SelectItem key={group.id} value={group.id}>
-                      {group.name} ({group.doctors.map(d => \`Dr. ${d.name}\`).join(', ')})
+                      {group.name} ({group.doctors.map(d => `Dr. ${d.name}`).join(', ')})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -622,8 +622,8 @@ function DoctorConsultationDashboard({
         handlePatientAction(patientId, action);
 
         toast({
-            title: \`Action: ${action.charAt(0).toUpperCase() + action.slice(1)}\`,
-            description: \`Patient ${patient.name} status updated.\`,
+            title: `Action: ${action.charAt(0).toUpperCase() + action.slice(1)}`,
+            description: `Patient ${patient.name} status updated.`,
         });
     };
 
@@ -640,7 +640,7 @@ function DoctorConsultationDashboard({
     }
 
     const handleCallPatient = (patient: Patient) => {
-        toast({ title: \`Calling ${patient.name}\`, description: \`Re-announcing token ${patient.tokenNumber}.\` });
+        toast({ title: `Calling ${patient.name}`, description: `Re-announcing token ${patient.tokenNumber}.` });
         // In a real app, this would trigger TTS again.
     }
 
@@ -685,7 +685,7 @@ function DoctorConsultationDashboard({
         {stats.map((stat) => (
           <Card key={stat.title}>
             <CardContent className="p-4 flex items-center gap-4">
-              <div className={\`p-3 rounded-lg ${stat.color}\`}>
+              <div className={`p-3 rounded-lg ${stat.color}`}>
                 <stat.icon className="h-6 w-6" />
               </div>
               <div>
