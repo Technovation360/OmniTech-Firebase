@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, use, useMemo } from 'react';
@@ -69,8 +68,8 @@ type RoomStatus = {
 
 const badgeColors: Record<Patient['status'], string> = {
   waiting: 'bg-blue-100 text-blue-800',
-  called: 'bg-orange-100 text-orange-800',
-  'in-consultation': 'bg-green-100 text-green-800',
+  calling: 'bg-orange-100 text-orange-800',
+  consulting: 'bg-green-100 text-green-800',
   'consultation-done': 'bg-gray-100 text-gray-800',
   'no-show': 'bg-red-100 text-red-800',
 };
@@ -194,7 +193,7 @@ function RoomCard({
         let timerId: NodeJS.Timeout | undefined;
         let countdownInterval: NodeJS.Timeout | undefined;
 
-        if (patient && patient.status === 'called') {
+        if (patient && patient.status === 'calling') {
             setNoShowEnabled(false);
             setTimer(30);
 
@@ -286,7 +285,7 @@ function RoomCard({
                     <p className="text-sm text-muted-foreground">{patient.age} / {patient.gender.charAt(0).toUpperCase()}</p>
                 </div>
                 {/* Action buttons */}
-                {patient.status === 'in-consultation' ? (
+                {patient.status === 'consulting' ? (
                      <div className="grid grid-cols-2 gap-2 w-full">
                         <Button size="sm" className="bg-red-500 hover:bg-red-600" onClick={() => onAction(patient!.id, cabin.name, 'end')}>
                             <Square className="mr-2 h-4 w-4"/> End
@@ -301,7 +300,7 @@ function RoomCard({
                             <History className="mr-2 h-4 w-4"/> History
                         </Button>
                     </div>
-                ) : ( // 'called' status
+                ) : ( // 'calling' status
                      <div className="grid grid-cols-2 gap-2 w-full">
                         <Button size="sm" className="bg-primary hover:bg-primary/90" onClick={() => onAction(patient!.id, cabin.name, 'start')}>
                             <Play className="mr-2 h-4 w-4"/> Start
@@ -397,7 +396,7 @@ function DoctorConsultationDashboard({
                 const newRooms = selectedGroup.cabins.map(cabin => {
                     const existingRoom = prevRooms.find(r => r.name === cabin.name);
                     if (existingRoom) {
-                        const patientStillActive = patientsForGroup.some(p => p.id === existingRoom.patientId && (p.status === 'called' || p.status === 'in-consultation'));
+                        const patientStillActive = patientsForGroup.some(p => p.id === existingRoom.patientId && (p.status === 'calling' || p.status === 'consulting'));
                         if (patientStillActive) {
                             return { ...existingRoom, status: 'occupied' };
                         }
@@ -427,7 +426,7 @@ function DoctorConsultationDashboard({
         // Sort by registration time to get the next patient in sequence
         const nextPatient = waitingPatients.sort((a, b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime())[0];
         
-        setPatients(prev => prev.map(p => p.id === nextPatient.id ? {...p, status: 'called'} : p));
+        setPatients(prev => prev.map(p => p.id === nextPatient.id ? {...p, status: 'calling'} : p));
         setRooms(prev => prev.map(room => room.name === roomName ? { ...room, patientId: nextPatient.id, status: 'occupied' } : room));
         
         handlePatientAction(nextPatient.id, 'call');
@@ -443,7 +442,7 @@ function DoctorConsultationDashboard({
         if (!patient) return;
         
         if (action === 'start') {
-            setPatients(prev => prev.map(p => p.id === patientId ? { ...p, status: 'in-consultation' } : p));
+            setPatients(prev => prev.map(p => p.id === patientId ? { ...p, status: 'consulting' } : p));
         } else {
             const newStatus = action === 'end' ? 'consultation-done' : 'no-show';
             setPatients(prev => prev.filter(p => p.id !== patientId)); // Remove from active queue
@@ -483,7 +482,7 @@ function DoctorConsultationDashboard({
       return allPatients.filter(p => p.groupId === groupId && p.status === 'waiting').length;
   }
 
-  const activePatients = patients.filter(p => p.status === 'waiting' || p.status === 'called' || p.status === 'in-consultation');
+  const activePatients = patients.filter(p => p.status === 'waiting' || p.status === 'calling' || p.status === 'consulting');
   const totalPatients = activePatients.length;
   const waitingPatients = patients.filter(p => p.status === 'waiting');
   const inQueue = waitingPatients.length;

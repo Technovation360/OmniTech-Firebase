@@ -64,13 +64,14 @@ export async function registerPatient(prevState: any, formData: FormData) {
   }
 }
 
-export async function handlePatientAction(patientId: string, action: 'call' | 'start' | 'end' | 'no-show') {
-    let status: 'called' | 'in-consultation' | 'consultation-done' | 'no-show' | 'waiting' = 'waiting';
+export async function handlePatientAction(patientId: string, action: 'call' | 'start' | 'end' | 'no-show' | 'call-revert') {
+    let status: 'calling' | 'consulting' | 'consultation-done' | 'no-show' | 'waiting' = 'waiting';
     switch(action) {
-        case 'call': status = 'called'; break;
-        case 'start': status = 'in-consultation'; break;
+        case 'call': status = 'calling'; break;
+        case 'start': status = 'consulting'; break;
         case 'end': status = 'consultation-done'; break;
         case 'no-show': status = 'no-show'; break;
+        case 'call-revert': status = 'waiting'; break;
     }
     await updatePatientStatus(patientId, status);
     revalidatePath('/doctor');

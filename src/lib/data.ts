@@ -1,4 +1,3 @@
-
 'use client';
 import {
   collection,
@@ -259,21 +258,21 @@ export const getQueueInfoByScreenId = async (screenId: string, allGroups: Group[
     
     const patients = allPatients.filter(p => p.groupId === groupForScreen.id);
 
-    const queuePatients = patients.filter(p => ['waiting', 'called', 'in-consultation'].includes(p.status));
+    const queuePatients = patients.filter(p => ['waiting', 'calling', 'consulting'].includes(p.status));
     
-    const calledPatient = queuePatients.find(p => p.status === 'called');
+    const callingPatient = queuePatients.find(p => p.status === 'calling');
     
     let calledPatientInfo = null;
-    if (calledPatient) {
+    if (callingPatient) {
         calledPatientInfo = {
-            ...calledPatient,
+            ...callingPatient,
             cabinName: groupForScreen?.cabins[0]?.name || 'Consultation Room',
         }
     }
 
     return {
         waiting: queuePatients.filter(p => p.status === 'waiting').sort((a, b) => a.tokenNumber.localeCompare(b.tokenNumber)),
-        inConsultation: queuePatients.filter(p => p.status === 'in-consultation').sort((a, b) => a.tokenNumber.localeCompare(b.tokenNumber)),
+        inConsultation: queuePatients.filter(p => p.status === 'consulting').sort((a, b) => a.tokenNumber.localeCompare(b.tokenNumber)),
         nowCalling: calledPatientInfo
     };
 };

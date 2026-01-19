@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import {
@@ -56,8 +55,8 @@ import type { User } from 'firebase/auth';
 
 const badgeColors: Record<Patient['status'], string> = {
   waiting: 'bg-blue-100 text-blue-800',
-  called: 'bg-orange-100 text-orange-800',
-  'in-consultation': 'bg-green-100 text-green-800',
+  calling: 'bg-orange-100 text-orange-800',
+  consulting: 'bg-green-100 text-green-800',
   'consultation-done': 'bg-gray-100 text-gray-800',
   'no-show': 'bg-red-100 text-red-800',
 };
@@ -672,8 +671,3 @@ export default function PatientRegistryPage() {
     </>
   );
 }
-
-    
-
-    
-

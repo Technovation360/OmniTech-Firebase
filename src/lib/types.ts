@@ -1,5 +1,3 @@
-
-
 import type { UserRole } from './roles';
 
 export type Patient = {
@@ -10,7 +8,7 @@ export type Patient = {
   contactNumber: string;
   emailAddress: string;
   tokenNumber: string;
-  status: 'waiting' | 'in-consultation' | 'consultation-done' | 'no-show' | 'called';
+  status: 'waiting' | 'calling' | 'consulting' | 'no-show' | 'consultation-done';
   groupId: string; // The ID of the group (e.g. Cardiology Department) within a clinic
   clinicId: string;
   registeredAt: string; // ISO 8601 date string

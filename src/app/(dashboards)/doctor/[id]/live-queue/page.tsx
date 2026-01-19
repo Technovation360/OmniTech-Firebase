@@ -17,8 +17,8 @@ import { collection, doc, query, where } from 'firebase/firestore';
 
 const badgeColors: Record<Patient['status'], string> = {
     'waiting': "bg-blue-100 text-blue-800",
-    'called': "bg-orange-100 text-orange-800",
-    'in-consultation': "bg-green-100 text-green-800",
+    'calling': "bg-orange-100 text-orange-800",
+    'consulting': "bg-green-100 text-green-800",
     'consultation-done': "bg-gray-100 text-gray-800",
     'no-show': "bg-red-100 text-red-800",
 };
@@ -47,7 +47,7 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
 
   const patientsQuery = useMemoFirebase(() => {
     if (!groupId) return null;
-    return query(collection(firestore, 'patients'), where('groupId', '==', groupId), where('status', 'in', ['waiting', 'in-consultation']));
+    return query(collection(firestore, 'patients'), where('groupId', '==', groupId), where('status', 'in', ['waiting', 'consulting']));
   }, [firestore, groupId]);
 
   const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
