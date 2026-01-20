@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, use, useMemo, useActionState, useCallback } from 'react';
@@ -66,7 +65,7 @@ import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 
 type DoctorPageProps = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 const badgeColors: Record<Patient['status'], string> = {
@@ -503,7 +502,7 @@ function RoomCard({
 
 
 export default function DoctorConsultationPageLoader({ params }: DoctorPageProps) {
-  const { id } = params;
+  const { id } = use(params);
   const firestore = useFirestore();
   
   const doctorUserRef = useMemoFirebase(() => {
