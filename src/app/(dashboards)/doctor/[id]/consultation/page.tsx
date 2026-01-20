@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, use, useMemo, useActionState, useCallback } from 'react';
@@ -466,11 +467,8 @@ function RoomCard({
                                 <Button size="sm" variant="outline" onClick={() => toast({ title: 'Add Notes', description: 'This would open a notes editor.' })}>
                                     <FileText className="mr-2 h-4 w-4"/> Add Notes
                                 </Button>
-                                <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-black" onClick={() => onCallPatient(patient)}>
-                                    <PhoneCall className="mr-2 h-4 w-4"/> Call Patient
-                                </Button>
-                                 <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onViewHistory(patient)}>
-                                    <History className="mr-2 h-4 w-4"/> History
+                                <Button size="sm" className="col-span-2 bg-blue-600 hover:bg-blue-700" onClick={() => onCallNext(cabin.id)}>
+                                    <PhoneCall className="mr-2 h-4 w-4"/> Call Next Patient
                                 </Button>
                             </div>
                         ) : ( // 'calling' status
@@ -545,7 +543,12 @@ function DoctorConsultationDashboard({
   groups: Group[];
 }) {
     const firestore = useFirestore();
-    const { data: doctorUser } = useDoc<User>(doc(firestore, 'users', doctorId));
+
+    const doctorUserRef = useMemoFirebase(() => {
+        return doc(firestore, 'users', doctorId);
+    }, [firestore, doctorId]);
+    const { data: doctorUser } = useDoc<User>(doctorUserRef);
+    
     const [selectedGroupId, setSelectedGroupId] = useState<string>(groups[0]?.id);
     const { toast } = useToast();
     const [historyPatient, setHistoryPatient] = useState<Patient | null>(null);
@@ -766,3 +769,5 @@ function DoctorConsultationDashboard({
         </div>
     );
 }
+
+    
