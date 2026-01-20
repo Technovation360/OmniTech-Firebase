@@ -1,3 +1,4 @@
+
 'use client';
 
 import { use, useState, useEffect, useCallback } from 'react';
@@ -132,7 +133,7 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
                   <Input
                   id="patientSearch"
                   placeholder="Search by Name, Number, Email"
-                  className="pl-9 h-6 placeholder:text-xs"
+                  className="pl-9 h-10 placeholder:text-xs"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   />
