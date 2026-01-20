@@ -244,24 +244,16 @@ export const getPatientHistory = async (
   const patientVisits = patientVisitsSnapshot.docs.map(
     (d) => {
         const data = d.data();
-        return {
-             ...data,
-             id: d.id,
-             registeredAt: (data.registeredAt as Timestamp).toDate().toISOString()
-        } as PatientTransaction;
+        const visit: {[key: string]: any} = { id: d.id, ...data };
+        for (const key in visit) {
+            if (Object.prototype.hasOwnProperty.call(visit, key) && visit[key] instanceof Timestamp) {
+                visit[key] = visit[key].toDate().toISOString();
+            }
+        }
+        return visit as PatientTransaction;
     });
 
   const historyPromises = patientVisits.map(async (visit) => {
-    // This part remains inefficient but is kept to preserve original functionality
-    const consultationsQuery = query(
-      collection(db, 'consultations'),
-      where('patientId', '==', visit.id)
-    );
-    const consultationsSnapshot = await getDocs(consultationsQuery);
-    const consultation = consultationsSnapshot.docs.length > 0
-      ? (consultationsSnapshot.docs[0].data() as Consultation)
-      : undefined;
-
     const groupDoc = await getDoc(doc(db, 'groups', visit.groupId));
     const groupData = groupDoc.exists() ? (groupDoc.data() as Group) : null;
 
@@ -279,10 +271,8 @@ export const getPatientHistory = async (
       groupName: groupData?.name || 'N/A',
       doctorName: groupData?.doctors[0]?.name || 'N/A',
       issuedAt: visit.registeredAt,
-      startTime: consultation?.date
-        ? new Date(new Date(consultation.date).getTime() - 10 * 60000).toISOString()
-        : undefined,
-      endTime: consultation?.date,
+      startTime: visit.consultingStartTime,
+      endTime: visit.consultingEndTime,
       status: visit.status,
     } as PatientHistoryEntry;
   });
