@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -42,7 +42,7 @@ import {
 } from '@/components/ui/select';
 import { ArrowUp, ArrowDown, Search, History, PlusCircle, Loader } from 'lucide-react';
 import { getPatientHistory } from '@/lib/data';
-import type { Patient, Group, PatientHistoryEntry, Clinic } from '@/lib/types';
+import type { Patient, Group, PatientHistoryEntry, Clinic, PatientTransaction, EnrichedPatient, PatientMaster } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -50,7 +50,7 @@ import { registerPatient } from '@/lib/actions';
 import { useActionState } from 'react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where, Timestamp } from 'firebase/firestore';
+import { collection, query, where, Timestamp, documentId } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 
 
@@ -364,7 +364,7 @@ export default function PatientRegistryPage() {
     if (!user) return null;
     return collection(firestore, 'patient_transactions');
   }, [firestore, user]);
-  const { data: allPatients, isLoading: patientsLoading, refetch } = useCollection<Patient>(patientsRef);
+  const { data: patientTransactions, isLoading: patientsLoading, refetch } = useCollection<PatientTransaction>(patientsRef);
   
   const clinicsRef = useMemoFirebase(() => {
     if (!user) return null;
@@ -378,7 +378,30 @@ export default function PatientRegistryPage() {
   }, [firestore, user]);
   const { data: groups, isLoading: groupsLoading } = useCollection<Group>(groupsRef);
 
-  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
+  const contactNumbers = useMemo(() => {
+    if (!patientTransactions) return [];
+    return [...new Set(patientTransactions.map(p => p.contactNumber).filter(Boolean))];
+  }, [patientTransactions]);
+
+  const patientMastersQuery = useMemoFirebase(() => {
+      if (contactNumbers.length === 0) return null;
+      return query(collection(firestore, 'patient_master'), where('contactNumber', 'in', contactNumbers.slice(0, 30)));
+  }, [firestore, contactNumbers]);
+  
+  const { data: patientMasters, isLoading: mastersLoading } = useCollection<PatientMaster>(patientMastersQuery);
+
+  const allPatients = useMemo<EnrichedPatient[]>(() => {
+      if (!patientTransactions || !patientMasters) return [];
+      const mastersMap = new Map(patientMasters.map(m => [m.contactNumber, m]));
+      return patientTransactions.map(t => {
+          const master = mastersMap.get(t.contactNumber);
+          if (!master) return null;
+          return { ...master, ...t };
+      }).filter((p): p is EnrichedPatient => p !== null);
+  }, [patientTransactions, patientMasters]);
+
+
+  const [filteredPatients, setFilteredPatients] = useState<EnrichedPatient[]>([]);
   const [sortConfig, setSortConfig] = useState<{
     key: keyof Patient;
     direction: 'asc' | 'desc';
@@ -471,6 +494,8 @@ export default function PatientRegistryPage() {
     formData.append('gender', patient.gender);
     formData.append('groupId', patient.groupId);
     formData.append('contactNumber', patient.contactNumber);
+    formData.append('emailAddress', patient.emailAddress || '');
+
 
     const result = await registerPatient(null, formData);
 
@@ -488,7 +513,7 @@ export default function PatientRegistryPage() {
     }
   }
 
-  const isLoading = isUserLoading || patientsLoading || clinicsLoading || groupsLoading;
+  const isLoading = isUserLoading || patientsLoading || clinicsLoading || groupsLoading || mastersLoading;
 
   if (isLoading) {
     return (
@@ -673,3 +698,5 @@ export default function PatientRegistryPage() {
     </>
   );
 }
+
+    

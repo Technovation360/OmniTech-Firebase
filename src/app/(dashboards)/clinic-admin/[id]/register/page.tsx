@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect, use, useCallback } from 'react';
+import { useState, useEffect, use, useCallback, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -37,14 +37,14 @@ import {
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ArrowUp, ArrowDown, Search, History, PlusCircle, Loader } from 'lucide-react';
 import { getPatientHistory } from '@/lib/data';
-import type { Patient, Group, PatientHistoryEntry } from '@/lib/types';
+import type { Patient, Group, PatientHistoryEntry, PatientTransaction, EnrichedPatient, PatientMaster } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { registerPatient } from '@/lib/actions';
 import { useActionState } from 'react';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where, Timestamp } from 'firebase/firestore';
+import { collection, query, where, Timestamp, documentId } from 'firebase/firestore';
 
 
 const badgeColors: Record<Patient['status'], string> = {
@@ -75,7 +75,7 @@ function VisitHistoryModal({
 
   useEffect(() => {
     if (patient) {
-      getPatientHistory(patient.id, patient.clinicId).then(setHistory);
+      getPatientHistory(patient.id).then(setHistory);
     } else {
       setHistory([]);
     }
@@ -304,15 +304,37 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
   const patientsQuery = useMemoFirebase(() => {
     return query(collection(firestore, 'patient_transactions'), where('clinicId', '==', clinicId));
   }, [firestore, clinicId]);
-  const { data: allPatients, isLoading: patientsLoading, refetch } = useCollection<Patient>(patientsQuery);
+  const { data: patientTransactions, isLoading: patientsLoading, refetch } = useCollection<PatientTransaction>(patientsQuery);
   
   const groupsQuery = useMemoFirebase(() => {
     return query(collection(firestore, 'groups'), where('clinicId', '==', clinicId));
   }, [firestore, clinicId]);
   const { data: groups, isLoading: groupsLoading } = useCollection<Group>(groupsQuery);
 
+  const contactNumbers = useMemo(() => {
+    if (!patientTransactions) return [];
+    return [...new Set(patientTransactions.map(p => p.contactNumber).filter(Boolean))];
+  }, [patientTransactions]);
 
-  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
+  const patientMastersQuery = useMemoFirebase(() => {
+      if (contactNumbers.length === 0) return null;
+      return query(collection(firestore, 'patient_master'), where('contactNumber', 'in', contactNumbers.slice(0, 30)));
+  }, [firestore, contactNumbers]);
+  
+  const { data: patientMasters, isLoading: mastersLoading } = useCollection<PatientMaster>(patientMastersQuery);
+
+  const allPatients = useMemo<EnrichedPatient[]>(() => {
+      if (!patientTransactions || !patientMasters) return [];
+      const mastersMap = new Map(patientMasters.map(m => [m.contactNumber, m]));
+      return patientTransactions.map(t => {
+          const master = mastersMap.get(t.contactNumber);
+          if (!master) return null;
+          return { ...master, ...t };
+      }).filter((p): p is EnrichedPatient => p !== null);
+  }, [patientTransactions, patientMasters]);
+
+
+  const [filteredPatients, setFilteredPatients] = useState<EnrichedPatient[]>([]);
   const [sortConfig, setSortConfig] = useState<{
     key: keyof Patient;
     direction: 'asc' | 'desc';
@@ -344,7 +366,7 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
             patient.name.toLowerCase().includes(lowercasedQuery) ||
             (patient.tokenNumber && patient.tokenNumber.toLowerCase().includes(lowercasedQuery)) ||
             patient.contactNumber.toLowerCase().includes(lowercasedQuery) ||
-            patient.emailAddress.toLowerCase().includes(lowercasedQuery)
+            (patient.emailAddress && patient.emailAddress.toLowerCase().includes(lowercasedQuery))
         );
     }
     
@@ -400,6 +422,7 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
     formData.append('gender', patient.gender);
     formData.append('groupId', patient.groupId);
     formData.append('contactNumber', patient.contactNumber);
+    formData.append('emailAddress', patient.emailAddress || '');
 
     const result = await registerPatient(null, formData);
 
@@ -418,7 +441,7 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
     }
   }
 
-  const isLoading = isUserLoading || patientsLoading || groupsLoading;
+  const isLoading = isUserLoading || patientsLoading || groupsLoading || mastersLoading;
 
   return (
     <div className="space-y-6">
@@ -578,3 +601,5 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
     </div>
   );
 }
+
+    

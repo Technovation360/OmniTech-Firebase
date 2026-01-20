@@ -64,27 +64,28 @@ export const getPatients = async (): Promise<EnrichedPatient[]> => {
     } as PatientTransaction;
   });
 
-  const masterIds = [...new Set(transactions.map(t => t.patientMasterId))].filter(Boolean);
+  const contactNumbers = [...new Set(transactions.map(t => t.contactNumber))].filter(Boolean);
   
-  if (masterIds.length === 0) {
+  if (contactNumbers.length === 0) {
       return []; 
   }
 
   // Firestore 'in' query is limited to 30 values in a single query.
   // Chunking is needed for larger sets. For this prototype, we assume fewer than 30.
   const mastersCol = collection(db, 'patient_master');
-  const mastersQuery = query(mastersCol, where('__name__', 'in', masterIds));
+  const mastersQuery = query(mastersCol, where('contactNumber', 'in', contactNumbers));
   const mastersSnapshot = await getDocs(mastersQuery);
 
-  const mastersMap = new Map<string, Omit<PatientMaster, 'id'>>();
+  const mastersMap = new Map<string, PatientMaster>();
   mastersSnapshot.docs.forEach(doc => {
-    mastersMap.set(doc.id, doc.data() as Omit<PatientMaster, 'id'>);
+    const masterData = { id: doc.id, ...doc.data() } as PatientMaster;
+    mastersMap.set(masterData.contactNumber, masterData);
   });
 
   const enrichedPatients = transactions.map(transaction => {
-    const masterData = mastersMap.get(transaction.patientMasterId);
+    const masterData = mastersMap.get(transaction.contactNumber);
     if (!masterData) return null; 
-    return { ...transaction, ...masterData };
+    return { ...masterData, ...transaction };
   }).filter(p => p !== null) as EnrichedPatient[];
 
   return enrichedPatients;
@@ -132,25 +133,25 @@ export const getPatientByToken = async (
   const transactionDoc = snapshot.docs[0];
   const transactionData = transactionDoc.data() as PatientTransaction;
 
-  if (!transactionData.patientMasterId) return undefined;
+  if (!transactionData.contactNumber) return undefined;
 
-  const masterDocRef = doc(db, 'patient_master', transactionData.patientMasterId);
-  const masterDocSnap = await getDoc(masterDocRef);
-
-  if (!masterDocSnap.exists()) return undefined;
+  const mastersQuery = query(collection(db, 'patient_master'), where('contactNumber', '==', transactionData.contactNumber));
+  const masterSnapshot = await getDocs(mastersQuery);
+  if (masterSnapshot.empty) return undefined;
+  const masterDocSnap = masterSnapshot.docs[0];
 
   const masterData = masterDocSnap.data() as Omit<PatientMaster, 'id'>;
 
   return {
-      ...transactionData,
       ...masterData,
+      ...transactionData,
       id: transactionDoc.id,
       registeredAt: (transactionData.registeredAt as any as Timestamp).toDate().toISOString(),
   };
 };
 
 export const addPatient = async (
-  data: Omit<PatientTransaction, 'id' | 'patientMasterId' | 'tokenNumber' | 'status' | 'registeredAt'> & Omit<PatientMaster, 'id'>,
+  data: Omit<PatientMaster, 'id'> & { groupId: string },
   clinicGroup: Group
 ): Promise<PatientTransaction> => {
 
@@ -158,12 +159,9 @@ export const addPatient = async (
   const q = query(patientMasterCol, where('contactNumber', '==', data.contactNumber));
   const masterSnapshot = await getDocs(q);
 
-  let patientMasterId: string;
-
   if (masterSnapshot.empty) {
     // Create new patient master
     const newMasterDocRef = doc(patientMasterCol);
-    patientMasterId = newMasterDocRef.id;
     const patientMasterData: Omit<PatientMaster, 'id'> = {
       name: data.name,
       age: data.age,
@@ -175,7 +173,6 @@ export const addPatient = async (
   } else {
     // Patient master exists, update it
     const masterDoc = masterSnapshot.docs[0];
-    patientMasterId = masterDoc.id;
     const patientMasterData: Partial<PatientMaster> = {
       name: data.name,
       age: data.age,
@@ -202,7 +199,7 @@ export const addPatient = async (
       const newTransactionDocRef = doc(collection(db, 'patient_transactions'));
 
       const transactionData: Omit<PatientTransaction, 'id'> = {
-        patientMasterId,
+        contactNumber: data.contactNumber,
         clinicId: clinicGroup.clinicId,
         groupId: clinicGroup.id,
         tokenNumber: `${prefix}${newToken}`,

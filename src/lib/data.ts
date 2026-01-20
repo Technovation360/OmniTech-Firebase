@@ -116,22 +116,24 @@ export const getAllPatients = async (): Promise<EnrichedPatient[]> => {
     } as PatientTransaction;
   });
   
-  const masterIds = [...new Set(transactions.map(t => t.patientMasterId))].filter(Boolean);
-  if (masterIds.length === 0) return transactions as any[]; // Should not happen
+  const contactNumbers = [...new Set(transactions.map(t => t.contactNumber))].filter(Boolean);
+  if (contactNumbers.length === 0) return []; 
 
   const mastersCol = collection(db, 'patient_master');
-  const mastersQuery = query(mastersCol, where(documentId(), 'in', masterIds));
+  const mastersQuery = query(mastersCol, where('contactNumber', 'in', contactNumbers));
   const mastersSnapshot = await getDocs(mastersQuery);
 
   const mastersMap = new Map<string, PatientMaster>();
   mastersSnapshot.docs.forEach(doc => {
-    mastersMap.set(doc.id, { id: doc.id, ...doc.data() } as PatientMaster);
+    const data = doc.data() as Omit<PatientMaster, 'id'>;
+    mastersMap.set(data.contactNumber, { id: doc.id, ...data});
   });
 
-  return transactions.map(t => ({
-    ...t,
-    ...mastersMap.get(t.patientMasterId),
-  } as EnrichedPatient));
+  return transactions.map(t => {
+      const masterData = mastersMap.get(t.contactNumber);
+      if (!masterData) return null;
+      return {...masterData, ...t };
+  }).filter((p): p is EnrichedPatient => p !== null);
 };
 
 export const getPatientByToken = async (
@@ -145,14 +147,16 @@ export const getPatientByToken = async (
   const transactionDoc = snapshot.docs[0];
   const transactionData = transactionDoc.data() as PatientTransaction;
   
-  if (!transactionData.patientMasterId) return undefined;
+  if (!transactionData.contactNumber) return undefined;
   
-  const masterDoc = await getDoc(doc(db, 'patient_master', transactionData.patientMasterId));
-  if (!masterDoc.exists()) return undefined;
+  const mastersQuery = query(collection(db, 'patient_master'), where('contactNumber', '==', transactionData.contactNumber));
+  const masterSnapshot = await getDocs(mastersQuery);
+  if (masterSnapshot.empty) return undefined;
+  const masterDoc = masterSnapshot.docs[0];
 
   const enrichedData = {
-      ...transactionData,
       ...masterDoc.data(),
+      ...transactionData,
       id: transactionDoc.id,
       registeredAt: (transactionData.registeredAt as any as Timestamp).toDate().toISOString(),
   } as EnrichedPatient;
@@ -177,14 +181,18 @@ export const getPatientsByClinicId = async (
     } as PatientTransaction
   });
   
-  const masterIds = [...new Set(transactions.map(t => t.patientMasterId))].filter(Boolean);
-  if (masterIds.length === 0) return [];
+  const contactNumbers = [...new Set(transactions.map(t => t.contactNumber))].filter(Boolean);
+  if (contactNumbers.length === 0) return [];
   
-  const mastersQuery = query(collection(db, 'patient_master'), where(documentId(), 'in', masterIds));
+  const mastersQuery = query(collection(db, 'patient_master'), where('contactNumber', 'in', contactNumbers));
   const mastersSnapshot = await getDocs(mastersQuery);
-  const mastersMap = new Map(mastersSnapshot.docs.map(d => [d.id, d.data() as Omit<PatientMaster, 'id'>]));
+  const mastersMap = new Map(mastersSnapshot.docs.map(d => [d.data().contactNumber, {id: d.id, ...d.data()} as PatientMaster]));
   
-  return transactions.map(t => ({...t, ...mastersMap.get(t.patientMasterId)!}));
+  return transactions.map(t => {
+      const masterData = mastersMap.get(t.contactNumber);
+      if (!masterData) return null;
+      return {...masterData, ...t };
+  }).filter((p): p is EnrichedPatient => p !== null);
 };
 
 export const getPatientsByGroupId = async (
@@ -201,14 +209,18 @@ export const getPatientsByGroupId = async (
     } as PatientTransaction
   });
   
-  const masterIds = [...new Set(transactions.map(t => t.patientMasterId))].filter(Boolean);
-  if (masterIds.length === 0) return [];
+  const contactNumbers = [...new Set(transactions.map(t => t.contactNumber))].filter(Boolean);
+  if (contactNumbers.length === 0) return [];
 
-  const mastersQuery = query(collection(db, 'patient_master'), where(documentId(), 'in', masterIds));
+  const mastersQuery = query(collection(db, 'patient_master'), where('contactNumber', 'in', contactNumbers));
   const mastersSnapshot = await getDocs(mastersQuery);
-  const mastersMap = new Map(mastersSnapshot.docs.map(d => [d.id, d.data() as Omit<PatientMaster, 'id'>]));
+  const mastersMap = new Map(mastersSnapshot.docs.map(d => [d.data().contactNumber, {id: d.id, ...d.data()} as PatientMaster]));
   
-  return transactions.map(t => ({...t, ...mastersMap.get(t.patientMasterId)!}));
+  return transactions.map(t => {
+      const masterData = mastersMap.get(t.contactNumber);
+      if (!masterData) return null;
+      return {...masterData, ...t };
+  }).filter((p): p is EnrichedPatient => p !== null);
 };
 
 export const getPatientHistory = async (
@@ -218,12 +230,12 @@ export const getPatientHistory = async (
   const transactionDocSnap = await getDoc(transactionDocRef);
   if (!transactionDocSnap.exists()) return [];
 
-  const { patientMasterId } = transactionDocSnap.data() as PatientTransaction;
-  if (!patientMasterId) return [];
+  const { contactNumber } = transactionDocSnap.data() as PatientTransaction;
+  if (!contactNumber) return [];
 
   const historyQuery = query(
     collection(db, 'patient_transactions'),
-    where('patientMasterId', '==', patientMasterId)
+    where('contactNumber', '==', contactNumber)
   );
 
   const patientVisitsSnapshot = await getDocs(historyQuery);

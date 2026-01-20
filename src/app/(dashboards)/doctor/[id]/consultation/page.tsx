@@ -592,34 +592,26 @@ function DoctorConsultationDashboard({
         return query(collection(firestore, 'patient_transactions'), where('groupId', 'in', groupIds));
     }, [firestore, groupIds, refetchIndex]);
 
-    const { data: patientTransactionsFromDB, isLoading: patientsLoading } = useCollection<PatientTransaction>(patientTransactionsQuery);
-    const [patientTransactions, setPatientTransactions] = useState<PatientTransaction[] | null>(null);
-
-    useEffect(() => {
-        if (patientTransactionsFromDB) {
-            setPatientTransactions(patientTransactionsFromDB);
-        }
-    }, [patientTransactionsFromDB]);
-
-
-    const patientMasterIds = useMemo(() => {
+    const { data: patientTransactions, isLoading: patientsLoading } = useCollection<PatientTransaction>(patientTransactionsQuery);
+    
+    const contactNumbers = useMemo(() => {
         if (!patientTransactions) return [];
-        return [...new Set(patientTransactions.map(p => p.patientMasterId).filter(Boolean))];
+        return [...new Set(patientTransactions.map(p => p.contactNumber).filter(Boolean))];
     }, [patientTransactions]);
     
     const patientMastersQuery = useMemoFirebase(() => {
-        if (patientMasterIds.length === 0) return null;
+        if (contactNumbers.length === 0) return null;
         // Firestore 'in' query supports up to 30 elements. Chunking is needed for more.
-        return query(collection(firestore, 'patient_master'), where(documentId(), 'in', patientMasterIds.slice(0, 30)));
-    }, [firestore, patientMasterIds]);
+        return query(collection(firestore, 'patient_master'), where('contactNumber', 'in', contactNumbers.slice(0, 30)));
+    }, [firestore, contactNumbers]);
     
     const { data: patientMasters, isLoading: mastersLoading } = useCollection<PatientMaster>(patientMastersQuery);
 
     const allPatients = useMemo<EnrichedPatient[]>(() => {
         if (!patientTransactions || !patientMasters) return [];
-        const mastersMap = new Map(patientMasters.map(m => [m.id, m]));
+        const mastersMap = new Map(patientMasters.map(m => [m.contactNumber, m]));
         return patientTransactions.map(t => {
-            const master = mastersMap.get(t.patientMasterId);
+            const master = mastersMap.get(t.contactNumber);
             if (!master) return null;
             return { ...master, ...t };
         }).filter((p): p is EnrichedPatient => p !== null);
@@ -666,15 +658,6 @@ function DoctorConsultationDashboard({
         }
         const nextPatient = waitingPatients[0];
 
-        // Optimistic UI Update
-        setPatientTransactions(currentTransactions => 
-            currentTransactions?.map(t => 
-                t.id === nextPatient.id 
-                ? { ...t, status: 'calling', cabinId: cabinId } 
-                : t
-            ) || null
-        );
-
         // DB Update
         const patientDocRef = doc(firestore, 'patient_transactions', nextPatient.id);
         const cabinDocRef = doc(firestore, 'cabins', cabinId);
@@ -683,6 +666,7 @@ function DoctorConsultationDashboard({
         setDocumentNonBlocking(cabinDocRef, { patientInCabinId: nextPatient.id }, { merge: true });
         
         toast({ title: "Patient Called", description: `${nextPatient.name} has been called.`});
+        refetchPatients();
     };
     
     const handleLeaveRoom = (cabinId: string) => {
@@ -700,44 +684,18 @@ function DoctorConsultationDashboard({
         const cabinDocRef = doc(firestore, 'cabins', cabinId);
 
         if (action === 'start') {
-            // Optimistic UI Update
-            setPatientTransactions(currentTransactions => 
-                currentTransactions?.map(t => 
-                    t.id === patientId 
-                    ? { ...t, status: 'consulting', consultingStartTime: new Date().toISOString() } 
-                    : t
-                ) || null
-            );
-            // Database Update
             setDocumentNonBlocking(patientDocRef, { status: 'consulting', consultingStartTime: new Date().toISOString() }, { merge: true });
             toast({ title: `Consultation Started` });
         } else if (action === 'end') {
-            // Optimistic UI Update
-            setPatientTransactions(currentTransactions => 
-                currentTransactions?.map(t => 
-                    t.id === patientId 
-                    ? { ...t, status: 'consultation-done', consultingEndTime: new Date().toISOString() } 
-                    : t
-                ) || null
-            );
-            // Database Update
             setDocumentNonBlocking(patientDocRef, { status: 'consultation-done', consultingEndTime: new Date().toISOString() }, { merge: true });
             setDocumentNonBlocking(cabinDocRef, { patientInCabinId: null }, { merge: true });
             toast({ title: `Consultation Ended` });
         } else if (action === 'no-show') {
-            // Optimistic UI Update
-            setPatientTransactions(currentTransactions => 
-                currentTransactions?.map(t => 
-                    t.id === patientId 
-                    ? { ...t, status: 'no-show', cabinId: undefined, consultingEndTime: new Date().toISOString() } 
-                    : t
-                ) || null
-            );
-            // Database Update
             setDocumentNonBlocking(patientDocRef, { status: 'no-show', cabinId: null, consultingEndTime: new Date().toISOString() }, { merge: true });
             setDocumentNonBlocking(cabinDocRef, { patientInCabinId: null }, { merge: true });
             toast({ title: `Patient marked as No Show` });
         }
+        refetchPatients();
     };
 
     const handleCallPatient = (patient: Patient) => {
@@ -862,3 +820,5 @@ function DoctorConsultationDashboard({
         </div>
     );
 }
+
+    

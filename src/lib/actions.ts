@@ -1,3 +1,4 @@
+
 'use server';
 
 import { z } from 'zod';
@@ -42,10 +43,9 @@ export async function registerPatient(prevState: any, formData: FormData) {
         name: validatedFields.data.name,
         age: validatedFields.data.age,
         gender: validatedFields.data.gender,
-        groupId: validatedFields.data.groupId,
         contactNumber: validatedFields.data.contactNumber,
         emailAddress: validatedFields.data.emailAddress || '',
-        clinicId: group.clinicId,
+        groupId: validatedFields.data.groupId
     }, group);
     
     // Revalidate paths to update caches
@@ -126,3 +126,5 @@ export async function createConsultationSummary(prevState: any, formData: FormDa
         return { message: "Failed to summarize or save consultation." };
     }
 }
+
+    

@@ -12,7 +12,7 @@ export type PatientMaster = {
 
 export type PatientTransaction = {
   id: string; // transaction id
-  patientMasterId: string;
+  contactNumber: string; // Patient's phone number, links to patient_master
   tokenNumber: string;
   status: 'waiting' | 'calling' | 'consulting' | 'no-show' | 'consultation-done';
   groupId: string;

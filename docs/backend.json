@@ -23,7 +23,7 @@
       "description": "Represents a single transactional visit for a patient.",
       "properties": {
         "id": { "type": "string", "description": "Unique identifier for the patient transaction." },
-        "patientMasterId": { "type": "string", "description": "Reference to the PatientMaster record." },
+        "contactNumber": { "type": "string", "description": "Patient's contact phone number, used to link to the patient master record." },
         "clinicId": { "type": "string", "description": "The ID of the clinic for this transaction." },
         "groupId": { "type": "string", "description": "The ID of the group for this transaction." },
         "cabinId": { "type": "string", "description": "The ID of the cabin assigned for consultation." },
@@ -33,7 +33,7 @@
         "consultingStartTime": { "type": "string", "format": "date-time", "description": "Timestamp when the consultation started." },
         "consultingEndTime": { "type": "string", "format": "date-time", "description": "Timestamp when the consultation ended." }
       },
-      "required": ["id", "patientMasterId", "clinicId", "groupId", "tokenNumber", "status", "registeredAt"]
+      "required": ["id", "contactNumber", "clinicId", "groupId", "tokenNumber", "status", "registeredAt"]
     },
     "Consultation": {
       "$schema": "http://json-schema.org/draft-07/schema#",
