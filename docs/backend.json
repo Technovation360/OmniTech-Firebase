@@ -168,6 +168,18 @@
         "clinicId": {
           "type": "string",
           "description": "The ID of the clinic this cabin belongs to."
+        },
+        "assignedDoctorId": {
+            "type": "string",
+            "description": "The ID of the doctor currently assigned to this cabin."
+        },
+        "assignedDoctorName": {
+            "type": "string",
+            "description": "The name of the doctor currently assigned to this cabin."
+        },
+        "patientInCabinId": {
+            "type": "string",
+            "description": "The ID of the patient transaction currently in the cabin."
         }
       },
       "required": [

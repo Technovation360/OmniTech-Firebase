@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, use, useMemo, useActionState, useCallback } from 'react';
-import type { Patient, Group, User, PatientHistoryEntry, Consultation } from '@/lib/types';
+import type { Patient, Group, User, PatientHistoryEntry, Consultation, Cabin } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -62,17 +62,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 
 type DoctorPageProps = {
   params: { id: string };
 };
-
-type RoomStatus = {
-    name: string; // Cabin name
-    patientId: string | null;
-    status: 'vacant' | 'occupied' | 'doctor-assigned';
-}
 
 const badgeColors: Record<Patient['status'], string> = {
   'waiting': "bg-blue-100 text-blue-800",
@@ -326,8 +321,8 @@ function VisitHistoryModal({
 
 
 function RoomCard({ 
+    doctorId,
     cabin, 
-    room, 
     patient, 
     onAssignDoctor,
     onCallNext,
@@ -335,18 +330,18 @@ function RoomCard({
     onAction,
     onViewHistory,
     onCallPatient,
-    onMakeVacant,
+    onRevertPatient,
 }: { 
-    cabin: any, 
-    room: RoomStatus, 
+    doctorId: string;
+    cabin: Cabin, 
     patient: Patient | null, 
-    onAssignDoctor: (roomName: string) => void,
-    onCallNext: (roomName: string) => void,
-    onLeave: (roomName: string) => void,
-    onAction: (patientId: string, roomName: string, action: 'start' | 'end' | 'no-show') => void,
+    onAssignDoctor: (cabinId: string) => void,
+    onCallNext: (cabinId: string) => void,
+    onLeave: (cabinId: string) => void,
+    onAction: (patientId: string, cabinId: string, action: 'start' | 'end' | 'no-show') => void,
     onViewHistory: (patient: Patient) => void,
     onCallPatient: (patient: Patient) => void,
-    onMakeVacant: (roomName: string) => void,
+    onRevertPatient: (patientId: string, cabinId: string) => void,
 }) {
     const { toast } = useToast();
     const [noShowEnabled, setNoShowEnabled] = useState(false);
@@ -385,11 +380,11 @@ function RoomCard({
     }, [patient]);
 
 
-    if (!room) {
+    if (!cabin) {
         return (
              <Card>
                 <CardHeader className="flex-row items-center justify-between p-3 border-b bg-muted/30 h-[53px]">
-                    <CardTitle className="text-sm font-semibold">{cabin.name.toUpperCase()}</CardTitle>
+                    <CardTitle className="text-sm font-semibold">LOADING...</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 h-48 flex items-center justify-center">
                     <Loader className="animate-spin" />
@@ -398,7 +393,7 @@ function RoomCard({
         )
     }
 
-    if (room.status === 'vacant') {
+    if (!cabin.assignedDoctorId) {
         return (
              <Card>
                 <CardHeader className="flex-row items-center justify-between p-3 border-b bg-muted/30 h-[53px]">
@@ -409,7 +404,7 @@ function RoomCard({
                         <Lock className="h-6 w-6 text-yellow-500" />
                     </div>
                     <p className="text-sm font-semibold text-muted-foreground mb-4">ROOM VACANT</p>
-                    <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => onAssignDoctor(cabin.name)}>
+                    <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => onAssignDoctor(cabin.id)}>
                         <PlusCircle className="mr-1 h-3 w-3" />
                         Assign
                     </Button>
@@ -418,98 +413,87 @@ function RoomCard({
         )
     }
 
-    if (room.status === 'doctor-assigned') {
-        return (
-           <Card>
-               <CardHeader className="flex-row items-center justify-between p-3 border-b bg-muted/30 h-[53px]">
-                   <CardTitle className="text-sm font-semibold">{cabin.name.toUpperCase()}</CardTitle>
-                   <Button variant="destructive" size="xs" className="h-7" onClick={() => onMakeVacant(cabin.name)}>
-                       <LogOut className="mr-1 h-3 w-3" />
-                       Leave
-                   </Button>
-               </CardHeader>
-               <CardContent className="p-4 h-48 flex flex-col items-center justify-center text-center">
-                    <div className="p-3 bg-blue-100 rounded-full mb-2">
-                       <Stethoscope className="h-6 w-6 text-blue-500" />
-                   </div>
-                   <p className="text-sm font-semibold text-muted-foreground mb-4">ROOM ASSIGNED</p>
-                   <Button size="sm" onClick={() => onCallNext(cabin.name)}>
-                       <PhoneCall className="mr-2 h-4 w-4"/>
-                       Call Patient
-                   </Button>
-               </CardContent>
-           </Card>
-       );
-    }
-    
-    if (!patient) { // Occupied but patient data is missing, should not happen.
-        return (
-            <Card>
-                <CardHeader className="flex-row items-center justify-between p-3 border-b bg-muted/30 h-[53px]">
+    if (cabin.assignedDoctorId !== doctorId) {
+         return (
+             <Card>
+                <CardHeader className="flex-row items-center justify-between p-3 border-b bg-gray-200 h-[53px]">
                     <CardTitle className="text-sm font-semibold">{cabin.name.toUpperCase()}</CardTitle>
-                     <Button variant="destructive" size="xs" className="h-7" onClick={() => onMakeVacant(cabin.name)}>
-                       <LogOut className="mr-1 h-3 w-3" />
-                       Leave
-                    </Button>
                 </CardHeader>
-                <CardContent className="p-4 h-48 flex items-center justify-center">
-                    <Loader className="animate-spin text-muted-foreground" />
+                <CardContent className="p-4 h-48 flex flex-col items-center justify-center text-center bg-gray-50">
+                     <div className="p-3 bg-red-100 rounded-full mb-2">
+                       <Stethoscope className="h-6 w-6 text-red-500" />
+                   </div>
+                   <p className="text-sm font-bold text-red-600 mb-1">ROOM OCCUPIED</p>
+                   <p className="text-xs font-semibold text-muted-foreground">Assigned to Dr. {cabin.assignedDoctorName}</p>
                 </CardContent>
             </Card>
-        )
+       );
     }
 
-    // Occupied states
+    // Assigned to current doctor
     return (
         <Card>
             <CardHeader className="flex-row items-center justify-between p-3 border-b bg-muted/30 h-[53px]">
                 <CardTitle className="text-sm font-semibold">{cabin.name.toUpperCase()}</CardTitle>
-                <Button variant="destructive" size="xs" className="h-7" onClick={() => onLeave(cabin.name)}>
+                 <Button variant="destructive" size="xs" className="h-7" onClick={() => patient ? onRevertPatient(patient.id, cabin.id) : onLeave(cabin.id)}>
                     <LogOut className="mr-1 h-3 w-3" />
                     Leave
                 </Button>
             </CardHeader>
-            <CardContent className="p-4 h-48 flex flex-col items-center justify-between text-center">
-                {/* Patient Info */}
-                <div className="text-center">
-                    <p className="font-bold text-4xl text-primary">{patient.tokenNumber}</p>
-                    <p className="font-semibold">{patient.name}</p>
-                    <p className="text-sm text-muted-foreground">{patient.age} / {patient.gender.charAt(0).toUpperCase()}</p>
-                </div>
-                {/* Action buttons */}
-                {patient.status === 'consulting' ? (
-                     <div className="grid grid-cols-2 gap-2 w-full">
-                        <Button size="sm" className="bg-red-500 hover:bg-red-600" onClick={() => onAction(patient!.id, cabin.name, 'end')}>
-                            <Square className="mr-2 h-4 w-4"/> End
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => toast({ title: 'Add Notes', description: 'This would open a notes editor.' })}>
-                            <FileText className="mr-2 h-4 w-4"/> Add Notes
-                        </Button>
-                        <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-black" onClick={() => onCallPatient(patient)}>
-                            <PhoneCall className="mr-2 h-4 w-4"/> Call Patient
-                        </Button>
-                         <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onViewHistory(patient)}>
-                            <History className="mr-2 h-4 w-4"/> History
-                        </Button>
-                    </div>
-                ) : ( // 'calling' status
-                     <div className="grid grid-cols-2 gap-2 w-full">
-                        <Button size="sm" className="bg-primary hover:bg-primary/90" onClick={() => onAction(patient!.id, cabin.name, 'start')}>
-                            <Play className="mr-2 h-4 w-4"/> Start
-                        </Button>
-                        <Button size="sm" variant="outline" disabled={!noShowEnabled} onClick={() => onAction(patient!.id, cabin.name, 'no-show')} className={cn(noShowEnabled && 'text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive')}>
-                            { !noShowEnabled ? (
-                                <span className="text-xs font-mono w-full text-center">No Show ({timer}s)</span>
-                            ) : (
-                                <><UserX className="mr-2 h-4 w-4"/> No Show</>
-                            )}
-                        </Button>
-                        <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-black" onClick={() => onCallPatient(patient)}>
-                            <PhoneCall className="mr-2 h-4 w-4"/> Call Patient
-                        </Button>
-                         <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onViewHistory(patient)}>
-                            <History className="mr-2 h-4 w-4"/> History
-                        </Button>
+            <CardContent className="p-4 h-48 flex flex-col items-center justify-center text-center">
+                { !patient ? (
+                     <>
+                        <div className="p-3 bg-blue-100 rounded-full mb-2">
+                           <Stethoscope className="h-6 w-6 text-blue-500" />
+                       </div>
+                       <p className="text-sm font-semibold text-muted-foreground mb-4">ROOM ASSIGNED</p>
+                       <Button size="sm" onClick={() => onCallNext(cabin.id)}>
+                           <PhoneCall className="mr-2 h-4 w-4"/>
+                           Call Patient
+                       </Button>
+                   </>
+                ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-between">
+                         <div className="text-center">
+                            <p className="font-bold text-4xl text-primary">{patient.tokenNumber}</p>
+                            <p className="font-semibold">{patient.name}</p>
+                            <p className="text-sm text-muted-foreground">{patient.age} / {patient.gender.charAt(0).toUpperCase()}</p>
+                        </div>
+                        {patient.status === 'consulting' ? (
+                             <div className="grid grid-cols-2 gap-2 w-full">
+                                <Button size="sm" className="bg-red-500 hover:bg-red-600" onClick={() => onAction(patient!.id, cabin.id, 'end')}>
+                                    <Square className="mr-2 h-4 w-4"/> End
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => toast({ title: 'Add Notes', description: 'This would open a notes editor.' })}>
+                                    <FileText className="mr-2 h-4 w-4"/> Add Notes
+                                </Button>
+                                <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-black" onClick={() => onCallPatient(patient)}>
+                                    <PhoneCall className="mr-2 h-4 w-4"/> Call Patient
+                                </Button>
+                                 <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onViewHistory(patient)}>
+                                    <History className="mr-2 h-4 w-4"/> History
+                                </Button>
+                            </div>
+                        ) : ( // 'calling' status
+                             <div className="grid grid-cols-2 gap-2 w-full">
+                                <Button size="sm" className="bg-primary hover:bg-primary/90" onClick={() => onAction(patient!.id, cabin.id, 'start')}>
+                                    <Play className="mr-2 h-4 w-4"/> Start
+                                </Button>
+                                <Button size="sm" variant="outline" disabled={!noShowEnabled} onClick={() => onAction(patient!.id, cabin.id, 'no-show')} className={cn(noShowEnabled && 'text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive')}>
+                                    { !noShowEnabled ? (
+                                        <span className="text-xs font-mono w-full text-center">No Show ({timer}s)</span>
+                                    ) : (
+                                        <><UserX className="mr-2 h-4 w-4"/> No Show</>
+                                    )}
+                                </Button>
+                                <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-black" onClick={() => onCallPatient(patient)}>
+                                    <PhoneCall className="mr-2 h-4 w-4"/> Call Patient
+                                </Button>
+                                 <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onViewHistory(patient)}>
+                                    <History className="mr-2 h-4 w-4"/> History
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 )}
             </CardContent>
@@ -519,7 +503,7 @@ function RoomCard({
 
 
 export default function DoctorConsultationPageLoader({ params }: DoctorPageProps) {
-  const { id } = use(params);
+  const { id } = params;
   const firestore = useFirestore();
   
   const doctorUserRef = useMemoFirebase(() => {
@@ -533,15 +517,8 @@ export default function DoctorConsultationPageLoader({ params }: DoctorPageProps
   }, [firestore, id, doctorUser]);
 
   const {data: doctorGroups, isLoading: groupsLoading} = useCollection<Group>(doctorGroupsQuery);
-  const groupIds = useMemo(() => doctorGroups?.map(g => g.id) || [], [doctorGroups]);
-
-  const patientsQuery = useMemoFirebase(() => {
-    if (groupIds.length === 0) return null;
-    return query(collection(firestore, 'patient_transactions'), where('groupId', 'in', groupIds));
-  }, [firestore, groupIds]);
-  const { data: allPatients, isLoading: patientsLoading, refetch } = useCollection<Patient>(patientsQuery);
   
-  if (doctorUserLoading || groupsLoading || patientsLoading) {
+  if (doctorUserLoading || groupsLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader className="h-8 w-8 animate-spin" />
@@ -557,129 +534,115 @@ export default function DoctorConsultationPageLoader({ params }: DoctorPageProps
        )
   }
 
-  return <DoctorConsultationDashboard doctorId={id} groups={doctorGroups} allPatients={allPatients || []} refetchPatients={refetch} />;
+  return <DoctorConsultationDashboard doctorId={id} groups={doctorGroups} />;
 }
 
 
 function DoctorConsultationDashboard({
   doctorId,
   groups,
-  allPatients,
-  refetchPatients,
 }: {
   doctorId: string,
   groups: Group[];
-  allPatients: Patient[];
-  refetchPatients: () => void;
 }) {
+    const firestore = useFirestore();
+    const { data: doctorUser } = useDoc<User>(doc(firestore, 'users', doctorId));
     const [selectedGroupId, setSelectedGroupId] = useState<string>(groups[0]?.id);
     const { toast } = useToast();
     const [historyPatient, setHistoryPatient] = useState<Patient | null>(null);
     const [isCheckInModalOpen, setCheckInModalOpen] = useState(false);
 
-    const closeCheckInModal = useCallback(() => {
-        setCheckInModalOpen(false);
-    }, []);
-
-    const onPatientRegistered = useCallback(() => {
-        refetchPatients();
-    }, [refetchPatients]);
-
+    const [refetchIndex, setRefetchIndex] = useState(0);
+    const refetchPatients = useCallback(() => setRefetchIndex(p => p + 1), []);
 
     const selectedGroup = useMemo(() => groups.find(g => g.id === selectedGroupId), [groups, selectedGroupId]);
     
-    const [patients, setPatients] = useState<Patient[]>([]);
-    const [rooms, setRooms] = useState<RoomStatus[]>([]);
+    const patientsQuery = useMemoFirebase(() => {
+        if (!selectedGroupId) return null;
+        return query(collection(firestore, 'patient_transactions'), where('groupId', '==', selectedGroupId));
+    }, [firestore, selectedGroupId, refetchIndex]);
+    const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
+    
+    const cabinIds = useMemo(() => selectedGroup?.cabins.map(c => c.id) || [], [selectedGroup]);
+    const cabinsQuery = useMemoFirebase(() => {
+        if (cabinIds.length === 0) return null;
+        return query(collection(firestore, 'cabins'), where('__name__', 'in', cabinIds));
+    }, [firestore, cabinIds]);
+    const { data: liveCabins, isLoading: cabinsLoading } = useCollection<Cabin>(cabinsQuery);
 
-    useEffect(() => {
-        const patientsForGroup = allPatients.filter(p => p.groupId === selectedGroupId);
-        setPatients(patientsForGroup);
 
-        if (selectedGroup) {
-            setRooms(prevRooms => {
-                const newRooms = selectedGroup.cabins.map(cabin => {
-                    const existingRoom = prevRooms.find(r => r.name === cabin.name);
-                    if (existingRoom) {
-                        const patientStillActive = patientsForGroup.some(p => p.id === existingRoom.patientId && (p.status === 'calling' || p.status === 'consulting'));
-                        if (patientStillActive) {
-                            return { ...existingRoom, status: 'occupied' };
-                        }
-                         if (existingRoom.status === 'doctor-assigned') {
-                            return existingRoom;
-                        }
-                    }
-                    return { name: cabin.name, patientId: null, status: 'vacant' };
-                });
-                return newRooms;
-            });
-        }
-    }, [allPatients, selectedGroupId, selectedGroup]);
+    const closeCheckInModal = useCallback(() => setCheckInModalOpen(false), []);
+    const onPatientRegistered = useCallback(() => { refetchPatients(); }, [refetchPatients]);
 
-    const handleAssignDoctorToRoom = (roomName: string) => {
-        setRooms(prev => prev.map(room => room.name === roomName ? { ...room, patientId: null, status: 'doctor-assigned' } : room));
-        toast({ title: 'Room Assigned', description: `${roomName} is now ready to call patients.` });
-    };
 
-    const handleCallNextPatient = (roomName: string) => {
-        const waitingPatients = patients.filter(p => p.status === 'waiting').sort((a, b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime());
-        if (waitingPatients.length === 0) {
-            toast({
-                variant: 'destructive',
-                title: "No patients in queue",
-                description: "There are no patients waiting to be assigned.",
-            });
+    const handleAssignDoctorToRoom = (cabinId: string) => {
+        const cabinDocRef = doc(firestore, 'cabins', cabinId);
+        const cabinData = liveCabins?.find(c => c.id === cabinId);
+        if (cabinData?.assignedDoctorId) {
+            toast({ variant: 'destructive', title: 'Room Occupied', description: `${cabinData.name} is already assigned to Dr. ${cabinData.assignedDoctorName}.` });
             return;
         }
 
-        const nextPatient = waitingPatients[0];
-        
-        setPatients(prev => prev.map(p => p.id === nextPatient.id ? {...p, status: 'calling'} : p));
-        setRooms(prev => prev.map(room => room.name === roomName ? { ...room, patientId: nextPatient.id, status: 'occupied' } : room));
-        
-        handlePatientAction(nextPatient.id, 'call');
-        
-        toast({
-            title: "Patient Assigned",
-            description: `${nextPatient.name} has been assigned to ${roomName}.`,
-        });
+        if (!doctorUser) return;
+
+        setDocumentNonBlocking(cabinDocRef, {
+            assignedDoctorId: doctorId,
+            assignedDoctorName: doctorUser.name
+        }, { merge: true });
+        toast({ title: 'Room Assigned', description: `You are now assigned to ${cabinData?.name}.` });
     };
 
-    const handleMakeRoomVacant = (roomName: string) => {
-        setRooms(prev => prev.map(room => room.name === roomName ? { ...room, patientId: null, status: 'vacant' } : room));
-        toast({ title: 'Room Vacated', description: `${roomName} is now available.` });
+    const handleCallNextPatient = (cabinId: string) => {
+        const waitingPatients = (allPatients || []).filter(p => p.status === 'waiting').sort((a, b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime());
+        if (waitingPatients.length === 0) {
+            toast({ variant: 'destructive', title: "No patients in queue", description: "There are no patients waiting." });
+            return;
+        }
+        const nextPatient = waitingPatients[0];
+
+        const patientDocRef = doc(firestore, 'patient_transactions', nextPatient.id);
+        const cabinDocRef = doc(firestore, 'cabins', cabinId);
+
+        setDocumentNonBlocking(patientDocRef, { status: 'calling', cabinId: cabinId }, { merge: true });
+        setDocumentNonBlocking(cabinDocRef, { patientInCabinId: nextPatient.id }, { merge: true });
+        
+        toast({ title: "Patient Called", description: `${nextPatient.name} has been called.`});
     };
     
-    const handleRoomAction = (patientId: string, roomName: string, action: 'start' | 'end' | 'no-show') => {
-        const patient = patients.find(p => p.id === patientId);
-        if (!patient) return;
-        
+    const handleLeaveRoom = (cabinId: string) => {
+        const cabinDocRef = doc(firestore, 'cabins', cabinId);
+        setDocumentNonBlocking(cabinDocRef, {
+            assignedDoctorId: null,
+            assignedDoctorName: null,
+            patientInCabinId: null
+        }, { merge: true });
+         toast({ title: 'Room Vacated' });
+    };
+    
+    const handleRoomAction = (patientId: string, cabinId: string, action: 'start' | 'end' | 'no-show') => {
+        const patientDocRef = doc(firestore, 'patient_transactions', patientId);
+        const cabinDocRef = doc(firestore, 'cabins', cabinId);
+
         if (action === 'start') {
-            setPatients(prev => prev.map(p => p.id === patientId ? { ...p, status: 'consulting' } : p));
+            setDocumentNonBlocking(patientDocRef, { status: 'consulting' }, { merge: true });
+            toast({ title: `Consultation Started` });
         } else {
             const newStatus = action === 'end' ? 'consultation-done' : 'no-show';
-            setPatients(prev => prev.filter(p => p.id !== patientId)); // Remove from active queue
-            setRooms(prev => prev.map(room => room.name === roomName ? { ...room, patientId: null, status: 'doctor-assigned' } : room));
+            setDocumentNonBlocking(patientDocRef, { status: newStatus, cabinId: null }, { merge: true });
+            setDocumentNonBlocking(cabinDocRef, { patientInCabinId: null }, { merge: true });
+            toast({ title: `Consultation ${newStatus.replace('-', ' ')}` });
         }
+    };
+    
+    const handleRevertPatient = (patientId: string, cabinId: string) => {
+        const patientDocRef = doc(firestore, 'patient_transactions', patientId);
+        const cabinDocRef = doc(firestore, 'cabins', cabinId);
         
-        handlePatientAction(patientId, action);
-
-        toast({
-            title: `Action: ${action.charAt(0).toUpperCase() + action.slice(1)}`,
-            description: `Patient ${patient.name} status updated.`,
-        });
+        setDocumentNonBlocking(patientDocRef, { status: 'waiting', cabinId: null }, { merge: true });
+        setDocumentNonBlocking(cabinDocRef, { patientInCabinId: null, assignedDoctorId: null, assignedDoctorName: null }, { merge: true });
+        toast({ title: 'Room Vacated', description: 'Patient sent back to the waiting queue.' });
     };
 
-    const handleLeaveRoom = (roomName: string) => {
-        const room = rooms.find(r => r.name === roomName);
-        if (!room || !room.patientId) return;
-        const patientId = room.patientId;
-
-        setPatients(prev => prev.map(p => p.id === patientId ? {...p, status: 'waiting'} : p));
-        setRooms(prev => prev.map(r => r.name === roomName ? { ...r, patientId: null, status: 'vacant' } : r));
-
-        handlePatientAction(patientId, 'call-revert'); // A special action to revert status
-        toast({ title: 'Room Vacated', description: 'Patient sent back to the waiting queue.' });
-    }
 
     const handleCallPatient = (patient: Patient) => {
         toast({ title: `Calling ${patient.name}`, description: `Re-announcing token ${patient.tokenNumber}.` });
@@ -690,111 +653,117 @@ function DoctorConsultationDashboard({
         setHistoryPatient(patient);
     }
 
-  const getQueueCountForGroup = (groupId: string) => {
-      return allPatients.filter(p => p.groupId === groupId && p.status === 'waiting').length;
-  }
+    const getQueueCountForGroup = (groupId: string) => {
+      return (allPatients || []).filter(p => p.groupId === groupId && p.status === 'waiting').length;
+    }
 
-  const activePatients = patients.filter(p => p.status === 'waiting' || p.status === 'calling' || p.status === 'consulting');
-  const totalPatients = activePatients.length;
-  const waitingPatients = patients.filter(p => p.status === 'waiting');
-  const inQueue = waitingPatients.length;
-  const attendedToday = allPatients.filter(p => p.groupId === selectedGroupId && p.status === 'consultation-done').length;
-  const noShowsToday = allPatients.filter(p => p.groupId === selectedGroupId && p.status === 'no-show').length;
+    const activePatients = (allPatients || []).filter(p => p.status === 'waiting' || p.status === 'calling' || p.status === 'consulting');
+    const totalPatients = activePatients.length;
+    const waitingPatients = (allPatients || []).filter(p => p.status === 'waiting');
+    const inQueue = waitingPatients.length;
+    const attendedToday = (allPatients || []).filter(p => p.groupId === selectedGroupId && p.status === 'consultation-done').length;
+    const noShowsToday = (allPatients || []).filter(p => p.groupId === selectedGroupId && p.status === 'no-show').length;
 
 
-  const stats = [
+    const stats = [
     { title: 'TOTAL ACTIVE', value: totalPatients, icon: Users, color: 'bg-indigo-100 text-indigo-600' },
     { title: 'IN QUEUE', value: inQueue, icon: Clock, color: 'bg-yellow-100 text-yellow-600' },
     { title: 'ATTENDED TODAY', value: attendedToday, icon: CheckSquare, color: 'bg-green-100 text-green-600' },
     { title: 'NO SHOWS TODAY', value: noShowsToday, icon: XCircle, color: 'bg-red-100 text-red-600' },
-  ];
+    ];
   
-  const nextToken = waitingPatients.length > 0
+    const nextToken = waitingPatients.length > 0
     ? [...waitingPatients].sort((a, b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime())[0].tokenNumber
     : undefined;
 
-  if (!selectedGroup) {
-    return (
-        <div className="flex items-center justify-center h-full">
-            <p>Select a group to begin.</p>
-        </div>
-    )
-  }
+    const isLoading = patientsLoading || cabinsLoading;
 
-  return (
-    <div className="space-y-6">
-       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => (
-          <Card key={stat.title}>
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className={`p-3 rounded-lg ${stat.color}`}>
-                <stat.icon className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground font-semibold">{stat.title}</p>
-                <p className="text-2xl font-bold">{stat.value}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-2 flex-wrap">
-            {groups.map(group => (
-                <Button 
-                    key={group.id} 
-                    variant={selectedGroupId === group.id ? 'default' : 'ghost'}
-                    onClick={() => setSelectedGroupId(group.id)}
-                >
-                    {group.name} 
-                    <Badge className="ml-2" variant={selectedGroupId === group.id ? 'secondary' : 'default'}>{getQueueCountForGroup(group.id)}</Badge>
-                </Button>
+    if (!selectedGroup) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <p>Select a group to begin.</p>
+            </div>
+        )
+    }
+
+    return (
+        <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {stats.map((stat) => (
+            <Card key={stat.title}>
+                <CardContent className="p-4 flex items-center gap-4">
+                <div className={`p-3 rounded-lg ${stat.color}`}>
+                    <stat.icon className="h-6 w-6" />
+                </div>
+                <div>
+                    <p className="text-xs text-muted-foreground font-semibold">{stat.title}</p>
+                    <p className="text-2xl font-bold">{stat.value}</p>
+                </div>
+                </CardContent>
+            </Card>
             ))}
         </div>
-        <div className="flex items-center gap-4">
-            {nextToken && (
-                <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-muted-foreground">NEXT:</span>
-                    <Badge variant="outline" className="text-base font-bold border-primary text-primary">{nextToken}</Badge>
-                </div>
-            )}
-            <Button onClick={() => setCheckInModalOpen(true)}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Manual Register
-            </Button>
+        
+        <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2 flex-wrap">
+                {groups.map(group => (
+                    <Button 
+                        key={group.id} 
+                        variant={selectedGroupId === group.id ? 'default' : 'ghost'}
+                        onClick={() => setSelectedGroupId(group.id)}
+                    >
+                        {group.name} 
+                        <Badge className="ml-2" variant={selectedGroupId === group.id ? 'secondary' : 'default'}>{getQueueCountForGroup(group.id)}</Badge>
+                    </Button>
+                ))}
+            </div>
+            <div className="flex items-center gap-4">
+                {nextToken && (
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-muted-foreground">NEXT:</span>
+                        <Badge variant="outline" className="text-base font-bold border-primary text-primary">{nextToken}</Badge>
+                    </div>
+                )}
+                <Button onClick={() => setCheckInModalOpen(true)}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Manual Register
+                </Button>
+            </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {selectedGroup.cabins.map(cabin => {
-            const room = rooms.find(r => r.name === cabin.name);
-            if (!room) return null;
-            const patientForRoom = room?.patientId ? allPatients.find(p => p.id === room.patientId) : null;
-            return (
-                <RoomCard 
-                    key={cabin.id}
-                    cabin={cabin}
-                    room={room}
-                    patient={patientForRoom || null}
-                    onAssignDoctor={handleAssignDoctorToRoom}
-                    onCallNext={handleCallNextPatient}
-                    onLeave={handleLeaveRoom}
-                    onAction={handleRoomAction}
-                    onCallPatient={handleCallPatient}
-                    onViewHistory={onViewHistory}
-                    onMakeVacant={handleMakeRoomVacant}
-                />
-            )
-        })}
-      </div>
-      <VisitHistoryModal isOpen={!!historyPatient} onClose={() => setHistoryPatient(null)} patient={historyPatient} />
-      <ManualCheckInModal 
-        isOpen={isCheckInModalOpen}
-        onClose={closeCheckInModal}
-        groups={groups}
-        onPatientRegistered={onPatientRegistered}
-      />
-    </div>
-  );
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {isLoading ? (
+                [...Array(selectedGroup.cabins.length || 4)].map((_, i) => (
+                    <Card key={i}><CardContent className="p-4 h-52 flex items-center justify-center"><Loader className="animate-spin"/></CardContent></Card>
+                ))
+            ) : selectedGroup.cabins.map(cabinRef => {
+                const cabin = liveCabins?.find(c => c.id === cabinRef.id);
+                if (!cabin) return null; // or a loading state for individual cabin
+                const patientForRoom = cabin.patientInCabinId ? (allPatients || []).find(p => p.id === cabin.patientInCabinId) : null;
+                return (
+                    <RoomCard 
+                        key={cabin.id}
+                        doctorId={doctorId}
+                        cabin={cabin}
+                        patient={patientForRoom || null}
+                        onAssignDoctor={handleAssignDoctorToRoom}
+                        onCallNext={handleCallNextPatient}
+                        onLeave={handleLeaveRoom}
+                        onAction={handleRoomAction}
+                        onCallPatient={handleCallPatient}
+                        onViewHistory={onViewHistory}
+                        onRevertPatient={handleRevertPatient}
+                    />
+                )
+            })}
+        </div>
+        <VisitHistoryModal isOpen={!!historyPatient} onClose={() => setHistoryPatient(null)} patient={historyPatient} />
+        <ManualCheckInModal 
+            isOpen={isCheckInModalOpen}
+            onClose={closeCheckInModal}
+            groups={groups}
+            onPatientRegistered={onPatientRegistered}
+        />
+        </div>
+    );
 }

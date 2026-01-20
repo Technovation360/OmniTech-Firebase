@@ -1,3 +1,4 @@
+
 import type { UserRole } from './roles';
 
 export type PatientMaster = {
@@ -37,6 +38,9 @@ export type Cabin = {
   id: string;
   name: string;
   clinicId: string;
+  assignedDoctorId?: string;
+  assignedDoctorName?: string;
+  patientInCabinId?: string;
 };
 
 export type Assistant = {
@@ -75,7 +79,7 @@ export type Group = {
   contact: string;
   doctors: Doctor[];
   assistants: Assistant[];
-  cabins: Cabin[];
+  cabins: {id: string, name: string}[];
   screens: Screen[];
   lastTokenNumber?: number;
 };
