@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState, useEffect, useMemo } from 'react';
+import { use, useState, useEffect, useMemo, useActionState } from 'react';
 import { getPatientHistory } from '@/lib/data';
 import type { Patient, Group, PatientHistoryEntry, User, PatientTransaction, PatientMaster, EnrichedPatient } from '@/lib/types';
 import {
@@ -27,12 +27,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -47,6 +41,8 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc, query, where, Timestamp } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import { registerPatient } from '@/lib/actions';
 
 
 const badgeColors: Record<Patient['status'], string> = {
@@ -149,6 +145,85 @@ function VisitHistoryModal({
   );
 }
 
+function GenerateTokenModal({
+  isOpen,
+  onClose,
+  patient,
+  groups,
+  onTokenGenerated,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  patient: EnrichedPatient | null;
+  groups: Group[];
+  onTokenGenerated: () => void;
+}) {
+  const [state, formAction] = useActionState(registerPatient, null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (state?.success && state.tokenNumber) {
+      toast({
+        title: 'Token Generated',
+        description: `New token ${state.tokenNumber} generated for ${patient?.name}.`,
+      });
+      onTokenGenerated();
+      onClose();
+    } else if (state?.message && !state.success) {
+      toast({
+        variant: 'destructive',
+        title: 'Failed to generate token',
+        description: state.message,
+      });
+    }
+  }, [state, toast, onClose, onTokenGenerated, patient]);
+
+  if (!patient) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader className="p-4 pb-2">
+          <DialogTitle>Generate New Token for {patient.name}</DialogTitle>
+          <CardDescription>Select a group to generate a new token.</CardDescription>
+        </DialogHeader>
+        <form action={formAction}>
+          <div className="p-4 space-y-4">
+            <input type="hidden" name="name" value={patient.name} />
+            <input type="hidden" name="age" value={patient.age} />
+            <input type="hidden" name="gender" value={patient.gender} />
+            <input type="hidden" name="contactNumber" value={patient.contactNumber} />
+            <input type="hidden" name="emailAddress" value={patient.emailAddress || ''} />
+
+            <div className="space-y-2">
+              <Label htmlFor="groupId">Select Group</Label>
+              <Select name="groupId" required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a Group" />
+                </SelectTrigger>
+                <SelectContent>
+                  {groups.map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name} ({group.doctors.map(d => d.name).join(', ')})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {state?.errors?.groupId && (
+                <p className="text-sm text-destructive">{state.errors.groupId[0]}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter className="bg-muted/50 px-4 py-3 mt-4 rounded-b-lg">
+            <Button variant="outline" type="button" onClick={onClose}>Cancel</Button>
+            <Button type="submit">Generate Token</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function DoctorPatientsPage({ params }: { params: { id: string } }) {
   const { id: doctorId } = use(params);
   const [filteredPatients, setFilteredPatients] = useState<EnrichedPatient[]>([]);
@@ -158,6 +233,8 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
   } | null>({ key: 'name', direction: 'asc' });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [patientForToken, setPatientForToken] = useState<EnrichedPatient | null>(null);
+  const [isTokenModalOpen, setTokenModalOpen] = useState(false);
 
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
@@ -180,7 +257,7 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
     return query(collection(firestore, 'patient_transactions'), where('clinicId', '==', clinicId));
   }, [firestore, clinicId]);
 
-  const { data: patientTransactions, isLoading: transactionsLoading } = useCollection<PatientTransaction>(transactionsQuery);
+  const { data: patientTransactions, isLoading: transactionsLoading, refetch: refetchTransactions } = useCollection<PatientTransaction>(transactionsQuery);
   
   const contactNumbers = useMemo(() => {
     if (!patientTransactions) return [];
@@ -271,9 +348,18 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
   const openHistoryModal = (patient: Patient) => {
     setSelectedPatient(patient);
   };
+  
+  const openTokenModal = (patient: EnrichedPatient) => {
+    setPatientForToken(patient);
+    setTokenModalOpen(true);
+  };
 
   const closeHistoryModal = () => {
     setSelectedPatient(null);
+  };
+  
+  const onTokenGenerated = () => {
+    refetchTransactions();
   };
 
   const isLoading = isUserLoading || doctorUserLoading || groupsLoading || transactionsLoading || mastersLoading;
@@ -363,11 +449,12 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
                     {getSortIcon('registeredAt')}
                   </Button>
                 </TableHead>
+                <TableHead className="text-center">Generate Token</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={7} className="text-center py-4"><Loader className="animate-spin mx-auto h-6 w-6" /></TableCell></TableRow>}
+              {isLoading && <TableRow><TableCell colSpan={8} className="text-center py-4"><Loader className="animate-spin mx-auto h-6 w-6" /></TableCell></TableRow>}
               {!isLoading && filteredPatients.map((patient) => (
                 <TableRow key={patient.contactNumber}>
                   <TableCell className="font-medium py-2 text-xs">{patient.name}</TableCell>
@@ -378,9 +465,12 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
                     </Badge>
                   </TableCell>
                   <TableCell className="py-2 px-2 text-xs">{patient.contactNumber}</TableCell>
-                  <TableCell className="py-2 px-2 text-xs">{patient.emailAddress}</TableCell>
+                  <TableCell className="py-2 px-2 text-xs">{patient.emailAddress || '-'}</TableCell>
                   <TableCell className="py-2 text-xs">
                      {format(new Date(patient.registeredAt), 'P, pp')}
+                  </TableCell>
+                  <TableCell className="py-2 text-xs text-center">
+                    <Button size="xs" onClick={() => openTokenModal(patient)}>GENERATE</Button>
                   </TableCell>
                   <TableCell className="py-2 text-xs">
                     <Button
@@ -397,7 +487,7 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
               ))}
                {!isLoading && filteredPatients.length === 0 && (
                 <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-4 text-sm">
+                    <TableCell colSpan={8} className="text-center text-muted-foreground py-4 text-sm">
                         No patients found.
                     </TableCell>
                 </TableRow>
@@ -411,6 +501,13 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
         isOpen={!!selectedPatient}
         onClose={closeHistoryModal}
         patient={selectedPatient}
+      />
+      <GenerateTokenModal 
+        isOpen={isTokenModalOpen}
+        onClose={() => setTokenModalOpen(false)}
+        patient={patientForToken}
+        groups={doctorGroups || []}
+        onTokenGenerated={onTokenGenerated}
       />
     </>
   );
