@@ -286,9 +286,6 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <CardTitle className="text-lg">Patients Register</CardTitle>
-              <CardDescription className="text-xs mt-1">
-                List of all patients in your clinic.
-              </CardDescription>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <div className="relative w-full sm:w-64">
