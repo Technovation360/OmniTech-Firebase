@@ -330,7 +330,6 @@ function RoomCard({
     onAction,
     onViewHistory,
     onCallPatient,
-    onRevertPatient,
 }: { 
     doctorId: string;
     cabin: Cabin, 
@@ -341,7 +340,6 @@ function RoomCard({
     onAction: (patientId: string, cabinId: string, action: 'start' | 'end' | 'no-show') => void,
     onViewHistory: (patient: Patient) => void,
     onCallPatient: (patient: Patient) => void,
-    onRevertPatient: (patientId: string, cabinId: string) => void,
 }) {
     const { toast } = useToast();
     const [noShowEnabled, setNoShowEnabled] = useState(false);
@@ -435,7 +433,7 @@ function RoomCard({
         <Card>
             <CardHeader className="flex-row items-center justify-between p-3 border-b bg-muted/30 h-[53px]">
                 <CardTitle className="text-sm font-semibold">{cabin.name.toUpperCase()}</CardTitle>
-                 <Button variant="destructive" size="xs" className="h-7" onClick={() => patient ? onRevertPatient(patient.id, cabin.id) : onLeave(cabin.id)}>
+                 <Button variant="destructive" size="xs" className="h-7" onClick={() => onLeave(cabin.id)}>
                     <LogOut className="mr-1 h-3 w-3" />
                     Leave
                 </Button>
@@ -467,8 +465,8 @@ function RoomCard({
                                 <Button size="sm" variant="outline" onClick={() => toast({ title: 'Add Notes', description: 'This would open a notes editor.' })}>
                                     <FileText className="mr-2 h-4 w-4"/> Add Notes
                                 </Button>
-                                <Button size="sm" className="col-span-2 bg-blue-600 hover:bg-blue-700" onClick={() => onCallNext(cabin.id)}>
-                                    <PhoneCall className="mr-2 h-4 w-4"/> Call Next Patient
+                                <Button size="sm" className="col-span-2 bg-green-600 hover:bg-green-700 text-white" onClick={() => onViewHistory(patient)}>
+                                    <History className="mr-2 h-4 w-4"/> Show History
                                 </Button>
                             </div>
                         ) : ( // 'calling' status
@@ -500,7 +498,8 @@ function RoomCard({
 
 
 export default function DoctorConsultationPageLoader({ params }: DoctorPageProps) {
-  const { id } = use(params);
+  const resolvedParams = use(params);
+  const { id } = resolvedParams;
   const firestore = useFirestore();
   
   const doctorUserRef = useMemoFirebase(() => {
@@ -635,16 +634,6 @@ function DoctorConsultationDashboard({
             toast({ title: `Consultation ${newStatus.replace('-', ' ')}` });
         }
     };
-    
-    const handleRevertPatient = (patientId: string, cabinId: string) => {
-        const patientDocRef = doc(firestore, 'patient_transactions', patientId);
-        const cabinDocRef = doc(firestore, 'cabins', cabinId);
-        
-        setDocumentNonBlocking(patientDocRef, { status: 'waiting', cabinId: null }, { merge: true });
-        setDocumentNonBlocking(cabinDocRef, { patientInCabinId: null, assignedDoctorId: null, assignedDoctorName: null }, { merge: true });
-        toast({ title: 'Room Vacated', description: 'Patient sent back to the waiting queue.' });
-    };
-
 
     const handleCallPatient = (patient: Patient) => {
         toast({ title: `Calling ${patient.name}`, description: `Re-announcing token ${patient.tokenNumber}.` });
@@ -754,7 +743,6 @@ function DoctorConsultationDashboard({
                         onAction={handleRoomAction}
                         onCallPatient={handleCallPatient}
                         onViewHistory={onViewHistory}
-                        onRevertPatient={handleRevertPatient}
                     />
                 )
             })}
