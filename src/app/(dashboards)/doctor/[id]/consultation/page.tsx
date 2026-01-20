@@ -63,6 +63,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { Textarea } from '@/components/ui/textarea';
 
 
 type DoctorPageProps = {
@@ -76,6 +77,64 @@ const badgeColors: Record<Patient['status'], string> = {
   'consultation-done': "bg-gray-100 text-gray-800",
   'no-show': "bg-red-100 text-red-800",
 };
+
+
+function AddNotesModal({
+  isOpen,
+  onClose,
+  patient,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  patient: Patient | null;
+}) {
+  const firestore = useFirestore();
+  const { toast } = useToast();
+  const [notes, setNotes] = useState('');
+
+  useEffect(() => {
+    if (patient) {
+      setNotes(patient.notes || '');
+    }
+  }, [patient]);
+
+  if (!patient) return null;
+
+  const handleSave = () => {
+    if (!notes.trim()) {
+      toast({ variant: 'destructive', title: 'Notes cannot be empty.' });
+      return;
+    }
+    const patientDocRef = doc(firestore, 'patient_transactions', patient.id);
+    setDocumentNonBlocking(patientDocRef, { notes }, { merge: true });
+    toast({ title: 'Notes saved.' });
+    onClose();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add Consultation Notes for {patient.name}</DialogTitle>
+        </DialogHeader>
+        <div className="py-4">
+          <Label htmlFor="notes">Consultation Notes</Label>
+          <Textarea
+            id="notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={10}
+            placeholder="Enter your notes here..."
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleSave}>Save Notes</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 
 function ManualCheckInModal({
@@ -332,6 +391,7 @@ function RoomCard({
     onAction,
     onViewHistory,
     onCallPatient,
+    onAddNotes,
 }: { 
     doctorId: string;
     cabin: Cabin, 
@@ -342,6 +402,7 @@ function RoomCard({
     onAction: (patientId: string, cabinId: string, action: 'start' | 'end' | 'no-show') => void,
     onViewHistory: (patient: Patient) => void,
     onCallPatient: (patient: Patient) => void,
+    onAddNotes: (patient: Patient) => void,
 }) {
     const { toast } = useToast();
     const [noShowEnabled, setNoShowEnabled] = useState(false);
@@ -492,7 +553,7 @@ function RoomCard({
                                 <Button size="sm" className="bg-red-500 hover:bg-red-600" onClick={() => onAction(patient!.id, cabin.id, 'end')}>
                                     <Square className="mr-2 h-4 w-4"/> End
                                 </Button>
-                                <Button size="sm" variant="outline" onClick={() => toast({ title: 'Add Notes', description: 'This would open a notes editor.' })}>
+                                <Button size="sm" variant="outline" onClick={() => onAddNotes(patient!)}>
                                     <FileText className="mr-2 h-4 w-4"/> Add Notes
                                 </Button>
                                 <Button size="sm" className="col-span-2 bg-green-600 hover:bg-green-700 text-white" onClick={() => onViewHistory(patient)}>
@@ -582,6 +643,7 @@ function DoctorConsultationDashboard({
     const { toast } = useToast();
     const [historyPatient, setHistoryPatient] = useState<Patient | null>(null);
     const [isCheckInModalOpen, setCheckInModalOpen] = useState(false);
+    const [notesPatient, setNotesPatient] = useState<Patient | null>(null);
 
     const [refetchIndex, setRefetchIndex] = useState(0);
     const refetchPatients = useCallback(() => setRefetchIndex(p => p + 1), []);
@@ -705,6 +767,10 @@ function DoctorConsultationDashboard({
         // In a real app, this would trigger TTS again.
     }
 
+    const handleAddNotes = (patient: Patient) => {
+        setNotesPatient(patient);
+    };
+
     const onViewHistory = (patient: Patient) => {
         setHistoryPatient(patient);
     }
@@ -808,11 +874,17 @@ function DoctorConsultationDashboard({
                         onAction={handleRoomAction}
                         onCallPatient={handleCallPatient}
                         onViewHistory={onViewHistory}
+                        onAddNotes={handleAddNotes}
                     />
                 )
             })}
         </div>
         <VisitHistoryModal isOpen={!!historyPatient} onClose={() => setHistoryPatient(null)} patient={historyPatient} />
+        <AddNotesModal 
+            isOpen={!!notesPatient}
+            onClose={() => setNotesPatient(null)}
+            patient={notesPatient}
+        />
         <ManualCheckInModal 
             isOpen={isCheckInModalOpen}
             onClose={closeCheckInModal}

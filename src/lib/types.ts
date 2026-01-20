@@ -21,6 +21,7 @@ export type PatientTransaction = {
   cabinId?: string;
   consultingStartTime?: string;
   consultingEndTime?: string;
+  notes?: string;
 };
 
 // Represents the joined data of a transaction and its master record
