@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, use, useMemo, useActionState, useCallback } from 'react';
@@ -39,7 +40,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { handlePatientAction, registerPatient } from '@/lib/actions';
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc, query, where, Timestamp, documentId } from 'firebase/firestore';
+import { collection, doc, query, where, Timestamp, documentId, setDoc } from 'firebase/firestore';
 import { getPatientHistory } from '@/lib/data';
 import {
   Table,
@@ -647,18 +648,27 @@ function DoctorConsultationDashboard({
          toast({ title: 'Room Vacated' });
     };
     
-    const handleRoomAction = (patientId: string, cabinId: string, action: 'start' | 'end' | 'no-show') => {
+    const handleRoomAction = async (patientId: string, cabinId: string, action: 'start' | 'end' | 'no-show') => {
         const patientDocRef = doc(firestore, 'patient_transactions', patientId);
         const cabinDocRef = doc(firestore, 'cabins', cabinId);
 
-        if (action === 'start') {
-            setDocumentNonBlocking(patientDocRef, { status: 'consulting', consultingStartTime: new Date().toISOString() }, { merge: true });
-            toast({ title: `Consultation Started` });
-        } else {
-            const newStatus = action === 'end' ? 'consultation-done' : 'no-show';
-            setDocumentNonBlocking(patientDocRef, { status: newStatus, cabinId: null, consultingEndTime: new Date().toISOString() }, { merge: true });
-            setDocumentNonBlocking(cabinDocRef, { patientInCabinId: null }, { merge: true });
-            toast({ title: `Consultation ${newStatus.replace('-', ' ')}` });
+        try {
+            if (action === 'start') {
+                await setDoc(patientDocRef, { status: 'consulting', consultingStartTime: new Date().toISOString() }, { merge: true });
+                toast({ title: `Consultation Started` });
+            } else {
+                const newStatus = action === 'end' ? 'consultation-done' : 'no-show';
+                await setDoc(patientDocRef, { status: newStatus, cabinId: null, consultingEndTime: new Date().toISOString() }, { merge: true });
+                await setDoc(cabinDocRef, { patientInCabinId: null }, { merge: true });
+                toast({ title: `Consultation ${newStatus.replace('-', ' ')}` });
+            }
+        } catch (error) {
+            console.error("Error handling room action:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Action Failed',
+                description: 'Could not update the patient or cabin status.',
+            });
         }
     };
 
@@ -784,3 +794,5 @@ function DoctorConsultationDashboard({
         </div>
     );
 }
+
+    
