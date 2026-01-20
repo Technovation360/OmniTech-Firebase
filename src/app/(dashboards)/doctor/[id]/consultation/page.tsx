@@ -71,7 +71,7 @@ type DoctorPageProps = {
 type RoomStatus = {
     name: string; // Cabin name
     patientId: string | null;
-    status: 'vacant' | 'occupied' | 'post-consultation' | 'doctor-assigned';
+    status: 'vacant' | 'occupied' | 'doctor-assigned';
 }
 
 const badgeColors: Record<Patient['status'], string> = {
@@ -442,24 +442,6 @@ function RoomCard({
        );
     }
     
-    if (room.status === 'post-consultation') {
-        return (
-            <Card>
-                <CardHeader className="flex-row items-center justify-between p-3 border-b bg-muted/30 h-[53px]">
-                    <CardTitle className="text-sm font-semibold">{cabin.name.toUpperCase()}</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 h-48 flex flex-col items-center justify-center text-center">
-                    <CheckCircle className="h-10 w-10 text-green-500 mb-2" />
-                    <p className="font-semibold mb-4">Consultation Ended</p>
-                    <div className="flex flex-col gap-2 w-full">
-                        <Button onClick={() => onAssignDoctor(cabin.name)}>Assign</Button>
-                        <Button variant="outline" onClick={() => onMakeVacant(cabin.name)}>Leave Room</Button>
-                    </div>
-                </CardContent>
-            </Card>
-        );
-    }
-    
     if (!patient) { // Occupied but patient data is missing, should not happen.
         return (
             <Card>
@@ -622,7 +604,7 @@ function DoctorConsultationDashboard({
                         if (patientStillActive) {
                             return { ...existingRoom, status: 'occupied' };
                         }
-                         if (existingRoom.status === 'post-consultation' || existingRoom.status === 'doctor-assigned') {
+                         if (existingRoom.status === 'doctor-assigned') {
                             return existingRoom;
                         }
                     }
@@ -676,7 +658,7 @@ function DoctorConsultationDashboard({
         } else {
             const newStatus = action === 'end' ? 'consultation-done' : 'no-show';
             setPatients(prev => prev.filter(p => p.id !== patientId)); // Remove from active queue
-            setRooms(prev => prev.map(room => room.name === roomName ? { ...room, patientId: null, status: 'post-consultation' } : room));
+            setRooms(prev => prev.map(room => room.name === roomName ? { ...room, patientId: null, status: 'doctor-assigned' } : room));
         }
         
         handlePatientAction(patientId, action);
