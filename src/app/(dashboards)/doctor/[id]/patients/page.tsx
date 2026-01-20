@@ -1,3 +1,4 @@
+
 'use client';
 
 import { use, useState, useEffect, useMemo } from 'react';
@@ -284,7 +285,7 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
         <CardHeader className="p-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <CardTitle className="text-lg">My Patients</CardTitle>
+              <CardTitle className="text-lg">Patients Register</CardTitle>
               <CardDescription className="text-xs mt-1">
                 List of all patients in your clinic.
               </CardDescription>
