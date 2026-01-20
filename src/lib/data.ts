@@ -242,8 +242,14 @@ export const getPatientHistory = async (
   if (patientVisitsSnapshot.empty) return [];
 
   const patientVisits = patientVisitsSnapshot.docs.map(
-    (d) => ({ ...d.data(), id: d.id } as PatientTransaction)
-  );
+    (d) => {
+        const data = d.data();
+        return {
+             ...data,
+             id: d.id,
+             registeredAt: (data.registeredAt as Timestamp).toDate().toISOString()
+        } as PatientTransaction;
+    });
 
   const historyPromises = patientVisits.map(async (visit) => {
     // This part remains inefficient but is kept to preserve original functionality
@@ -338,5 +344,3 @@ export const getConsultationsByPatientId = async (
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 };
-
-    
