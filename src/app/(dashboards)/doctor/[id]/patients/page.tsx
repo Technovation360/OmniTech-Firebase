@@ -210,18 +210,29 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
     }).filter((p): p is EnrichedPatient => p !== null);
   }, [patientTransactions, patientMasters]);
   
+  const uniquePatients = useMemo(() => {
+    if (!allPatients) return [];
+    const patientMap = new Map<string, EnrichedPatient>();
+    allPatients.forEach(p => {
+        const existingPatient = patientMap.get(p.contactNumber);
+        if (!existingPatient || new Date(p.registeredAt) > new Date(existingPatient.registeredAt)) {
+            patientMap.set(p.contactNumber, p);
+        }
+    });
+    return Array.from(patientMap.values());
+  }, [allPatients]);
+  
   useEffect(() => {
-    if (!allPatients) {
+    if (!uniquePatients) {
         setFilteredPatients([]);
         return;
     }
-    let filteredData = [...allPatients];
+    let filteredData = [...uniquePatients];
 
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
         filteredData = filteredData.filter(patient => 
             patient.name.toLowerCase().includes(lowercasedQuery) ||
-            (patient.tokenNumber && patient.tokenNumber.toLowerCase().includes(lowercasedQuery)) ||
             (patient.contactNumber && patient.contactNumber.toLowerCase().includes(lowercasedQuery)) ||
             (patient.emailAddress && patient.emailAddress.toLowerCase().includes(lowercasedQuery))
         );
@@ -240,7 +251,7 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
         setFilteredPatients(filteredData);
     }
 
-  }, [searchQuery, allPatients, sortConfig]);
+  }, [searchQuery, uniquePatients, sortConfig]);
 
   const handleSort = (key: keyof Patient) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -350,7 +361,7 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
                     className="text-xs p-0 hover:bg-transparent"
                     onClick={() => handleSort('registeredAt')}
                   >
-                    Last Token Generated
+                    Last Visit
                     {getSortIcon('registeredAt')}
                   </Button>
                 </TableHead>
@@ -360,7 +371,7 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
             <TableBody>
               {isLoading && <TableRow><TableCell colSpan={7} className="text-center py-4"><Loader className="animate-spin mx-auto h-6 w-6" /></TableCell></TableRow>}
               {!isLoading && filteredPatients.map((patient) => (
-                <TableRow key={patient.id}>
+                <TableRow key={patient.contactNumber}>
                   <TableCell className="font-medium py-2 text-xs">{patient.name}</TableCell>
                   <TableCell className="py-2 px-2 text-xs">{patient.age}</TableCell>
                   <TableCell className="py-2 px-2 text-xs capitalize">
@@ -406,3 +417,5 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
     </>
   );
 }
+
+    
