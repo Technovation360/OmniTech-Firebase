@@ -621,7 +621,7 @@ function DoctorConsultationDashboard({
         return patientTransactions.map(t => {
             const master = mastersMap.get(t.patientMasterId);
             if (!master) return null;
-            return { ...t, ...master };
+            return { ...master, ...t };
         }).filter((p): p is EnrichedPatient => p !== null);
     }, [patientTransactions, patientMasters]);
     
