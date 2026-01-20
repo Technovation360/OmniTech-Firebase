@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, use, useMemo, useActionState, useCallback } from 'react';
@@ -113,12 +112,12 @@ function AddNotesModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="sm:max-w-xl p-0">
+        <DialogHeader className="p-6 pb-4 border-b">
           <DialogTitle>Add Consultation Notes for {patient.name}</DialogTitle>
         </DialogHeader>
-        <div className="py-4">
-          <Label htmlFor="notes">Consultation Notes</Label>
+        <div className="p-6">
+          <Label htmlFor="notes" className="mb-2 block font-semibold text-muted-foreground">Consultation Notes</Label>
           <Textarea
             id="notes"
             value={notes}
@@ -127,7 +126,7 @@ function AddNotesModal({
             placeholder="Enter your notes here..."
           />
         </div>
-        <DialogFooter>
+        <DialogFooter className="bg-muted/50 px-6 py-4 rounded-b-lg">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSave}>Save Notes</Button>
         </DialogFooter>
@@ -894,5 +893,3 @@ function DoctorConsultationDashboard({
         </div>
     );
 }
-
-    
