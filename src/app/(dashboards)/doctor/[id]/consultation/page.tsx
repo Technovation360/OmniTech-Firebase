@@ -427,8 +427,36 @@ function RoomCard({
             </Card>
        );
     }
-
+    
     // Assigned to current doctor
+    if (!cabin.patientInCabinId && patient && patient.status === 'consultation-done') {
+        // After consultation, show "Call Next" and "Leave"
+         return (
+            <Card>
+                <CardHeader className="flex-row items-center justify-between p-3 border-b bg-muted/30 h-[53px]">
+                    <CardTitle className="text-sm font-semibold">{cabin.name.toUpperCase()}</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 h-48 flex flex-col items-center justify-center text-center">
+                    <div className="p-3 bg-green-100 rounded-full mb-2">
+                        <CheckCircle className="h-6 w-6 text-green-500" />
+                    </div>
+                    <p className="text-sm font-semibold text-muted-foreground mb-4">CONSULTATION DONE</p>
+                    <div className="flex flex-col gap-2 w-full">
+                       <Button size="sm" onClick={() => onCallNext(cabin.id)}>
+                           <PhoneCall className="mr-2 h-4 w-4"/>
+                           Call Next Patient
+                       </Button>
+                        <Button variant="destructive" size="sm" onClick={() => onLeave(cabin.id)}>
+                            <LogOut className="mr-1 h-3 w-3" />
+                            Leave Room
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
+
+
     return (
         <Card>
             <CardHeader className="flex-row items-center justify-between p-3 border-b bg-muted/30 h-[53px]">
@@ -559,12 +587,12 @@ function DoctorConsultationDashboard({
     const selectedGroup = useMemo(() => groups.find(g => g.id === selectedGroupId), [groups, selectedGroupId]);
     
     const groupIds = useMemo(() => groups.map(g => g.id), [groups]);
-    const patientsTransactionsQuery = useMemoFirebase(() => {
+    const patientTransactionsQuery = useMemoFirebase(() => {
         if (groupIds.length === 0) return null;
         return query(collection(firestore, 'patient_transactions'), where('groupId', 'in', groupIds));
     }, [firestore, groupIds, refetchIndex]);
 
-    const { data: patientTransactions, isLoading: patientsLoading } = useCollection<PatientTransaction>(patientsTransactionsQuery);
+    const { data: patientTransactions, isLoading: patientsLoading } = useCollection<PatientTransaction>(patientTransactionsQuery);
 
     const patientMasterIds = useMemo(() => {
         if (!patientTransactions) return [];
@@ -573,7 +601,8 @@ function DoctorConsultationDashboard({
     
     const patientMastersQuery = useMemoFirebase(() => {
         if (patientMasterIds.length === 0) return null;
-        return query(collection(firestore, 'patient_master'), where(documentId(), 'in', patientMasterIds));
+        // Firestore 'in' query supports up to 30 elements. Chunking is needed for more.
+        return query(collection(firestore, 'patient_master'), where(documentId(), 'in', patientMasterIds.slice(0, 30)));
     }, [firestore, patientMasterIds]);
     
     const { data: patientMasters, isLoading: mastersLoading } = useCollection<PatientMaster>(patientMastersQuery);
@@ -656,12 +685,16 @@ function DoctorConsultationDashboard({
             if (action === 'start') {
                 await setDoc(patientDocRef, { status: 'consulting', consultingStartTime: new Date().toISOString() }, { merge: true });
                 toast({ title: `Consultation Started` });
-            } else {
-                const newStatus = action === 'end' ? 'consultation-done' : 'no-show';
-                await setDoc(patientDocRef, { status: newStatus, cabinId: null, consultingEndTime: new Date().toISOString() }, { merge: true });
+            } else if (action === 'end') {
+                await setDoc(patientDocRef, { status: 'consultation-done', consultingEndTime: new Date().toISOString() }, { merge: true });
                 await setDoc(cabinDocRef, { patientInCabinId: null }, { merge: true });
-                toast({ title: `Consultation ${newStatus.replace('-', ' ')}` });
+                toast({ title: `Consultation Ended` });
+            } else if (action === 'no-show') {
+                await setDoc(patientDocRef, { status: 'no-show', cabinId: null, consultingEndTime: new Date().toISOString() }, { merge: true });
+                await setDoc(cabinDocRef, { patientInCabinId: null }, { merge: true });
+                toast({ title: `Patient marked as No Show` });
             }
+            refetchPatients(); // Force a refetch after any action
         } catch (error) {
             console.error("Error handling room action:", error);
             toast({
