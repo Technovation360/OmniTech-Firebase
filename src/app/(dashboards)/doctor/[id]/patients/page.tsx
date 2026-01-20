@@ -3,7 +3,7 @@
 
 import { use, useState, useEffect, useMemo } from 'react';
 import { getPatientHistory } from '@/lib/data';
-import type { Patient, Group, PatientHistoryEntry, User } from '@/lib/types';
+import type { Patient, Group, PatientHistoryEntry, User, PatientTransaction, PatientMaster, EnrichedPatient } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -150,7 +150,7 @@ function VisitHistoryModal({
 
 export default function DoctorPatientsPage({ params }: { params: { id: string } }) {
   const { id: doctorId } = use(params);
-  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
+  const [filteredPatients, setFilteredPatients] = useState<EnrichedPatient[]>([]);
   const [sortConfig, setSortConfig] = useState<{
     key: keyof Patient;
     direction: 'asc' | 'desc';
@@ -174,12 +174,41 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
   const {data: doctorGroups, isLoading: groupsLoading} = useCollection<Group>(doctorGroupsQuery);
   const groupIds = useMemo(() => doctorGroups?.map(g => g.id) || [], [doctorGroups]);
 
-  const patientsQuery = useMemoFirebase(() => {
+  const transactionsQuery = useMemoFirebase(() => {
     if (groupIds.length === 0) return null;
     return query(collection(firestore, 'patient_transactions'), where('groupId', 'in', groupIds));
   }, [firestore, groupIds]);
 
-  const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
+  const { data: patientTransactions, isLoading: transactionsLoading } = useCollection<PatientTransaction>(transactionsQuery);
+  
+  const contactNumbers = useMemo(() => {
+    if (!patientTransactions) return [];
+    return [...new Set(patientTransactions.map(p => p.contactNumber).filter(Boolean))];
+  }, [patientTransactions]);
+
+  const patientMastersQuery = useMemoFirebase(() => {
+      if (contactNumbers.length === 0) return null;
+      const chunks = [];
+      for (let i = 0; i < contactNumbers.length; i += 30) {
+          chunks.push(contactNumbers.slice(i, i + 30));
+      }
+      if(chunks.length > 1) {
+          console.warn("This page currently only supports fetching master records for up to 30 unique patients at a time.")
+      }
+      if (chunks.length === 0) return null;
+      return query(collection(firestore, 'patient_master'), where('contactNumber', 'in', chunks[0]));
+  }, [firestore, contactNumbers]);
+  const { data: patientMasters, isLoading: mastersLoading } = useCollection<PatientMaster>(patientMastersQuery);
+  
+  const allPatients = useMemo<EnrichedPatient[]>(() => {
+    if (!patientTransactions || !patientMasters) return [];
+    const mastersMap = new Map(patientMasters.map(m => [m.contactNumber, m]));
+    return patientTransactions.map(t => {
+        const master = mastersMap.get(t.contactNumber);
+        if (!master) return null;
+        return { ...master, ...t, id: t.id };
+    }).filter((p): p is EnrichedPatient => p !== null);
+  }, [patientTransactions, patientMasters]);
   
   useEffect(() => {
     if (!allPatients) {
@@ -235,7 +264,7 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
     setSelectedPatient(null);
   };
 
-  const isLoading = isUserLoading || doctorUserLoading || groupsLoading || patientsLoading;
+  const isLoading = isUserLoading || doctorUserLoading || groupsLoading || transactionsLoading || mastersLoading;
 
   return (
     <>
