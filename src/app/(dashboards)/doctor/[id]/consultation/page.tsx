@@ -1,8 +1,7 @@
-
 'use client';
 
 import { useState, useEffect, use, useMemo, useActionState, useCallback } from 'react';
-import type { Patient, Group, User, PatientHistoryEntry, Consultation, Cabin } from '@/lib/types';
+import type { Patient, Group, User, PatientHistoryEntry, Consultation, Cabin, PatientTransaction, PatientMaster, EnrichedPatient } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -40,7 +39,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { handlePatientAction, registerPatient } from '@/lib/actions';
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc, query, where, Timestamp } from 'firebase/firestore';
+import { collection, doc, query, where, Timestamp, documentId } from 'firebase/firestore';
 import { getPatientHistory } from '@/lib/data';
 import {
   Table,
@@ -242,7 +241,7 @@ function VisitHistoryModal({
   
   useEffect(() => {
     if (patient && isOpen) {
-      getPatientHistory(patient.id, patient.clinicId).then(setHistory);
+      getPatientHistory(patient.id).then(setHistory);
     } else if (!isOpen) {
       setHistory([]);
     }
@@ -558,11 +557,39 @@ function DoctorConsultationDashboard({
 
     const selectedGroup = useMemo(() => groups.find(g => g.id === selectedGroupId), [groups, selectedGroupId]);
     
-    const patientsQuery = useMemoFirebase(() => {
-        if (!selectedGroupId) return null;
-        return query(collection(firestore, 'patient_transactions'), where('groupId', '==', selectedGroupId));
-    }, [firestore, selectedGroupId, refetchIndex]);
-    const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
+    const groupIds = useMemo(() => groups.map(g => g.id), [groups]);
+    const patientsTransactionsQuery = useMemoFirebase(() => {
+        if (groupIds.length === 0) return null;
+        return query(collection(firestore, 'patient_transactions'), where('groupId', 'in', groupIds));
+    }, [firestore, groupIds, refetchIndex]);
+
+    const { data: patientTransactions, isLoading: patientsLoading } = useCollection<PatientTransaction>(patientsTransactionsQuery);
+
+    const patientMasterIds = useMemo(() => {
+        if (!patientTransactions) return [];
+        return [...new Set(patientTransactions.map(p => p.patientMasterId).filter(Boolean))];
+    }, [patientTransactions]);
+    
+    const patientMastersQuery = useMemoFirebase(() => {
+        if (patientMasterIds.length === 0) return null;
+        return query(collection(firestore, 'patient_master'), where(documentId(), 'in', patientMasterIds));
+    }, [firestore, patientMasterIds]);
+    
+    const { data: patientMasters, isLoading: mastersLoading } = useCollection<PatientMaster>(patientMastersQuery);
+
+    const allPatients = useMemo<EnrichedPatient[]>(() => {
+        if (!patientTransactions || !patientMasters) return [];
+        const mastersMap = new Map(patientMasters.map(m => [m.id, m]));
+        return patientTransactions.map(t => {
+            const master = mastersMap.get(t.patientMasterId);
+            if (!master) return null;
+            return { ...t, ...master };
+        }).filter((p): p is EnrichedPatient => p !== null);
+    }, [patientTransactions, patientMasters]);
+    
+    const selectedGroupPatients = useMemo(() => {
+        return allPatients.filter(p => p.groupId === selectedGroupId);
+    }, [allPatients, selectedGroupId]);
     
     const cabinIds = useMemo(() => selectedGroup?.cabins.map(c => c.id) || [], [selectedGroup]);
     const cabinsQuery = useMemoFirebase(() => {
@@ -594,7 +621,7 @@ function DoctorConsultationDashboard({
     };
 
     const handleCallNextPatient = (cabinId: string) => {
-        const waitingPatients = (allPatients || []).filter(p => p.status === 'waiting').sort((a, b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime());
+        const waitingPatients = (allPatients || []).filter(p => p.status === 'waiting' && p.groupId === selectedGroupId).sort((a, b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime());
         if (waitingPatients.length === 0) {
             toast({ variant: 'destructive', title: "No patients in queue", description: "There are no patients waiting." });
             return;
@@ -625,11 +652,11 @@ function DoctorConsultationDashboard({
         const cabinDocRef = doc(firestore, 'cabins', cabinId);
 
         if (action === 'start') {
-            setDocumentNonBlocking(patientDocRef, { status: 'consulting' }, { merge: true });
+            setDocumentNonBlocking(patientDocRef, { status: 'consulting', consultingStartTime: new Date().toISOString() }, { merge: true });
             toast({ title: `Consultation Started` });
         } else {
             const newStatus = action === 'end' ? 'consultation-done' : 'no-show';
-            setDocumentNonBlocking(patientDocRef, { status: newStatus, cabinId: null }, { merge: true });
+            setDocumentNonBlocking(patientDocRef, { status: newStatus, cabinId: null, consultingEndTime: new Date().toISOString() }, { merge: true });
             setDocumentNonBlocking(cabinDocRef, { patientInCabinId: null }, { merge: true });
             toast({ title: `Consultation ${newStatus.replace('-', ' ')}` });
         }
@@ -648,12 +675,12 @@ function DoctorConsultationDashboard({
       return (allPatients || []).filter(p => p.groupId === groupId && p.status === 'waiting').length;
     }
 
-    const activePatients = (allPatients || []).filter(p => p.status === 'waiting' || p.status === 'calling' || p.status === 'consulting');
+    const activePatients = selectedGroupPatients.filter(p => p.status === 'waiting' || p.status === 'calling' || p.status === 'consulting');
     const totalPatients = activePatients.length;
-    const waitingPatients = (allPatients || []).filter(p => p.status === 'waiting');
+    const waitingPatients = selectedGroupPatients.filter(p => p.status === 'waiting');
     const inQueue = waitingPatients.length;
-    const attendedToday = (allPatients || []).filter(p => p.groupId === selectedGroupId && p.status === 'consultation-done').length;
-    const noShowsToday = (allPatients || []).filter(p => p.groupId === selectedGroupId && p.status === 'no-show').length;
+    const attendedToday = selectedGroupPatients.filter(p => p.status === 'consultation-done').length;
+    const noShowsToday = selectedGroupPatients.filter(p => p.status === 'no-show').length;
 
 
     const stats = [
@@ -667,7 +694,7 @@ function DoctorConsultationDashboard({
     ? [...waitingPatients].sort((a, b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime())[0].tokenNumber
     : undefined;
 
-    const isLoading = patientsLoading || cabinsLoading;
+    const isLoading = patientsLoading || mastersLoading || cabinsLoading;
 
     if (!selectedGroup) {
         return (
@@ -757,5 +784,3 @@ function DoctorConsultationDashboard({
         </div>
     );
 }
-
-    
