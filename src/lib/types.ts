@@ -13,21 +13,21 @@ export type PatientMaster = {
 export type PatientTransaction = {
   id: string; // transaction id
   patientMasterId: string;
-  name: string;
-  age: number;
-  gender: 'male' | 'female' | 'other';
-  contactNumber: string;
-  emailAddress: string;
   tokenNumber: string;
   status: 'waiting' | 'calling' | 'consulting' | 'no-show' | 'consultation-done';
   groupId: string;
   clinicId: string;
   registeredAt: string; // ISO 8601 date string
   cabinId?: string;
+  consultingStartTime?: string;
+  consultingEndTime?: string;
 };
 
-// Kept for backward compatibility in UI components
-export type Patient = PatientTransaction;
+// Represents the joined data of a transaction and its master record
+export type EnrichedPatient = PatientTransaction & Omit<PatientMaster, 'id'>;
+
+// Kept for backward compatibility in UI components, now represents the enriched view
+export type Patient = EnrichedPatient;
 
 export type Doctor = {
   id: string;
@@ -109,7 +109,7 @@ export type PatientHistoryEntry = {
     issuedAt: string; // ISO 8601 date string
     startTime?: string; // ISO 8601 date string
     endTime?: string; // ISO 8601 date string
-    status: Patient['status'];
+    status: PatientTransaction['status'];
 }
 
 export type Role = {
@@ -127,3 +127,5 @@ export type User = {
     phone?: string;
     specialty?: string;
 };
+
+    

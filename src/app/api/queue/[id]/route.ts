@@ -1,5 +1,5 @@
 
-import { getQueueInfoByScreenId } from '@/lib/data';
+import { getQueueInfoByScreenId } from '@/lib/server-data';
 import { getClinicGroups, getPatients } from '@/lib/server-data';
 import { NextResponse } from 'next/server';
 
@@ -26,3 +26,5 @@ export async function GET(
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }
+
+    

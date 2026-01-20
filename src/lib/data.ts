@@ -1,3 +1,4 @@
+
 'use client';
 import {
   collection,
@@ -8,6 +9,7 @@ import {
   where,
   Timestamp,
   Firestore,
+  documentId,
 } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 
@@ -15,11 +17,14 @@ import type {
   Clinic,
   Group,
   Patient,
+  PatientTransaction,
+  PatientMaster,
   Advertisement,
   Consultation,
   PatientHistoryEntry,
   Cabin,
   User,
+  EnrichedPatient,
 } from './types';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
@@ -97,106 +102,139 @@ export const getCabinsByClinicId = async (
 
 
 // Patients
-export const getAllPatients = async (): Promise<Patient[]> => {
-  const patientsCol = collection(db, 'patient_transactions');
-  const snapshot = await getDocs(patientsCol);
-  const patients = snapshot.docs.map(doc => {
+export const getAllPatients = async (): Promise<EnrichedPatient[]> => {
+  const transactionsCol = collection(db, 'patient_transactions');
+  const transactionsSnapshot = await getDocs(transactionsCol);
+  if (transactionsSnapshot.empty) return [];
+
+  const transactions = transactionsSnapshot.docs.map(doc => {
     const data = doc.data();
     return {
-        ...data,
-        id: doc.id,
-        registeredAt: (data.registeredAt as Timestamp).toDate().toISOString(),
-    } as Patient
+      ...data,
+      id: doc.id,
+      registeredAt: (data.registeredAt as Timestamp).toDate().toISOString(),
+    } as PatientTransaction;
   });
-  return patients;
+  
+  const masterIds = [...new Set(transactions.map(t => t.patientMasterId))].filter(Boolean);
+  if (masterIds.length === 0) return transactions as any[]; // Should not happen
+
+  const mastersCol = collection(db, 'patient_master');
+  const mastersQuery = query(mastersCol, where(documentId(), 'in', masterIds));
+  const mastersSnapshot = await getDocs(mastersQuery);
+
+  const mastersMap = new Map<string, PatientMaster>();
+  mastersSnapshot.docs.forEach(doc => {
+    mastersMap.set(doc.id, { id: doc.id, ...doc.data() } as PatientMaster);
+  });
+
+  return transactions.map(t => ({
+    ...t,
+    ...mastersMap.get(t.patientMasterId),
+  } as EnrichedPatient));
 };
 
 export const getPatientByToken = async (
   token: string
-): Promise<Patient | undefined> => {
+): Promise<EnrichedPatient | undefined> => {
   const q = query(collection(db, 'patient_transactions'), where('tokenNumber', '==', token));
   const snapshot = await getDocs(q);
   if (snapshot.empty) {
     return undefined;
   }
-  const doc = snapshot.docs[0];
-  const data = doc.data();
-  return { ...data, id: doc.id, registeredAt: (data.registeredAt as Timestamp).toDate().toISOString() } as Patient;
+  const transactionDoc = snapshot.docs[0];
+  const transactionData = transactionDoc.data() as PatientTransaction;
+  
+  if (!transactionData.patientMasterId) return undefined;
+  
+  const masterDoc = await getDoc(doc(db, 'patient_master', transactionData.patientMasterId));
+  if (!masterDoc.exists()) return undefined;
+
+  const enrichedData = {
+      ...transactionData,
+      ...masterDoc.data(),
+      id: transactionDoc.id,
+      registeredAt: (transactionData.registeredAt as any as Timestamp).toDate().toISOString(),
+  } as EnrichedPatient;
+
+  return enrichedData;
 };
 
 export const getPatientsByClinicId = async (
   clinicId: string
-): Promise<Patient[]> => {
+): Promise<EnrichedPatient[]> => {
   const q = query(
     collection(db, 'patient_transactions'),
     where('clinicId', '==', clinicId)
   );
   const snapshot = await getDocs(q);
-  const patients = snapshot.docs.map(doc => {
+  const transactions = snapshot.docs.map(doc => {
     const data = doc.data();
     return {
         ...data,
         id: doc.id,
         registeredAt: (data.registeredAt as Timestamp).toDate().toISOString(),
-    } as Patient
+    } as PatientTransaction
   });
-  return patients;
+  
+  const masterIds = [...new Set(transactions.map(t => t.patientMasterId))].filter(Boolean);
+  if (masterIds.length === 0) return [];
+  
+  const mastersQuery = query(collection(db, 'patient_master'), where(documentId(), 'in', masterIds));
+  const mastersSnapshot = await getDocs(mastersQuery);
+  const mastersMap = new Map(mastersSnapshot.docs.map(d => [d.id, d.data() as Omit<PatientMaster, 'id'>]));
+  
+  return transactions.map(t => ({...t, ...mastersMap.get(t.patientMasterId)!}));
 };
 
 export const getPatientsByGroupId = async (
   groupId: string
-): Promise<Patient[]> => {
+): Promise<EnrichedPatient[]> => {
   const q = query(collection(db, 'patient_transactions'), where('groupId', '==', groupId));
   const snapshot = await getDocs(q);
-    const patients = snapshot.docs.map(doc => {
+  const transactions = snapshot.docs.map(doc => {
     const data = doc.data();
     return {
         ...data,
         id: doc.id,
         registeredAt: (data.registeredAt as Timestamp).toDate().toISOString(),
-    } as Patient
+    } as PatientTransaction
   });
-  return patients;
+  
+  const masterIds = [...new Set(transactions.map(t => t.patientMasterId))].filter(Boolean);
+  if (masterIds.length === 0) return [];
+
+  const mastersQuery = query(collection(db, 'patient_master'), where(documentId(), 'in', masterIds));
+  const mastersSnapshot = await getDocs(mastersQuery);
+  const mastersMap = new Map(mastersSnapshot.docs.map(d => [d.id, d.data() as Omit<PatientMaster, 'id'>]));
+  
+  return transactions.map(t => ({...t, ...mastersMap.get(t.patientMasterId)!}));
 };
 
 export const getPatientHistory = async (
-  patientId: string, // transactionId
-  clinicId?: string
+  transactionId: string
 ): Promise<PatientHistoryEntry[]> => {
-  const transactionDocRef = doc(db, 'patient_transactions', patientId);
+  const transactionDocRef = doc(db, 'patient_transactions', transactionId);
   const transactionDocSnap = await getDoc(transactionDocRef);
-  if (!transactionDocSnap.exists()) {
-    return [];
-  }
-  const currentPatientData = transactionDocSnap.data() as Patient;
+  if (!transactionDocSnap.exists()) return [];
 
-  let patientHistoryQuery;
+  const { patientMasterId } = transactionDocSnap.data() as PatientTransaction;
+  if (!patientMasterId) return [];
 
-  // Base queries to find the person
-  const queries: any[] = [];
-  if (currentPatientData.contactNumber) {
-    queries.push(where('contactNumber', '==', currentPatientData.contactNumber));
-  } else {
-    return []; // No unique identifier to find history
-  }
+  const historyQuery = query(
+    collection(db, 'patient_transactions'),
+    where('patientMasterId', '==', patientMasterId)
+  );
 
-  // Add clinic filter if provided
-  if (clinicId) {
-    queries.push(where('clinicId', '==', clinicId));
-  }
-
-  patientHistoryQuery = query(collection(db, 'patient_transactions'), ...queries);
-
-  const patientVisitsSnapshot = await getDocs(patientHistoryQuery);
-  if (patientVisitsSnapshot.empty) {
-    return [];
-  }
+  const patientVisitsSnapshot = await getDocs(historyQuery);
+  if (patientVisitsSnapshot.empty) return [];
 
   const patientVisits = patientVisitsSnapshot.docs.map(
-    (d) => ({ ...d.data(), id: d.id } as Patient)
+    (d) => ({ ...d.data(), id: d.id } as PatientTransaction)
   );
 
   const historyPromises = patientVisits.map(async (visit) => {
+    // This part remains inefficient but is kept to preserve original functionality
     const consultationsQuery = query(
       collection(db, 'consultations'),
       where('patientId', '==', visit.id)
@@ -217,21 +255,14 @@ export const getPatientHistory = async (
       }
     }
 
-    const registeredAt =
-      (visit.registeredAt as any) instanceof Timestamp
-        ? (visit.registeredAt as any).toDate().toISOString()
-        : visit.registeredAt;
-
     return {
       tokenNumber: visit.tokenNumber,
-      clinicName: clinicName,
+      clinicName,
       groupName: groupData?.name || 'N/A',
       doctorName: groupData?.doctors[0]?.name || 'N/A',
-      issuedAt: registeredAt,
+      issuedAt: visit.registeredAt,
       startTime: consultation?.date
-        ? new Date(
-            new Date(consultation.date).getTime() - 10 * 60000
-          ).toISOString()
+        ? new Date(new Date(consultation.date).getTime() - 10 * 60000).toISOString()
         : undefined,
       endTime: consultation?.date,
       status: visit.status,
@@ -239,14 +270,10 @@ export const getPatientHistory = async (
   });
 
   const history = await Promise.all(historyPromises);
-
-  return history.sort(
-    (a, b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime()
-  );
+  return history.sort((a, b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime());
 };
 
-
-export const getQueueInfoByScreenId = async (screenId: string, allGroups: Group[], allPatients: Patient[]) => {
+export const getQueueInfoByScreenId = async (screenId: string, allGroups: Group[], allPatients: EnrichedPatient[]) => {
     const groupForScreen = allGroups.find(g => g.screens.some(s => s.id === screenId));
     
     if (!groupForScreen) {
@@ -299,3 +326,5 @@ export const getConsultationsByPatientId = async (
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 };
+
+    
