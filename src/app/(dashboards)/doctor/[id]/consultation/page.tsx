@@ -440,11 +440,11 @@ function RoomCard({
                     <div className="p-3 bg-green-100 rounded-full mb-2">
                         <CheckCircle className="h-6 w-6 text-green-500" />
                     </div>
-                    <p className="text-sm font-semibold text-muted-foreground mb-4">CONSULTATION DONE</p>
+                    <p className="text-sm font-semibold text-muted-foreground mb-4">ROOM AVAILABLE</p>
                     <div className="flex flex-col gap-2 w-full">
                        <Button size="sm" onClick={() => onCallNext(cabin.id)}>
                            <PhoneCall className="mr-2 h-4 w-4"/>
-                           Call Next Patient
+                           Call Patient
                        </Button>
                         <Button variant="destructive" size="sm" onClick={() => onLeave(cabin.id)}>
                             <LogOut className="mr-1 h-3 w-3" />
@@ -514,7 +514,7 @@ function RoomCard({
                                 </Button>
                                  <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onViewHistory(patient)}>
                                     <History className="mr-2 h-4 w-4"/> History
-                                </Button>
+                                 </Button>
                             </div>
                         )}
                     </div>
@@ -592,7 +592,15 @@ function DoctorConsultationDashboard({
         return query(collection(firestore, 'patient_transactions'), where('groupId', 'in', groupIds));
     }, [firestore, groupIds, refetchIndex]);
 
-    const { data: patientTransactions, isLoading: patientsLoading } = useCollection<PatientTransaction>(patientTransactionsQuery);
+    const { data: patientTransactionsFromDB, isLoading: patientsLoading } = useCollection<PatientTransaction>(patientTransactionsQuery);
+    const [patientTransactions, setPatientTransactions] = useState<PatientTransaction[] | null>(null);
+
+    useEffect(() => {
+        if (patientTransactionsFromDB) {
+            setPatientTransactions(patientTransactionsFromDB);
+        }
+    }, [patientTransactionsFromDB]);
+
 
     const patientMasterIds = useMemo(() => {
         if (!patientTransactions) return [];
@@ -658,6 +666,16 @@ function DoctorConsultationDashboard({
         }
         const nextPatient = waitingPatients[0];
 
+        // Optimistic UI Update
+        setPatientTransactions(currentTransactions => 
+            currentTransactions?.map(t => 
+                t.id === nextPatient.id 
+                ? { ...t, status: 'calling', cabinId: cabinId } 
+                : t
+            ) || null
+        );
+
+        // DB Update
         const patientDocRef = doc(firestore, 'patient_transactions', nextPatient.id);
         const cabinDocRef = doc(firestore, 'cabins', cabinId);
 
@@ -682,13 +700,40 @@ function DoctorConsultationDashboard({
         const cabinDocRef = doc(firestore, 'cabins', cabinId);
 
         if (action === 'start') {
+            // Optimistic UI Update
+            setPatientTransactions(currentTransactions => 
+                currentTransactions?.map(t => 
+                    t.id === patientId 
+                    ? { ...t, status: 'consulting', consultingStartTime: new Date().toISOString() } 
+                    : t
+                ) || null
+            );
+            // Database Update
             setDocumentNonBlocking(patientDocRef, { status: 'consulting', consultingStartTime: new Date().toISOString() }, { merge: true });
             toast({ title: `Consultation Started` });
         } else if (action === 'end') {
+            // Optimistic UI Update
+            setPatientTransactions(currentTransactions => 
+                currentTransactions?.map(t => 
+                    t.id === patientId 
+                    ? { ...t, status: 'consultation-done', consultingEndTime: new Date().toISOString() } 
+                    : t
+                ) || null
+            );
+            // Database Update
             setDocumentNonBlocking(patientDocRef, { status: 'consultation-done', consultingEndTime: new Date().toISOString() }, { merge: true });
             setDocumentNonBlocking(cabinDocRef, { patientInCabinId: null }, { merge: true });
             toast({ title: `Consultation Ended` });
         } else if (action === 'no-show') {
+            // Optimistic UI Update
+            setPatientTransactions(currentTransactions => 
+                currentTransactions?.map(t => 
+                    t.id === patientId 
+                    ? { ...t, status: 'no-show', cabinId: undefined, consultingEndTime: new Date().toISOString() } 
+                    : t
+                ) || null
+            );
+            // Database Update
             setDocumentNonBlocking(patientDocRef, { status: 'no-show', cabinId: null, consultingEndTime: new Date().toISOString() }, { merge: true });
             setDocumentNonBlocking(cabinDocRef, { patientInCabinId: null }, { merge: true });
             toast({ title: `Patient marked as No Show` });
@@ -817,5 +862,3 @@ function DoctorConsultationDashboard({
         </div>
     );
 }
-
-    
