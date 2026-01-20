@@ -429,7 +429,7 @@ function RoomCard({
     }
     
     // Assigned to current doctor
-    if (!cabin.patientInCabinId && patient && patient.status === 'consultation-done') {
+    if (!cabin.patientInCabinId) {
         // After consultation, show "Call Next" and "Leave"
          return (
             <Card>
@@ -483,7 +483,7 @@ function RoomCard({
                          <div className="text-center">
                             <p className="font-bold text-4xl text-primary">{patient.tokenNumber}</p>
                             <p className="font-semibold">{patient.name}</p>
-                            <p className="text-sm text-muted-foreground">{patient.age} / {patient.gender.charAt(0).toUpperCase()}</p>
+                            <p className="text-sm text-muted-foreground">{patient.age} / {patient.gender?.charAt(0).toUpperCase()}</p>
                         </div>
                         {patient.status === 'consulting' ? (
                              <div className="grid grid-cols-2 gap-2 w-full">
@@ -677,31 +677,21 @@ function DoctorConsultationDashboard({
          toast({ title: 'Room Vacated' });
     };
     
-    const handleRoomAction = async (patientId: string, cabinId: string, action: 'start' | 'end' | 'no-show') => {
+    const handleRoomAction = (patientId: string, cabinId: string, action: 'start' | 'end' | 'no-show') => {
         const patientDocRef = doc(firestore, 'patient_transactions', patientId);
         const cabinDocRef = doc(firestore, 'cabins', cabinId);
 
-        try {
-            if (action === 'start') {
-                await setDoc(patientDocRef, { status: 'consulting', consultingStartTime: new Date().toISOString() }, { merge: true });
-                toast({ title: `Consultation Started` });
-            } else if (action === 'end') {
-                await setDoc(patientDocRef, { status: 'consultation-done', consultingEndTime: new Date().toISOString() }, { merge: true });
-                await setDoc(cabinDocRef, { patientInCabinId: null }, { merge: true });
-                toast({ title: `Consultation Ended` });
-            } else if (action === 'no-show') {
-                await setDoc(patientDocRef, { status: 'no-show', cabinId: null, consultingEndTime: new Date().toISOString() }, { merge: true });
-                await setDoc(cabinDocRef, { patientInCabinId: null }, { merge: true });
-                toast({ title: `Patient marked as No Show` });
-            }
-            refetchPatients(); // Force a refetch after any action
-        } catch (error) {
-            console.error("Error handling room action:", error);
-            toast({
-                variant: 'destructive',
-                title: 'Action Failed',
-                description: 'Could not update the patient or cabin status.',
-            });
+        if (action === 'start') {
+            setDocumentNonBlocking(patientDocRef, { status: 'consulting', consultingStartTime: new Date().toISOString() }, { merge: true });
+            toast({ title: `Consultation Started` });
+        } else if (action === 'end') {
+            setDocumentNonBlocking(patientDocRef, { status: 'consultation-done', consultingEndTime: new Date().toISOString() }, { merge: true });
+            setDocumentNonBlocking(cabinDocRef, { patientInCabinId: null }, { merge: true });
+            toast({ title: `Consultation Ended` });
+        } else if (action === 'no-show') {
+            setDocumentNonBlocking(patientDocRef, { status: 'no-show', cabinId: null, consultingEndTime: new Date().toISOString() }, { merge: true });
+            setDocumentNonBlocking(cabinDocRef, { patientInCabinId: null }, { merge: true });
+            toast({ title: `Patient marked as No Show` });
         }
     };
 
