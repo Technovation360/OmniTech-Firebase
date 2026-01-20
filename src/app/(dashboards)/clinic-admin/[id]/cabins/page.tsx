@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Edit, Trash2, Search, ArrowUp, ArrowDown, PlusCircle, Loader } from 'lucide-react';
+import { Edit, Trash2, Search, ArrowUp, ArrowDown, PlusCircle, Loader, UserX } from 'lucide-react';
 import type { Cabin } from '@/lib/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
@@ -219,6 +219,16 @@ export default function CabinsPage({ params }: { params: { id: string } }) {
     }
     closeModal();
   };
+  
+  const handleUnassign = (cabin: Cabin) => {
+    if (!cabin.id) return;
+    const cabinDocRef = doc(firestore, 'cabins', cabin.id);
+    setDocumentNonBlocking(cabinDocRef, {
+        assignedDoctorId: null,
+        assignedDoctorName: null,
+        patientInCabinId: null
+    }, { merge: true });
+  };
 
   const handleSort = (key: keyof Cabin) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -293,14 +303,26 @@ export default function CabinsPage({ params }: { params: { id: string } }) {
                                       </div>
                                   </AccordionTrigger>
                               </div>
-                              <div className="col-span-3 py-0 px-2 text-center">
-                                 <p className="text-xs text-green-600 font-semibold">VACANT</p>
+                               <div className="col-span-3 py-0 px-2 text-center">
+                                {cabin.assignedDoctorId ? (
+                                    <div>
+                                        <p className="text-xs text-orange-600 font-semibold">ASSIGNED</p>
+                                        <p className="text-xs text-muted-foreground truncate">to Dr. {cabin.assignedDoctorName}</p>
+                                    </div>
+                                ) : (
+                                    <p className="text-xs text-green-600 font-semibold">VACANT</p>
+                                )}
                               </div>
                               <div className="col-span-3 p-4 flex justify-center gap-1">
-                                <Button variant="ghost" size="icon-xs" onClick={() => openEditModal(cabin)}>
+                                {cabin.assignedDoctorId ? (
+                                    <Button variant="ghost" size="icon-xs" onClick={() => handleUnassign(cabin)} title="Unassign Doctor">
+                                      <UserX className="h-4 w-4 text-blue-600" />
+                                    </Button>
+                                ) : null}
+                                <Button variant="ghost" size="icon-xs" onClick={() => openEditModal(cabin)} title="Edit Cabin">
                                     <Edit className="h-4 w-4 text-muted-foreground"/>
                                 </Button>
-                                <Button variant="ghost" size="icon-xs" onClick={() => openDeleteDialog(cabin)}>
+                                <Button variant="ghost" size="icon-xs" onClick={() => openDeleteDialog(cabin)} title="Delete Cabin">
                                     <Trash2 className="h-4 w-4 text-destructive"/>
                                 </Button>
                               </div>
