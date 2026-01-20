@@ -1,4 +1,3 @@
-
 'use client';
 
 import { use, useState, useEffect, useMemo } from 'react';
@@ -174,12 +173,12 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
   }, [firestore, doctorId, doctorUser]);
 
   const {data: doctorGroups, isLoading: groupsLoading} = useCollection<Group>(doctorGroupsQuery);
-  const groupIds = useMemo(() => doctorGroups?.map(g => g.id) || [], [doctorGroups]);
+  const clinicId = useMemo(() => doctorGroups?.[0]?.clinicId, [doctorGroups]);
 
   const transactionsQuery = useMemoFirebase(() => {
-    if (groupIds.length === 0) return null;
-    return query(collection(firestore, 'patient_transactions'), where('groupId', 'in', groupIds));
-  }, [firestore, groupIds]);
+    if (!clinicId) return null;
+    return query(collection(firestore, 'patient_transactions'), where('clinicId', '==', clinicId));
+  }, [firestore, clinicId]);
 
   const { data: patientTransactions, isLoading: transactionsLoading } = useCollection<PatientTransaction>(transactionsQuery);
   
