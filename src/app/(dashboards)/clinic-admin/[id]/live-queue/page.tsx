@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, use, useCallback } from 'react';
 import {
@@ -104,8 +105,8 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
                 bVal = getDoctorName(b.groupId);
                 break;
             case 'registeredAt':
-                 aVal = (a.registeredAt as any)?.seconds || 0;
-                 bVal = (b.registeredAt as any)?.seconds || 0;
+                 aVal = new Date(a.registeredAt).getTime();
+                 bVal = new Date(b.registeredAt).getTime();
                  break;
             default:
                 aVal = a[sortConfig.key as keyof Patient];
@@ -119,7 +120,7 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
       });
       setFilteredPatients(sorted);
     } else {
-       const sorted = [...filteredData].sort((a,b) => ((a.registeredAt as any) as Timestamp).toMillis() - ((b.registeredAt as any) as Timestamp).toMillis());
+       const sorted = [...filteredData].sort((a,b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime());
        setFilteredPatients(sorted);
     }
 
@@ -209,7 +210,7 @@ export default function ClinicLiveQueuePage({ params }: { params: Promise<{ id: 
                   <TableCell className="py-2 px-4 text-xs">{patient.name}</TableCell>
                   <TableCell className="py-2 px-4 text-xs">{getGroupName(patient.groupId)}</TableCell>
                   <TableCell className="py-2 px-4 text-xs">{getDoctorName(patient.groupId)}</TableCell>
-                  <TableCell className="py-2 px-4 text-xs">{format(((patient.registeredAt as any) as Timestamp).toDate(), 'hh:mm a')}</TableCell>
+                  <TableCell className="py-2 px-4 text-xs">{format(new Date(patient.registeredAt), 'hh:mm a')}</TableCell>
                   <TableCell className="py-2 px-4 text-xs">
                     <Badge variant={'secondary'} className={cn("text-[10px] border-transparent capitalize", badgeColors[patient.status])}>
                           {patient.status.replace('-', ' ')}

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { use, useState, useEffect, useCallback } from 'react';
@@ -193,7 +194,7 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
                 <TableCell className="p-2 text-xs">{patient.name}</TableCell>
                 <TableCell className="p-2 text-xs">{getGroupName()}</TableCell>
                 <TableCell className="p-2 text-xs">{getDoctorName()}</TableCell>
-                <TableCell className="p-2 text-xs">{format(((patient.registeredAt as any) as Timestamp).toDate(), 'hh:mm a')}</TableCell>
+                <TableCell className="p-2 text-xs">{format(new Date(patient.registeredAt), 'hh:mm a')}</TableCell>
                 <TableCell className="p-2 text-xs">
                   <Badge variant="secondary" className={cn("capitalize", badgeColors[patient.status])}>
                     {patient.status.replace('-', ' ')}

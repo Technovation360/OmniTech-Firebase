@@ -534,7 +534,7 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
                   <TableCell className="py-2 text-xs">{patient.contactNumber}</TableCell>
                   <TableCell className="py-2 text-xs">{patient.emailAddress || '-'}</TableCell>
                   <TableCell className="py-2 text-xs">
-                     {patient.registeredAt ? format(((patient.registeredAt as any) as Timestamp).toDate(), 'P, pp') : ''}
+                     {patient.registeredAt ? format(new Date(patient.registeredAt), 'P, pp') : ''}
                   </TableCell>
                   <TableCell className="py-2 text-xs text-center">
                      <Button size="xs" onClick={() => handleGenerateToken(patient)}>GENERATE</Button>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { use, useState, useEffect, useMemo } from 'react';
@@ -341,7 +342,7 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
                   <TableCell className="py-2 px-2 text-xs">{patient.contactNumber}</TableCell>
                   <TableCell className="py-2 px-2 text-xs">{patient.emailAddress}</TableCell>
                   <TableCell className="py-2 text-xs">
-                     {format(((patient.registeredAt as any) as Timestamp).toDate(), 'P, pp')}
+                     {format(new Date(patient.registeredAt), 'P, pp')}
                   </TableCell>
                   <TableCell className="py-2 text-xs">
                     <Button
