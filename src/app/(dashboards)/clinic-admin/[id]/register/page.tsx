@@ -97,6 +97,7 @@ function VisitHistoryModal({
               <TableRow>
                 <TableHead className="text-xs">Token #</TableHead>
                 <TableHead className="text-xs">Group</TableHead>
+                <TableHead className="text-xs">Doctor</TableHead>
                 <TableHead className="text-xs">Issued Date/Time</TableHead>
                 <TableHead className="text-xs">Start Time</TableHead>
                 <TableHead className="text-xs">Stop Time</TableHead>
@@ -110,6 +111,7 @@ function VisitHistoryModal({
                     {item.tokenNumber}
                   </TableCell>
                   <TableCell className="py-2 text-xs">{item.groupName}</TableCell>
+                  <TableCell className="py-2 text-xs">{item.doctorName}</TableCell>
                   <TableCell className="py-2 text-xs">
                     {format(new Date(item.issuedAt), 'P, pp')}
                   </TableCell>

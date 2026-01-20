@@ -1,4 +1,3 @@
-
 'use client';
 
 import { use, useState, useEffect, useMemo } from 'react';
@@ -78,7 +77,7 @@ function VisitHistoryModal({
   
   useEffect(() => {
     if (patient) {
-      getPatientHistory(patient.id, patient.clinicId).then(setHistory);
+      getPatientHistory(patient.id).then(setHistory);
     } else {
       setHistory([]);
     }
@@ -99,7 +98,8 @@ function VisitHistoryModal({
             <TableHeader>
               <TableRow>
                 <TableHead className="text-xs">Token #</TableHead>
-                <TableHead className="text-xs">Clinic</TableHead>
+                <TableHead className="text-xs">Group</TableHead>
+                <TableHead className="text-xs">Doctor</TableHead>
                 <TableHead className="text-xs">Issued Date/Time</TableHead>
                 <TableHead className="text-xs">Start Time</TableHead>
                 <TableHead className="text-xs">Stop Time</TableHead>
@@ -112,7 +112,8 @@ function VisitHistoryModal({
                   <TableCell className="font-medium text-primary py-2 text-xs">
                     {item.tokenNumber}
                   </TableCell>
-                  <TableCell className="py-2 text-xs">{item.clinicName}</TableCell>
+                  <TableCell className="py-2 text-xs">{item.groupName}</TableCell>
+                  <TableCell className="py-2 text-xs">{item.doctorName}</TableCell>
                   <TableCell className="py-2 text-xs">
                     {format(new Date(item.issuedAt), 'P, pp')}
                   </TableCell>
@@ -417,5 +418,3 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
     </>
   );
 }
-
-    
