@@ -128,7 +128,6 @@ export default function DoctorLiveQueuePage({ params }: { params: Promise<{ id: 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
                 <CardTitle>Live Patient Queue</CardTitle>
-                <CardDescription>A real-time view of patients in your queue.</CardDescription>
             </div>
              <div className="space-y-1">
                 <Label htmlFor="patientSearch" className="font-medium text-xs text-muted-foreground">Patient Search</Label>
