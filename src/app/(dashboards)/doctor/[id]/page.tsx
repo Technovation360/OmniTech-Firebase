@@ -1,7 +1,7 @@
 
 'use client';
 
-import { use, useState, useEffect } from 'react';
+import { use, useState, useEffect, useMemo } from 'react';
 import type { Patient, Group, Doctor, User } from '@/lib/types';
 import {
   Card,
@@ -39,28 +39,14 @@ export default function DoctorPageLoader({ params }: DoctorPageProps) {
   }, [firestore, id]);
   const { data: doctorUser, isLoading: doctorUserLoading } = useDoc<User>(doctorUserRef);
 
-  const doctorGroupIdQuery = useMemoFirebase(() => {
+  const doctorGroupsQuery = useMemoFirebase(() => {
     if (!doctorUser) return null;
     return query(collection(firestore, "groups"), where("doctors", "array-contains", { id: id, name: doctorUser.name }));
   }, [firestore, id, doctorUser]);
 
-  const {data: doctorGroups, isLoading: groupsLoading} = useCollection<Group>(doctorGroupIdQuery);
-  const groupId = doctorGroups?.[0]?.id;
+  const {data: doctorGroups, isLoading: groupsLoading} = useCollection<Group>(doctorGroupsQuery);
 
-  const patientsQuery = useMemoFirebase(() => {
-    if (!groupId) return null;
-    return query(collection(firestore, 'patient_transactions'), where('groupId', '==', groupId));
-  }, [firestore, groupId]);
-  const { data: initialPatients, isLoading: patientsLoading } = useCollection<Patient>(patientsQuery);
-  
-  const groupQuery = useMemoFirebase(() => {
-    if (!groupId) return null;
-    return doc(firestore, 'groups', groupId);
-  }, [firestore, groupId]);
-  const { data: group, isLoading: groupLoading } = useDoc<Group>(groupQuery);
-
-
-  if (isUserLoading || doctorUserLoading || groupsLoading || patientsLoading || groupLoading) {
+  if (isUserLoading || doctorUserLoading || groupsLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader className="h-8 w-8 animate-spin" />
@@ -68,7 +54,7 @@ export default function DoctorPageLoader({ params }: DoctorPageProps) {
     );
   }
 
-  if (!group || !initialPatients) {
+  if (!doctorGroups || doctorGroups.length === 0) {
        return (
          <div className="flex items-center justify-center h-full">
             <p>Could not load doctor's dashboard. Ensure doctor is assigned to a group.</p>
@@ -79,26 +65,42 @@ export default function DoctorPageLoader({ params }: DoctorPageProps) {
   return (
     <DoctorDashboard
       doctorId={id}
-      group={group}
-      initialPatients={initialPatients}
+      groups={doctorGroups}
     />
   );
 }
 
 function DoctorDashboard({
   doctorId,
-  group,
-  initialPatients,
+  groups,
 }: {
   doctorId: string;
-  group: Group;
-  initialPatients: Patient[];
+  groups: Group[];
 }) {
+  const [selectedGroupId, setSelectedGroupId] = useState('all');
+  const firestore = useFirestore();
+  const doctor = groups.flatMap(g => g.doctors).find(d => d.id === doctorId);
 
-  const totalPatients = initialPatients.length;
-  const inQueue = initialPatients.filter(p => p.status === 'waiting' || p.status === 'calling').length;
-  const attended = initialPatients.filter(p => p.status === 'consultation-done').length;
-  const noShows = initialPatients.filter(p => p.status === 'no-show').length;
+  const groupIds = useMemo(() => groups.map(g => g.id), [groups]);
+
+  const allPatientsQuery = useMemoFirebase(() => {
+    if (groupIds.length === 0) return null;
+    return query(collection(firestore, 'patient_transactions'), where('groupId', 'in', groupIds));
+  }, [firestore, groupIds]);
+  const { data: allPatients, isLoading: patientsLoading } = useCollection<Patient>(allPatientsQuery);
+
+  const filteredPatients = useMemo(() => {
+    if (!allPatients) return [];
+    if (selectedGroupId === 'all') {
+      return allPatients;
+    }
+    return allPatients.filter(p => p.groupId === selectedGroupId);
+  }, [allPatients, selectedGroupId]);
+
+  const totalPatients = filteredPatients.length;
+  const inQueue = filteredPatients.filter(p => p.status === 'waiting' || p.status === 'calling').length;
+  const attended = filteredPatients.filter(p => p.status === 'consultation-done').length;
+  const noShows = filteredPatients.filter(p => p.status === 'no-show').length;
 
   const stats = [
     { title: 'TOTAL PATIENTS', value: totalPatients, icon: Users, color: 'bg-indigo-100 text-indigo-600' },
@@ -107,16 +109,18 @@ function DoctorDashboard({
     { title: 'NO SHOWS', value: noShows, icon: XCircle, color: 'bg-red-100 text-red-600' },
   ];
 
-  const waitingPatients = initialPatients.filter(p => p.status === 'waiting');
+  const waitingPatients = allPatients ? allPatients.filter(p => p.status === 'waiting') : [];
   const nextToken = waitingPatients.length > 0
     ? [...waitingPatients].sort((a, b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime())[0]
     : undefined;
   
-  const doctor = group.doctors.find(d => d.id === doctorId);
-
   if (!doctor) {
     return <p>Doctor not found in this group.</p>
   }
+  
+  const selectedGroup = groups.find(g => g.id === selectedGroupId);
+  const doctorSpecialty = selectedGroup ? selectedGroup.specialties.join(', ') : (doctor?.specialty || 'Multiple');
+
 
   return (
     <div className="space-y-6">
@@ -129,7 +133,7 @@ function DoctorDashboard({
               </div>
               <div>
                 <p className="text-xs text-muted-foreground font-semibold">{stat.title}</p>
-                <p className="text-2xl font-bold">{stat.value}</p>
+                <p className="text-2xl font-bold">{patientsLoading ? <Loader className="h-6 w-6 animate-spin" /> : stat.value}</p>
               </div>
             </CardContent>
           </Card>
@@ -140,15 +144,16 @@ function DoctorDashboard({
         <div className="lg:col-span-2 space-y-6">
           <Card>
              <CardHeader>
-                <div className="flex items-center gap-4">
-                    <Button>ALL GROUPS</Button>
-                    <Button variant="ghost">GENERAL MEDICINE</Button>
-                    <Button variant="ghost">PEDIATRICS</Button>
+                <div className="flex items-center gap-4 flex-wrap">
+                    <Button variant={selectedGroupId === 'all' ? 'default' : 'ghost'} onClick={() => setSelectedGroupId('all')}>ALL GROUPS</Button>
+                    {groups.map(group => (
+                        <Button key={group.id} variant={selectedGroupId === group.id ? 'default' : 'ghost'} onClick={() => setSelectedGroupId(group.id)}>{group.name.toUpperCase()}</Button>
+                    ))}
                 </div>
             </CardHeader>
             <CardContent>
                 <h3 className="text-lg font-bold">Performance Details</h3>
-                <p className="text-sm text-muted-foreground mb-4">GROUP CONTEXT: ALL ASSIGNED WINGS</p>
+                <p className="text-sm text-muted-foreground mb-4">GROUP CONTEXT: {selectedGroupId === 'all' ? 'ALL ASSIGNED WINGS' : (groups.find(g=>g.id === selectedGroupId)?.name || '').toUpperCase()}</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Card className="bg-muted/50">
                         <CardHeader>
@@ -193,7 +198,7 @@ function DoctorDashboard({
               </Button>
               <div className="bg-primary-foreground/20 p-3 rounded-lg">
                 <p className="font-bold text-white">Dr. {doctor.name}</p>
-                <p className="text-xs text-primary-foreground/80">SPECIALTY: {group.specialties.join(', ')}</p>
+                <p className="text-xs text-primary-foreground/80">SPECIALTY: {doctorSpecialty}</p>
               </div>
             </CardContent>
             <Stethoscope className="absolute -right-8 -bottom-8 h-40 w-40 text-primary-foreground/10" />
