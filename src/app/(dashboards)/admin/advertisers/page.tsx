@@ -161,7 +161,7 @@ export default function AdvertisersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [advertiserToEdit, setAdvertiserToEdit] = useState<Advertiser | null>(null);
   const [advertiserToDelete, setAdvertiserToDelete] = useState<Advertiser | null>(null);
-  const [sortConfig, setSortConfig] = useState<{ key: keyof Advertiser; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc' });
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -176,8 +176,18 @@ export default function AdvertisersPage() {
     
     if (sortConfig) {
       const sorted = [...filteredData].sort((a, b) => {
-        const aVal = a[sortConfig.key];
-        const bVal = b[sortConfig.key];
+        let aVal: any, bVal: any;
+
+        switch(sortConfig.key) {
+            case 'availableLimit':
+                aVal = (a.campaignsLimit || 0) - a.campaigns;
+                bVal = (b.campaignsLimit || 0) - b.campaigns;
+                break;
+            default:
+                aVal = a[sortConfig.key as keyof Advertiser];
+                bVal = b[sortConfig.key as keyof Advertiser];
+        }
+        
         if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
         if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
         return 0;
@@ -232,7 +242,7 @@ export default function AdvertisersPage() {
     closeModal();
   };
 
-  const handleSort = (key: keyof Advertiser) => {
+  const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
       direction = 'desc';
@@ -240,7 +250,7 @@ export default function AdvertisersPage() {
     setSortConfig({ key, direction });
   };
 
-  const getSortIcon = (key: keyof Advertiser) => {
+  const getSortIcon = (key: string) => {
     if (!sortConfig || sortConfig.key !== key) return null;
     if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3" />;
     return <ArrowDown className="ml-2 h-3 w-3" />;
@@ -283,6 +293,18 @@ export default function AdvertisersPage() {
                         {getSortIcon('campaigns')}
                     </Button>
                 </TableHead>
+                <TableHead>
+                    <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('campaignsLimit')}>
+                        Limit
+                        {getSortIcon('campaignsLimit')}
+                    </Button>
+                </TableHead>
+                <TableHead>
+                    <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('availableLimit')}>
+                        Available
+                        {getSortIcon('availableLimit')}
+                    </Button>
+                </TableHead>
                  <TableHead>
                     <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('status')}>
                         Status
@@ -295,7 +317,7 @@ export default function AdvertisersPage() {
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-10">
+                  <TableCell colSpan={6} className="text-center py-10">
                     <Loader className="mx-auto h-6 w-6 animate-spin" />
                   </TableCell>
                 </TableRow>
@@ -304,6 +326,8 @@ export default function AdvertisersPage() {
                 <TableRow key={advertiser.id}>
                   <TableCell className="font-medium py-2 text-xs">{advertiser.name}</TableCell>
                   <TableCell className="py-2 text-xs text-center">{advertiser.campaigns}</TableCell>
+                  <TableCell className="py-2 text-xs text-center">{advertiser.campaignsLimit || 0}</TableCell>
+                  <TableCell className="py-2 text-xs text-center">{(advertiser.campaignsLimit || 0) - advertiser.campaigns}</TableCell>
                   <TableCell className="py-2 text-xs">
                      <Badge variant={advertiser.status === 'active' ? 'default' : 'secondary'} className={advertiser.status === 'active' ? 'bg-green-100 text-green-800' : ''}>
                         {advertiser.status}
@@ -321,7 +345,7 @@ export default function AdvertisersPage() {
               ))}
                {!isLoading && filteredAdvertisers.length === 0 && (
                  <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-4">No advertisers found.</TableCell>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-4">No advertisers found.</TableCell>
                  </TableRow>
               )}
             </TableBody>
