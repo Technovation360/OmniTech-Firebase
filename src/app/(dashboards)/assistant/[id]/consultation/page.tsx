@@ -50,7 +50,6 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { Textarea } from '@/components/ui/textarea';
 
 
 type AssistantPageProps = {
@@ -64,64 +63,6 @@ const badgeColors: Record<Patient['status'], string> = {
   'consultation-done': "bg-gray-100 text-gray-800",
   'no-show': "bg-red-100 text-red-800",
 };
-
-
-function AddNotesModal({
-  isOpen,
-  onClose,
-  patient,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  patient: Patient | null;
-}) {
-  const firestore = useFirestore();
-  const { toast } = useToast();
-  const [notes, setNotes] = useState('');
-
-  useEffect(() => {
-    if (patient) {
-      setNotes(patient.notes || '');
-    }
-  }, [patient]);
-
-  if (!patient) return null;
-
-  const handleSave = () => {
-    if (!notes.trim()) {
-      toast({ variant: 'destructive', title: 'Notes cannot be empty.' });
-      return;
-    }
-    const patientDocRef = doc(firestore, 'patient_transactions', patient.id);
-    setDocumentNonBlocking(patientDocRef, { notes }, { merge: true });
-    toast({ title: 'Notes saved.' });
-    onClose();
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-xl p-0">
-        <DialogHeader className="p-6 pb-4 border-b">
-          <DialogTitle>Add Consultation Notes for {patient.name}</DialogTitle>
-        </DialogHeader>
-        <div className="p-6">
-          <Label htmlFor="notes" className="mb-2 block font-semibold text-muted-foreground">Consultation Notes</Label>
-          <Textarea
-            id="notes"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={10}
-            placeholder="Enter your notes here..."
-          />
-        </div>
-        <DialogFooter className="bg-muted/50 px-6 py-4 rounded-b-lg">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave}>Save Notes</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 
 function VisitHistoryModal({
@@ -224,7 +165,6 @@ function RoomCard({
     onAction,
     onViewHistory,
     onCallPatient,
-    onAddNotes,
 }: { 
     cabin: Cabin, 
     patient: Patient | null, 
@@ -232,7 +172,6 @@ function RoomCard({
     onAction: (patientId: string, cabinId: string, action: 'no-show') => void,
     onViewHistory: (patient: Patient) => void,
     onCallPatient: (patient: Patient) => void,
-    onAddNotes: (patient: Patient) => void,
 }) {
     const { toast } = useToast();
     const [noShowEnabled, setNoShowEnabled] = useState(false);
@@ -326,34 +265,31 @@ function RoomCard({
                             <p className="text-sm text-muted-foreground">{patient.age} / {patient.gender?.charAt(0).toUpperCase()}</p>
                         </div>
                         {patient.status === 'consulting' ? (
-                             <div className="grid grid-cols-2 gap-2 w-full">
-                                <Button size="xs" variant="outline" disabled className="col-span-2">
+                             <div className="grid grid-cols-1 gap-2 w-full">
+                                <Button size="xs" variant="outline" disabled>
                                     <Square className="mr-2 h-4 w-4"/> Consulting
-                                </Button>
-                                <Button size="xs" variant="outline" onClick={() => onAddNotes(patient!)}>
-                                    <FileText className="mr-2 h-4 w-4"/> Notes
                                 </Button>
                                 <Button size="xs" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onViewHistory(patient)}>
                                     <History className="mr-2 h-4 w-4"/> History
                                 </Button>
                             </div>
                         ) : ( // 'calling' status
-                             <div className="grid grid-cols-2 gap-2 w-full">
+                            <div className="grid grid-cols-2 gap-2 w-full">
                                 <Button size="xs" variant="outline" disabled>
-                                    <Play className="mr-2 h-3 w-3"/> Waiting
+                                    Waiting
                                 </Button>
                                 <Button size="xs" variant="outline" disabled={!noShowEnabled} onClick={() => onAction(patient!.id, cabin.id, 'no-show')} className={cn('text-xs', noShowEnabled && 'text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive')}>
                                     { !noShowEnabled ? (
-                                        <span className="text-xs font-mono w-full text-center">No Show ({timer}s)</span>
+                                        <span className="text-xs font-mono w-full text-center">No Show</span>
                                     ) : (
-                                        <><UserX className="mr-2 h-3 w-3"/> No Show</>
+                                        "No Show"
                                     )}
                                 </Button>
                                 <Button size="xs" className="bg-yellow-500 hover:bg-yellow-600 text-black" onClick={() => onCallPatient(patient)}>
-                                    <PhoneCall className="mr-2 h-3 w-3"/> Re-Call
-                                </Button>
+                                    Re-Call
+                                 </Button>
                                  <Button size="xs" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onViewHistory(patient)}>
-                                    <History className="mr-2 h-3 w-3"/> History
+                                     History
                                  </Button>
                             </div>
                         )}
@@ -414,7 +350,6 @@ function AssistantConsultationDashboard({
     const [selectedGroupId, setSelectedGroupId] = useState<string>(groups[0]?.id);
     const { toast } = useToast();
     const [historyPatient, setHistoryPatient] = useState<Patient | null>(null);
-    const [notesPatient, setNotesPatient] = useState<Patient | null>(null);
 
     const [refetchIndex, setRefetchIndex] = useState(0);
     const refetchPatients = useCallback(() => setRefetchIndex(p => p + 1), []);
@@ -493,10 +428,6 @@ function AssistantConsultationDashboard({
         toast({ title: `Calling ${patient.name}`, description: `Re-announcing token ${patient.tokenNumber}.` });
     }
 
-    const handleAddNotes = (patient: Patient) => {
-        setNotesPatient(patient);
-    };
-
     const onViewHistory = (patient: Patient) => {
         setHistoryPatient(patient);
     }
@@ -564,19 +495,14 @@ function AssistantConsultationDashboard({
                         onAction={handleRoomAction}
                         onCallPatient={handleCallPatient}
                         onViewHistory={onViewHistory}
-                        onAddNotes={handleAddNotes}
                     />
                 )
             })}
         </div>
         <VisitHistoryModal isOpen={!!historyPatient} onClose={() => setHistoryPatient(null)} patient={historyPatient} />
-        <AddNotesModal 
-            isOpen={!!notesPatient}
-            onClose={() => setNotesPatient(null)}
-            patient={notesPatient}
-        />
         </div>
     );
 }
 
     
+
