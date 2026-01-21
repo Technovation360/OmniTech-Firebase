@@ -29,6 +29,7 @@ import {
   Stethoscope,
   FileText,
   Archive,
+  Folder,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -73,6 +74,7 @@ function AdminSidebar() {
   const advertisersManagementItems = [
       { href: `${basePath}/advertisers`, icon: Megaphone, label: 'Advertisers', active: pathname === `${basePath}/advertisers` },
       { href: `${basePath}/campaigns`, icon: Film, label: 'Campaigns', active: pathname === `${basePath}/campaigns` },
+      { href: `${basePath}/clinic-groups`, icon: Folder, label: 'Clinic Groups', active: pathname === `${basePath}/clinic-groups` },
   ];
   
   const advertiserNavItems = [

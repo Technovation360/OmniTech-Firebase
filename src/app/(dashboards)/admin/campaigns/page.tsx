@@ -35,7 +35,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Edit, Trash2, ArrowUp, ArrowDown, Search, Loader, PlusCircle } from 'lucide-react';
-import type { Campaign, Advertisement, Group, User } from '@/lib/types';
+import type { Campaign, Advertisement, AdvertiserClinicGroup, User } from '@/lib/types';
 import { collection, doc, query, where, getDocs, getDoc } from 'firebase/firestore';
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
@@ -48,20 +48,20 @@ function CampaignForm({
   campaign,
   onConfirm,
   advertisements,
-  groups,
+  clinicGroups,
 }: {
   isOpen: boolean;
   onClose: () => void;
   campaign: Campaign | null;
   onConfirm: (formData: Omit<Campaign, 'id'>) => void;
   advertisements: Advertisement[];
-  groups: Group[];
+  clinicGroups: AdvertiserClinicGroup[];
 }) {
   const isEditMode = !!campaign;
   const [formData, setFormData] = useState({
     name: '',
     advertisementIds: [] as string[],
-    groupIds: [] as string[],
+    clinicGroupIds: [] as string[],
   });
 
   useEffect(() => {
@@ -69,10 +69,10 @@ function CampaignForm({
       setFormData({
         name: campaign.name,
         advertisementIds: campaign.advertisementIds || [],
-        groupIds: campaign.groupIds || [],
+        clinicGroupIds: campaign.clinicGroupIds || [],
       });
     } else {
-      setFormData({ name: '', advertisementIds: [], groupIds: [] });
+      setFormData({ name: '', advertisementIds: [], clinicGroupIds: [] });
     }
   }, [campaign]);
 
@@ -104,12 +104,12 @@ function CampaignForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="groups">Groups</Label>
+            <Label htmlFor="groups">Clinic Groups</Label>
             <MultiSelect
-              options={groups.map(group => ({ value: group.id, label: group.name }))}
-              selected={formData.groupIds}
-              onChange={(selected) => setFormData({ ...formData, groupIds: selected })}
-              placeholder="Select groups..."
+              options={clinicGroups.map(group => ({ value: group.id, label: group.name }))}
+              selected={formData.clinicGroupIds}
+              onChange={(selected) => setFormData({ ...formData, clinicGroupIds: selected })}
+              placeholder="Select clinic groups..."
             />
           </div>
         </div>
@@ -162,7 +162,19 @@ export default function CampaignsPage() {
 
   const { data: campaigns, isLoading: campaignsLoading } = useCollection<Campaign>(campaignsQuery);
   const { data: advertisements, isLoading: adsLoading } = useCollection<Advertisement>(useMemoFirebase(() => collection(firestore, 'advertisements'), [firestore]));
-  const { data: groups, isLoading: groupsLoading } = useCollection<Group>(useMemoFirebase(() => collection(firestore, 'groups'), [firestore]));
+  
+  const clinicGroupsQuery = useMemoFirebase(() => {
+    if (!currentUserData) return null;
+    if (currentUserData.role === 'central-admin') {
+      return collection(firestore, 'advertiser_clinic_groups');
+    }
+    if (currentUserData.role === 'advertiser' && advertiserId) {
+      return query(collection(firestore, 'advertiser_clinic_groups'), where('advertiserId', '==', advertiserId));
+    }
+    return null;
+  }, [firestore, currentUserData, advertiserId]);
+  const { data: clinicGroups, isLoading: groupsLoading } = useCollection<AdvertiserClinicGroup>(clinicGroupsQuery);
+
 
   const [filteredCampaigns, setFilteredCampaigns] = useState<Campaign[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -232,7 +244,7 @@ export default function CampaignsPage() {
               <TableRow>
                 <TableHead>Campaign Name</TableHead>
                 <TableHead># Advertisements</TableHead>
-                <TableHead># Groups</TableHead>
+                <TableHead># Clinic Groups</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -254,7 +266,7 @@ export default function CampaignsPage() {
                   <TableRow key={campaign.id}>
                     <TableCell className="font-medium">{campaign.name}</TableCell>
                     <TableCell>{campaign.advertisementIds?.length || 0}</TableCell>
-                    <TableCell>{campaign.groupIds?.length || 0}</TableCell>
+                    <TableCell>{campaign.clinicGroupIds?.length || 0}</TableCell>
                     <TableCell className="flex gap-2">
                       <Button variant="ghost" size="icon-xs" onClick={() => { setCampaignToEdit(campaign); setIsModalOpen(true); }}>
                         <Edit className="h-4 w-4" />
@@ -277,7 +289,7 @@ export default function CampaignsPage() {
         campaign={campaignToEdit}
         onConfirm={handleFormConfirm}
         advertisements={advertisements || []}
-        groups={groups || []}
+        clinicGroups={clinicGroups || []}
       />
       
       <AlertDialog open={!!campaignToDelete} onOpenChange={() => setCampaignToDelete(null)}>
@@ -297,3 +309,5 @@ export default function CampaignsPage() {
     </div>
   );
 }
+
+    

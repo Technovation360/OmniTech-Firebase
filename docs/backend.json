@@ -294,6 +294,19 @@
         "endDate"
       ]
     },
+    "AdvertiserClinicGroup": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AdvertiserClinicGroup",
+      "type": "object",
+      "description": "Represents a group of clinics that an advertiser can target in a campaign.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the advertiser clinic group." },
+        "name": { "type": "string", "description": "Name of the clinic group." },
+        "advertiserId": { "type": "string", "description": "ID of the advertiser this group belongs to." },
+        "clinicIds": { "type": "array", "items": { "type": "string" }, "description": "List of clinic IDs in this group." }
+      },
+      "required": ["id", "name", "advertiserId", "clinicIds"]
+    },
     "Campaign": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Campaign",
@@ -319,9 +332,9 @@
             "type": "string"
           }
         },
-        "groupIds": {
+        "clinicGroupIds": {
           "type": "array",
-          "description": "References to Groups. (Relationship: Campaign N:N Group)",
+          "description": "References to AdvertiserClinicGroups. (Relationship: Campaign N:N AdvertiserClinicGroup)",
           "items": {
             "type": "string"
           }
@@ -331,7 +344,7 @@
         "id",
         "name",
         "advertisementIds",
-        "groupIds"
+        "clinicGroupIds"
       ]
     },
     "Impression": {
@@ -654,6 +667,22 @@
         }
       },
       {
+        "path": "/advertiser_clinic_groups/{groupId}",
+        "definition": {
+          "entityName": "AdvertiserClinicGroup",
+          "schema": {
+            "$ref": "#/backend/entities/AdvertiserClinicGroup"
+          },
+          "description": "Stores groups of clinics created by advertisers for targeting campaigns.",
+          "params": [
+            {
+              "name": "groupId",
+              "description": "The unique ID of the advertiser clinic group."
+            }
+          ]
+        }
+      },
+      {
         "path": "/impressions/{impressionId}",
         "definition": {
           "entityName": "Impression",
@@ -721,3 +750,4 @@
     "reasoning": "The Firestore structure is designed to ensure security, scalability, and ease of debugging, following the principles of Authorization Independence, Clarity of Intent, DBAC (Database-Based Access Control), and QAPs (Rules are not Filters). Authorization Independence is achieved through denormalization, where necessary authorization data is duplicated within documents to avoid relying on `get()` calls in security rules. Structural Segregation ensures that each collection has a homogeneous security posture.\n\nThe structure uses path-based ownership for user-related data (e.g., `/users/{userId}/...`) and membership maps for collaborative data. Global roles are managed through dedicated collections (e.g., `/roles_admin/{uid}`).  The design incorporates explicit state modeling using a `status` field and enforces radical consistency with semantic naming conventions.\n\nTo support the core features, the following approach is considered:\n\n*   **QR Code Patient Registration & Token Generation:** Patients are registered under a specific `Clinic` after scanning a QR code. A `Token` is generated and linked to the patient and group. The group ID is denormalized into the `Token` document to allow filtering by screens.\n*   **Queue Display & Doctor Call Notification:** The queue display uses a combination of patients and group information. The `groupId` on the `Patient` and `Token` records are used to filter displayed tokens per each `Screen`.\n*   **Consultation Management:** Consultations are linked to doctors and patients. AI summaries are stored in the consultation document.\n*   **Assistant Token Creation:** Assistants can create tokens under a specific group on behalf of patients.\n*   **Clinic Group Management:** Groups are created to represent screens, cabins, doctors, and assistants.  These groups and its id are crucial for queue management and display.\n*   **Advertising Management:** Advertisements are managed through an admin portal and associated with campaigns and groups. Impressions are tracked to measure advertisement performance.\n\nThis design supports the required QAPs by using structural segregation and membership models, ensuring that list operations can be securely performed based on user roles and group memberships."
   }
 }
+    

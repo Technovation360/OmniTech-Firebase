@@ -128,16 +128,24 @@ export type User = {
     specialty?: string;
 };
 
+export type AdvertiserClinicGroup = {
+  id: string;
+  name: string;
+  advertiserId: string;
+  clinicIds: string[];
+};
+
 export type Campaign = {
   id: string;
   name: string;
   advertiserId?: string;
   advertisementIds: string[];
-  groupIds: string[];
+  clinicGroupIds: string[];
 };
 
 export type Category = {
   id: string;
   name: string;
 };
+
     

@@ -112,6 +112,11 @@ service cloud.firestore {
       allow update: if (isAdmin() && isExistingDoc()) || isAdmin();
       allow delete: if (isAdmin() && isExistingDoc()) || isAdmin();
     }
+    
+    match /advertiser_clinic_groups/{groupId} {
+      allow read: if isSignedIn() && (isAdmin() || isAdvertiser());
+      allow create, update, delete: if isAdmin();
+    }
 
     match /impressions/{impressionId} {
       allow get, list: if isAdmin();
