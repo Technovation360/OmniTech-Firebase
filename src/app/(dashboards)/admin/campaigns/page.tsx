@@ -36,7 +36,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Edit, Trash2, ArrowUp, ArrowDown, Search, Loader, PlusCircle } from 'lucide-react';
 import type { Campaign, Advertisement, Group, User } from '@/lib/types';
-import { collection, doc, query, where, getDoc } from 'firebase/firestore';
+import { collection, doc, query, where, getDocs, getDoc } from 'firebase/firestore';
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { MultiSelect } from '@/components/ui/multi-select';
@@ -138,7 +138,7 @@ export default function CampaignsPage() {
           setCurrentUserData(userData);
           if (userData.role === 'advertiser' && userData.affiliation) {
             const advQuery = query(collection(firestore, 'advertisers'), where('name', '==', userData.affiliation));
-            getDoc(advQuery as any).then((advSnap: any) => {
+            getDocs(advQuery).then((advSnap) => {
               if (!advSnap.empty) {
                 setAdvertiserId(advSnap.docs[0].id);
               }
