@@ -447,35 +447,30 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="space-y-6">
-       <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-             <div className="space-y-1 w-full sm:w-auto">
-              <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">PATIENT SEARCH</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="search"
-                  placeholder="Name, Phone, Email..."
-                  className="pl-9 h-10 w-full sm:w-64"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="flex items-center gap-4 w-full sm:w-auto self-end">
-                <Button onClick={() => setCheckInModalOpen(true)} className="h-10 w-full sm:w-auto">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    MANUAL CHECK-IN
-                </Button>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-      
       <Card>
         <CardHeader>
-            <CardTitle className="text-lg">Patients Register</CardTitle>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+             <CardTitle className="text-lg">Patients Register</CardTitle>
+            <div className="flex items-end gap-4">
+              <div className="space-y-1 w-full sm:w-auto">
+                  <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">PATIENT SEARCH</Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="search"
+                      placeholder="Name, Phone, Email..."
+                      className="pl-9 h-10 w-full sm:w-64"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+              </div>
+              <Button onClick={() => setCheckInModalOpen(true)} className="h-10">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  MANUAL CHECK-IN
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -603,5 +598,3 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
     </div>
   );
 }
-
-    
