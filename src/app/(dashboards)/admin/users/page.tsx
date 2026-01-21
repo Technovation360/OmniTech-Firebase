@@ -87,13 +87,15 @@ function UserForm({
   onClose,
   user,
   onConfirm,
-  clinics
+  clinics,
+  advertisers,
 }: {
   isOpen: boolean;
   onClose: () => void;
   user: User | null;
   onConfirm: (formData: Omit<User, 'id' | 'uid'> & {password?: string}, authUserId?: string) => void;
   clinics: Clinic[];
+  advertisers: {id: string, name: string}[];
 }) {
   const { toast } = useToast();
   const isEditMode = !!user;
@@ -179,9 +181,14 @@ function UserForm({
                       <SelectValue placeholder="Select Affiliation..."/>
                   </SelectTrigger>
                   <SelectContent>
-                      {clinics.map(clinic => (
+                    {formData.role === 'advertiser'
+                      ? advertisers.map(advertiser => (
+                          <SelectItem key={advertiser.id} value={advertiser.name} className="text-[11px]">{advertiser.name}</SelectItem>
+                      ))
+                      : clinics.map(clinic => (
                           <SelectItem key={clinic.id} value={clinic.name} className="text-[11px]">{clinic.name}</SelectItem>
-                      ))}
+                      ))
+                    }
                   </SelectContent>
                 </Select>
               </div>
@@ -364,6 +371,12 @@ export default function UsersPage() {
     return collection(firestore, 'clinics');
   }, [firestore, authUser]);
   const { data: clinicsData, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
+
+  const advertisersQuery = useMemoFirebase(() => {
+    if (!authUser) return null;
+    return collection(firestore, 'advertisers');
+  }, [firestore, authUser]);
+  const { data: advertisersData, isLoading: advertisersLoading } = useCollection<{id: string, name: string}>(advertisersQuery);
   
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -375,6 +388,7 @@ export default function UsersPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const clinics = clinicsData || [];
+  const advertisers = advertisersData || [];
 
   const getRoleName = (role: UserRole) => {
     return availableRoles.find(r => r.value === role)?.label || 'Unknown';
@@ -520,7 +534,7 @@ export default function UsersPage() {
     return <ArrowDown className="ml-2 h-3 w-3" />;
   };
 
-  const isLoading = isUserLoading || usersLoading || clinicsLoading;
+  const isLoading = isUserLoading || usersLoading || clinicsLoading || advertisersLoading;
 
   if (!authUser) {
      return (
@@ -635,6 +649,7 @@ export default function UsersPage() {
         user={userToEdit}
         onConfirm={handleFormConfirm}
         clinics={clinics}
+        advertisers={advertisers}
     />
     <PasswordResetForm 
       isOpen={isPasswordModalOpen}

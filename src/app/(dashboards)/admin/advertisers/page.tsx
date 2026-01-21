@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect } from 'react';
 import {
@@ -18,7 +17,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2, ArrowUp, ArrowDown, Search } from 'lucide-react';
+import { Edit, Trash2, ArrowUp, ArrowDown, Search, Loader } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -38,7 +37,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { getAdvertisements } from '@/lib/data';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
+import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 type Advertiser = {
   id: string;
@@ -129,7 +130,10 @@ function DeleteAdvertiserDialog({
   }
 
 export default function AdvertisersPage() {
-  const [allAdvertisers, setAllAdvertisers] = useState<Advertiser[]>([]);
+  const firestore = useFirestore();
+  const advertisersQuery = useMemoFirebase(() => collection(firestore, 'advertisers'), [firestore]);
+  const { data: allAdvertisers, isLoading } = useCollection<Advertiser>(advertisersQuery);
+
   const [filteredAdvertisers, setFilteredAdvertisers] = useState<Advertiser[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [advertiserToEdit, setAdvertiserToEdit] = useState<Advertiser | null>(null);
@@ -138,10 +142,11 @@ export default function AdvertisersPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    let filteredData = allAdvertisers;
+    let sourceData = allAdvertisers || [];
+    let filteredData = [...sourceData];
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
-        filteredData = allAdvertisers.filter(advertiser =>
+        filteredData = filteredData.filter(advertiser =>
             advertiser.name.toLowerCase().includes(lowercasedQuery)
         );
     }
@@ -186,22 +191,21 @@ export default function AdvertisersPage() {
 
   const handleDeleteConfirm = () => {
     if (advertiserToDelete) {
-      setAllAdvertisers(allAdvertisers.filter(s => s.id !== advertiserToDelete.id));
+      deleteDocumentNonBlocking(doc(firestore, 'advertisers', advertiserToDelete.id));
       closeDeleteDialog();
     }
   }
 
   const handleFormConfirm = (formData: Omit<Advertiser, 'id' | 'campaigns' | 'status'>) => {
     if (advertiserToEdit) {
-        setAllAdvertisers(allAdvertisers.map(s => s.id === advertiserToEdit.id ? { ...advertiserToEdit, ...formData } : s));
+        setDocumentNonBlocking(doc(firestore, 'advertisers', advertiserToEdit.id), formData, { merge: true });
     } else {
-        const newAdvertiser: Advertiser = {
+        const newAdvertiser: Omit<Advertiser, 'id'> = {
             ...formData,
-            id: `adv_${Date.now()}`,
             campaigns: 0,
             status: 'inactive'
         };
-        setAllAdvertisers([newAdvertiser, ...allAdvertisers]);
+        addDocumentNonBlocking(collection(firestore, 'advertisers'), newAdvertiser);
     }
     closeModal();
   };
@@ -267,7 +271,14 @@ export default function AdvertisersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAdvertisers.map((advertiser) => (
+              {isLoading && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-10">
+                    <Loader className="mx-auto h-6 w-6 animate-spin" />
+                  </TableCell>
+                </TableRow>
+              )}
+              {!isLoading && filteredAdvertisers.map((advertiser) => (
                 <TableRow key={advertiser.id}>
                   <TableCell className="font-medium py-2 text-xs">{advertiser.name}</TableCell>
                   <TableCell className="py-2 text-xs text-center">{advertiser.campaigns}</TableCell>
@@ -286,6 +297,11 @@ export default function AdvertisersPage() {
                   </TableCell>
                 </TableRow>
               ))}
+               {!isLoading && filteredAdvertisers.length === 0 && (
+                 <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground py-4">No advertisers found.</TableCell>
+                 </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
