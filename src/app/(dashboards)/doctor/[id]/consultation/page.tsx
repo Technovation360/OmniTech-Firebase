@@ -30,6 +30,7 @@ import {
   LogOut,
   CheckCircle,
   Stethoscope,
+  PlusCircle,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { handlePatientAction } from '@/lib/actions';
