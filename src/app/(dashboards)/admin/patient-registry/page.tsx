@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
@@ -528,7 +527,7 @@ export default function PatientRegistryPage() {
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-             <CardTitle>All Patients</CardTitle>
+             
             <div className="flex items-center gap-4">
                 <div className="space-y-1 w-full sm:w-auto">
                   <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">PATIENT SEARCH</Label>
