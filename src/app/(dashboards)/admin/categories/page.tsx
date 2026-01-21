@@ -26,7 +26,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,10 +42,10 @@ import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocki
 import type { Category } from '@/lib/types';
 
 const seedCategories = [
-    { name: 'General', forClinic: true, forDoctor: true },
-    { name: 'Dental', forClinic: true, forDoctor: true },
-    { name: 'Skin', forClinic: true, forDoctor: true },
-    { name: 'Eye', forClinic: false, forDoctor: true },
+    { name: 'General' },
+    { name: 'Dental' },
+    { name: 'Skin' },
+    { name: 'Eye' },
 ]
 
 function CategoryForm({
@@ -63,19 +62,15 @@ function CategoryForm({
   const isEditMode = !!category;
   const [formData, setFormData] = useState({
       name: '',
-      forClinic: true,
-      forDoctor: true,
   });
 
   useEffect(() => {
       if (category) {
           setFormData({
               name: category.name,
-              forClinic: category.forClinic,
-              forDoctor: category.forDoctor,
           });
       } else {
-          setFormData({ name: '', forClinic: true, forDoctor: true });
+          setFormData({ name: '' });
       }
   }, [category]);
 
@@ -98,16 +93,6 @@ function CategoryForm({
             <div className="space-y-1">
                 <Label htmlFor="categoryName" className="text-[10px] font-semibold text-gray-600">CATEGORY NAME</Label>
                 <Input id="categoryName" className="h-7 text-[11px]" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
-            </div>
-            <div className="mt-4 flex gap-4">
-                <div className="flex items-center gap-2">
-                    <Checkbox id="forClinic" checked={formData.forClinic} onCheckedChange={(checked) => setFormData({...formData, forClinic: !!checked})} />
-                    <Label htmlFor="forClinic" className="text-xs font-normal">For Clinic</Label>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Checkbox id="forDoctor" checked={formData.forDoctor} onCheckedChange={(checked) => setFormData({...formData, forDoctor: !!checked})} />
-                    <Label htmlFor="forDoctor" className="text-xs font-normal">For Doctors</Label>
-                </div>
             </div>
         </div>
         <DialogFooter className="bg-gray-50 px-4 py-2 flex justify-end gap-2 rounded-b-lg">
@@ -298,22 +283,14 @@ export default function CategoriesPage() {
                     {getSortIcon('name')}
                   </Button>
                 </TableHead>
-                <TableHead className="text-xs">For Clinic</TableHead>
-                <TableHead className="text-xs">For Doctors</TableHead>
                 <TableHead className="text-xs">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={4} className="text-center"><Loader className="animate-spin mx-auto" /></TableCell></TableRow>}
+              {isLoading && <TableRow><TableCell colSpan={2} className="text-center"><Loader className="animate-spin mx-auto" /></TableCell></TableRow>}
               {!isLoading && filteredCategories && filteredCategories.map((category) => (
                 <TableRow key={category.id}>
                   <TableCell className="font-medium py-2 text-xs">{category.name}</TableCell>
-                  <TableCell className="py-2 text-xs">
-                    <Checkbox checked={category.forClinic} disabled />
-                  </TableCell>
-                  <TableCell className="py-2 text-xs">
-                    <Checkbox checked={category.forDoctor} disabled />
-                  </TableCell>
                   <TableCell className="flex gap-2 py-2">
                     <Button variant="ghost" size="icon-xs" onClick={() => openEditModal(category)}>
                       <Edit className="h-3 w-3" />
@@ -326,7 +303,7 @@ export default function CategoriesPage() {
               ))}
               {!isLoading && (!filteredCategories || filteredCategories.length === 0) && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">No categories found.</TableCell>
+                  <TableCell colSpan={2} className="text-center text-muted-foreground">No categories found.</TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -348,5 +325,3 @@ export default function CategoriesPage() {
     </>
   );
 }
-
-    
