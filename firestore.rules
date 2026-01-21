@@ -47,6 +47,11 @@ service cloud.firestore {
       allow get, list: if isSignedIn() || isAdmin();
       allow create, update, delete: if isAdmin();
     }
+    
+    match /categories/{categoryId} {
+      allow get, list: if isSignedIn() || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
 
     match /clinics/{clinicId} {
       allow get: if isSignedIn() || isClinicAdmin() || isAdmin();
@@ -116,3 +121,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

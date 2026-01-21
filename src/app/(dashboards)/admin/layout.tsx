@@ -28,6 +28,7 @@ import {
   ChevronLeft,
   Stethoscope,
   FileText,
+  Archive,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -66,6 +67,7 @@ function AdminSidebar() {
     { href: `${basePath}/patient-registry`, icon: ClipboardList, label: 'Patient Registry', active: pathname === `${basePath}/patient-registry` },
     { href: `${basePath}/clinics`, icon: Building, label: 'Clinics', active: pathname === `${basePath}/clinics` },
     { href: `${basePath}/specialties`, icon: Sparkles, label: 'Specialties', active: pathname === `${basePath}/specialties` },
+    { href: `${basePath}/categories`, icon: Archive, label: 'Categories', active: pathname === `${basePath}/categories` },
   ];
 
   const advertisersManagementItems = [
@@ -186,3 +188,5 @@ export default function AdminLayout({
     </SidebarProvider>
   );
 }
+
+    

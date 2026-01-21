@@ -136,4 +136,13 @@ export type Campaign = {
   advertisementIds: string[];
   groupIds: string[];
 };
+
+export type Category = {
+  id: string;
+  name: string;
+  forClinic: boolean;
+  forDoctor: boolean;
+};
+    
+
     
