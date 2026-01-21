@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use, useMemo, useActionState, useCallback } from 'react';
+import { useState, useEffect, use, useMemo, useCallback } from 'react';
 import type { Patient, Group, User, PatientHistoryEntry, Consultation, Cabin, PatientTransaction, PatientMaster, EnrichedPatient } from '@/lib/types';
 import {
   Card,
@@ -29,11 +29,10 @@ import {
   FileText,
   LogOut,
   CheckCircle,
-  PlusCircle,
   Stethoscope,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { handlePatientAction, registerPatient } from '@/lib/actions';
+import { handlePatientAction } from '@/lib/actions';
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc, query, where, Timestamp, documentId, setDoc } from 'firebase/firestore';
 import { getPatientHistory } from '@/lib/data';
@@ -47,16 +46,7 @@ import {
 } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -126,155 +116,6 @@ function AddNotesModal({
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSave}>Save Notes</Button>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-
-function ManualCheckInModal({
-  isOpen,
-  onClose,
-  groups,
-  onPatientRegistered,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  groups: Group[];
-  onPatientRegistered: () => void;
-}) {
-  const [state, formAction] = useActionState(registerPatient, null);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    if (state?.success && state.tokenNumber) {
-      toast({
-        title: 'Patient Registered',
-        description: `Token number ${state.tokenNumber} has been assigned.`,
-      });
-      onPatientRegistered();
-      onClose();
-    } else if (state?.message && !state.success) {
-      toast({
-        variant: 'destructive',
-        title: 'Registration Failed',
-        description: state.message,
-      });
-    }
-  }, [state, toast, onClose, onPatientRegistered]);
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg p-0">
-        <DialogHeader className="p-6 pb-4">
-          <DialogTitle>Manual Patient Check-in</DialogTitle>
-          <CardDescription>
-            Fill in the details to add a patient to the queue.
-          </CardDescription>
-        </DialogHeader>
-        <form action={formAction}>
-          <div className="px-6 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="groupId">Clinic Group</Label>
-              <Select name="groupId" required>
-                <SelectTrigger className="h-7">
-                  <SelectValue placeholder="Select a Group" />
-                </SelectTrigger>
-                <SelectContent>
-                  {groups.map((group) => (
-                    <SelectItem key={group.id} value={group.id}>
-                      {group.name} ({group.doctors.map(d => `Dr. ${d.name}`).join(', ')})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {state?.errors?.groupId && (
-                <p className="text-sm text-destructive">
-                  {state.errors.groupId[0]}
-                </p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Patient Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  placeholder="e.g., John Doe"
-                  required
-                  className="h-7"
-                />
-                {state?.errors?.name && (
-                  <p className="text-sm text-destructive">
-                    {state.errors.name[0]}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="age">Age</Label>
-                <Input
-                  id="age"
-                  name="age"
-                  type="number"
-                  placeholder="e.g., 42"
-                  required
-                  className="h-7"
-                />
-                {state?.errors?.age && (
-                  <p className="text-sm text-destructive">
-                    {state.errors.age[0]}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label htmlFor="contactNumber">Phone Number</Label>
-                    <Input id="contactNumber" name="contactNumber" placeholder="e.g., 9876543210" required className="h-7" />
-                    {state?.errors?.contactNumber && <p className="text-sm text-destructive">{state.errors.contactNumber[0]}</p>}
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="emailAddress">Email</Label>
-                    <Input id="emailAddress" name="emailAddress" type="email" placeholder="Optional" className="h-7" />
-                    {state?.errors?.emailAddress && <p className="text-sm text-destructive">{state.errors.emailAddress[0]}</p>}
-                </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Gender</Label>
-              <RadioGroup
-                name="gender"
-                defaultValue="male"
-                className="flex gap-4"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="male" id="male" />
-                  <Label htmlFor="male">Male</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="female" id="female" />
-                  <Label htmlFor="female">Female</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="other" id="other" />
-                  <Label htmlFor="other">Other</Label>
-                </div>
-              </RadioGroup>
-              {state?.errors?.gender && (
-                <p className="text-sm text-destructive">
-                  {state.errors.gender[0]}
-                </p>
-              )}
-            </div>
-          </div>
-          <DialogFooter className="bg-muted/50 px-6 py-4 mt-6 rounded-b-lg">
-            <Button variant="outline" type="button" onClick={onClose}>Cancel</Button>
-            <Button type="submit">Register Patient</Button>
-          </DialogFooter>
-        </form>
       </DialogContent>
     </Dialog>
   );
@@ -635,7 +476,6 @@ function DoctorConsultationDashboard({
     const [selectedGroupId, setSelectedGroupId] = useState<string>(groups[0]?.id);
     const { toast } = useToast();
     const [historyPatient, setHistoryPatient] = useState<Patient | null>(null);
-    const [isCheckInModalOpen, setCheckInModalOpen] = useState(false);
     const [notesPatient, setNotesPatient] = useState<Patient | null>(null);
 
     const [refetchIndex, setRefetchIndex] = useState(0);
@@ -680,10 +520,6 @@ function DoctorConsultationDashboard({
         return query(collection(firestore, 'cabins'), where('__name__', 'in', cabinIds));
     }, [firestore, cabinIds]);
     const { data: liveCabins, isLoading: cabinsLoading } = useCollection<Cabin>(cabinsQuery);
-
-
-    const closeCheckInModal = useCallback(() => setCheckInModalOpen(false), []);
-    const onPatientRegistered = useCallback(() => { refetchPatients(); }, [refetchPatients]);
 
 
     const handleAssignDoctorToRoom = (cabinId: string) => {
@@ -806,10 +642,6 @@ function DoctorConsultationDashboard({
                         <Badge variant="outline" className="text-base font-bold border-primary text-primary">{nextToken}</Badge>
                     </div>
                 )}
-                <Button onClick={() => setCheckInModalOpen(true)}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Manual Register
-                </Button>
             </div>
         </div>
 
@@ -844,12 +676,6 @@ function DoctorConsultationDashboard({
             isOpen={!!notesPatient}
             onClose={() => setNotesPatient(null)}
             patient={notesPatient}
-        />
-        <ManualCheckInModal 
-            isOpen={isCheckInModalOpen}
-            onClose={closeCheckInModal}
-            groups={groups}
-            onPatientRegistered={onPatientRegistered}
         />
         </div>
     );
