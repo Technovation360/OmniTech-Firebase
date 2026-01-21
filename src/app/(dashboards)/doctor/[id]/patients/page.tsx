@@ -1,3 +1,4 @@
+
 'use client';
 
 import { use, useState, useEffect, useMemo, useActionState, useCallback } from 'react';
@@ -497,21 +498,22 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
     return <ArrowDown className="ml-2 h-3 w-3" />;
   };
 
-  const openHistoryModal = (patient: Patient) => {
+  const openHistoryModal = useCallback((patient: Patient) => {
     setSelectedPatient(patient);
-  };
+  }, []);
   
-  const openTokenModal = (patient: EnrichedPatient) => {
+  const openTokenModal = useCallback((patient: EnrichedPatient) => {
     setPatientForToken(patient);
     setTokenModalOpen(true);
-  };
+  }, []);
 
-  const closeHistoryModal = () => {
+  const closeHistoryModal = useCallback(() => {
     setSelectedPatient(null);
-  };
+  }, []);
   
   const closeTokenModal = useCallback(() => {
     setTokenModalOpen(false);
+    setPatientForToken(null);
   }, []);
 
   const onTokenGenerated = useCallback(() => {
@@ -533,8 +535,8 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
       <h1 className="text-3xl font-bold mb-6">Patients Register</h1>
       <Card>
         <CardHeader className="p-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-end gap-4">
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -544,7 +546,7 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <Button onClick={() => setCheckInModalOpen(true)} className="h-10">
+              <Button onClick={() => setCheckInModalOpen(true)}>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Manual Register
               </Button>
@@ -684,3 +686,4 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
     </>
   );
 }
+
