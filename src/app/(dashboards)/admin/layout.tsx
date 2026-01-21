@@ -27,20 +27,39 @@ import {
   Sparkles,
   ChevronLeft,
   Stethoscope,
+  FileText,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import React from 'react';
-import { useAuth, useUser } from '@/firebase';
+import React, { useState, useEffect } from 'react';
+import { useAuth, useUser, useFirestore } from '@/firebase';
 import { signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import type { User } from '@/lib/types';
 
 function AdminSidebar() {
   const pathname = usePathname();
   const basePath = '/admin';
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const [currentUserData, setCurrentUserData] = useState<User | null>(null);
 
-  const menuItems = [
+  useEffect(() => {
+    if (user) {
+      const userDocRef = doc(firestore, 'users', user.uid);
+      getDoc(userDocRef).then(docSnap => {
+        if (docSnap.exists()) {
+          setCurrentUserData(docSnap.data() as User);
+        }
+      });
+    }
+  }, [user, firestore]);
+
+  const userRole = currentUserData?.role;
+
+  const adminMenuItems = [
     { href: `${basePath}`, icon: LayoutDashboard, label: 'Dashboard', active: pathname === `${basePath}` },
     { href: `${basePath}/users`, icon: Users, label: 'Users', active: pathname === `${basePath}/users` },
     { href: `${basePath}/live-queue`, icon: Monitor, label: 'Live Queue', active: pathname === `${basePath}/live-queue` },
@@ -49,10 +68,27 @@ function AdminSidebar() {
     { href: `${basePath}/specialties`, icon: Sparkles, label: 'Specialties', active: pathname === `${basePath}/specialties` },
   ];
 
-  const advertisersMenuItems = [
+  const advertisersManagementItems = [
       { href: `${basePath}/advertisers`, icon: Megaphone, label: 'Advertisers', active: pathname === `${basePath}/advertisers` },
       { href: `${basePath}/campaigns`, icon: Film, label: 'Campaigns', active: pathname === `${basePath}/campaigns` },
-  ]
+  ];
+  
+  const advertiserNavItems = [
+    { href: `${basePath}`, icon: LayoutDashboard, label: 'Dashboard', active: pathname === `${basePath}` },
+    { href: `${basePath}/campaigns`, icon: Film, label: 'Campaigns', active: pathname.startsWith(`${basePath}/campaigns`) },
+    { href: `${basePath}/reports`, icon: FileText, label: 'Reports', active: pathname.startsWith(`${basePath}/reports`) },
+  ];
+  
+  let menuToRender;
+
+  if (userRole === 'advertiser') {
+    menuToRender = advertiserNavItems;
+  } else if (userRole === 'central-admin') {
+    menuToRender = [...adminMenuItems, ...advertisersManagementItems];
+  } else {
+    // Default or other roles can see a limited set, or nothing
+    menuToRender = adminMenuItems;
+  }
 
   return (
     <Sidebar>
@@ -61,17 +97,7 @@ function AdminSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
-          {menuItems.map((item) => (
-            <SidebarMenuItem key={item.label}>
-              <SidebarMenuButton asChild isActive={item.active} tooltip={item.label}>
-                <Link href={item.href}>
-                  <item.icon />
-                  {item.label}
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-          {advertisersMenuItems.map((item) => (
+          {menuToRender.map((item) => (
             <SidebarMenuItem key={item.label}>
               <SidebarMenuButton asChild isActive={item.active} tooltip={item.label}>
                 <Link href={item.href}>
