@@ -385,8 +385,8 @@ function RoomCard({
                             <p className="text-sm text-muted-foreground">{patient.age} / {patient.gender?.charAt(0).toUpperCase()}</p>
                         </div>
                         {patient.status === 'consulting' ? (
-                             <div className="grid grid-cols-1 gap-2 w-full">
-                                <Button size="xs" className="bg-red-500 hover:bg-red-600" onClick={() => onAction(patient!.id, cabin.id, 'end')}>
+                             <div className="grid grid-cols-2 gap-2 w-full">
+                                <Button size="xs" className="bg-red-500 hover:bg-red-600 col-span-2" onClick={() => onAction(patient!.id, cabin.id, 'end')}>
                                     <Square className="mr-2 h-4 w-4"/> End
                                 </Button>
                                 <Button size="xs" variant="outline" onClick={() => onAddNotes(patient!)}>
@@ -397,22 +397,22 @@ function RoomCard({
                                 </Button>
                             </div>
                         ) : ( // 'calling' status
-                             <div className="grid grid-cols-1 gap-2 w-full">
+                             <div className="grid grid-cols-2 gap-2 w-full">
                                 <Button size="xs" className="bg-primary hover:bg-primary/90" onClick={() => onAction(patient!.id, cabin.id, 'start')}>
-                                    <Play className="mr-2 h-4 w-4"/> Start
+                                    <Play className="mr-2 h-3 w-3"/> Start
                                 </Button>
-                                <Button size="xs" variant="outline" disabled={!noShowEnabled} onClick={() => onAction(patient!.id, cabin.id, 'no-show')} className={cn(noShowEnabled && 'text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive')}>
+                                <Button size="xs" variant="outline" disabled={!noShowEnabled} onClick={() => onAction(patient!.id, cabin.id, 'no-show')} className={cn('text-xs', noShowEnabled && 'text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive')}>
                                     { !noShowEnabled ? (
                                         <span className="text-xs font-mono w-full text-center">No Show ({timer}s)</span>
                                     ) : (
-                                        <><UserX className="mr-2 h-4 w-4"/> No Show</>
+                                        <><UserX className="mr-2 h-3 w-3"/> No Show</>
                                     )}
                                 </Button>
                                 <Button size="xs" className="bg-yellow-500 hover:bg-yellow-600 text-black" onClick={() => onCallPatient(patient)}>
-                                    <PhoneCall className="mr-2 h-4 w-4"/> Re-Call
+                                    <PhoneCall className="mr-2 h-3 w-3"/> Re-Call
                                  </Button>
                                  <Button size="xs" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onViewHistory(patient)}>
-                                    <History className="mr-2 h-4 w-4"/> History
+                                    <History className="mr-2 h-3 w-3"/> History
                                  </Button>
                             </div>
                         )}
@@ -682,3 +682,5 @@ function DoctorConsultationDashboard({
         </div>
     );
 }
+
+    

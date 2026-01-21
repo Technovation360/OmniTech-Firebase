@@ -326,8 +326,8 @@ function RoomCard({
                             <p className="text-sm text-muted-foreground">{patient.age} / {patient.gender?.charAt(0).toUpperCase()}</p>
                         </div>
                         {patient.status === 'consulting' ? (
-                             <div className="grid grid-cols-1 gap-2 w-full">
-                                <Button size="xs" variant="outline" disabled>
+                             <div className="grid grid-cols-2 gap-2 w-full">
+                                <Button size="xs" variant="outline" disabled className="col-span-2">
                                     <Square className="mr-2 h-4 w-4"/> Consulting
                                 </Button>
                                 <Button size="xs" variant="outline" onClick={() => onAddNotes(patient!)}>
@@ -338,22 +338,22 @@ function RoomCard({
                                 </Button>
                             </div>
                         ) : ( // 'calling' status
-                             <div className="grid grid-cols-1 gap-2 w-full">
+                             <div className="grid grid-cols-2 gap-2 w-full">
                                 <Button size="xs" variant="outline" disabled>
-                                    <Play className="mr-2 h-4 w-4"/> Waiting
+                                    <Play className="mr-2 h-3 w-3"/> Waiting
                                 </Button>
-                                <Button size="xs" variant="outline" disabled={!noShowEnabled} onClick={() => onAction(patient!.id, cabin.id, 'no-show')} className={cn(noShowEnabled && 'text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive')}>
+                                <Button size="xs" variant="outline" disabled={!noShowEnabled} onClick={() => onAction(patient!.id, cabin.id, 'no-show')} className={cn('text-xs', noShowEnabled && 'text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive')}>
                                     { !noShowEnabled ? (
                                         <span className="text-xs font-mono w-full text-center">No Show ({timer}s)</span>
                                     ) : (
-                                        <><UserX className="mr-2 h-4 w-4"/> No Show</>
+                                        <><UserX className="mr-2 h-3 w-3"/> No Show</>
                                     )}
                                 </Button>
                                 <Button size="xs" className="bg-yellow-500 hover:bg-yellow-600 text-black" onClick={() => onCallPatient(patient)}>
-                                    <PhoneCall className="mr-2 h-4 w-4"/> Re-Call
+                                    <PhoneCall className="mr-2 h-3 w-3"/> Re-Call
                                 </Button>
                                  <Button size="xs" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onViewHistory(patient)}>
-                                    <History className="mr-2 h-4 w-4"/> History
+                                    <History className="mr-2 h-3 w-3"/> History
                                  </Button>
                             </div>
                         )}
@@ -578,3 +578,5 @@ function AssistantConsultationDashboard({
         </div>
     );
 }
+
+    
