@@ -47,6 +47,7 @@ type Advertiser = {
   name: string;
   campaigns: number;
   status: 'active' | 'inactive';
+  campaignsLimit?: number;
 };
 
 function AdvertiserForm({
@@ -61,13 +62,13 @@ function AdvertiserForm({
   onConfirm: (formData: Omit<Advertiser, 'id' | 'campaigns'>) => void;
 }) {
   const isEditMode = !!advertiser;
-  const [formData, setFormData] = useState({ name: '', status: 'inactive' as 'active' | 'inactive' });
+  const [formData, setFormData] = useState({ name: '', status: 'inactive' as 'active' | 'inactive', campaignsLimit: 0 });
 
   useEffect(() => {
       if (advertiser) {
-          setFormData({ name: advertiser.name, status: advertiser.status });
+          setFormData({ name: advertiser.name, status: advertiser.status, campaignsLimit: advertiser.campaignsLimit || 0 });
       } else {
-          setFormData({ name: '', status: 'inactive' });
+          setFormData({ name: '', status: 'inactive', campaignsLimit: 0 });
       }
   }, [advertiser]);
 
@@ -90,6 +91,10 @@ function AdvertiserForm({
             <div className="space-y-1">
                 <Label htmlFor="advertiserName" className="text-[10px] font-semibold text-gray-600">ADVERTISER NAME</Label>
                 <Input id="advertiserName" className="h-7 text-[11px]" value={formData.name} onChange={(e) => setFormData(prev => ({...prev, name: e.target.value}))} />
+            </div>
+            <div className="space-y-1">
+                <Label htmlFor="campaignsLimit" className="text-[10px] font-semibold text-gray-600">CAMPAIGNS LIMIT</Label>
+                <Input id="campaignsLimit" type="number" className="h-7 text-[11px]" value={formData.campaignsLimit} onChange={(e) => setFormData(prev => ({...prev, campaignsLimit: parseInt(e.target.value, 10) || 0}))} />
             </div>
             {isEditMode && (
                 <div className="flex items-center space-x-2 pt-2">
