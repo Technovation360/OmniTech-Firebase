@@ -447,10 +447,10 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="space-y-6">
+       <h1 className="text-3xl font-bold">Patients Register</h1>
       <Card>
         <CardHeader>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-             <CardTitle className="text-lg">Patients Register</CardTitle>
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-4">
             <div className="flex items-end gap-4">
               <div className="space-y-1 w-full sm:w-auto">
                   <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">PATIENT SEARCH</Label>
