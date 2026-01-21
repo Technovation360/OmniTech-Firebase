@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, use, useMemo, useCallback } from 'react';
@@ -384,19 +385,19 @@ function RoomCard({
                             <p className="text-sm text-muted-foreground">{patient.age} / {patient.gender?.charAt(0).toUpperCase()}</p>
                         </div>
                         {patient.status === 'consulting' ? (
-                             <div className="grid grid-cols-2 gap-2 w-full">
+                             <div className="grid grid-cols-1 gap-2 w-full">
                                 <Button size="sm" className="bg-red-500 hover:bg-red-600" onClick={() => onAction(patient!.id, cabin.id, 'end')}>
                                     <Square className="mr-2 h-4 w-4"/> End
                                 </Button>
                                 <Button size="sm" variant="outline" onClick={() => onAddNotes(patient!)}>
                                     <FileText className="mr-2 h-4 w-4"/> Add Notes
                                 </Button>
-                                <Button size="sm" className="col-span-2 bg-green-600 hover:bg-green-700 text-white" onClick={() => onViewHistory(patient)}>
+                                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onViewHistory(patient)}>
                                     <History className="mr-2 h-4 w-4"/> Show History
                                 </Button>
                             </div>
                         ) : ( // 'calling' status
-                             <div className="grid grid-cols-2 gap-2 w-full">
+                             <div className="grid grid-cols-1 gap-2 w-full">
                                 <Button size="sm" className="bg-primary hover:bg-primary/90" onClick={() => onAction(patient!.id, cabin.id, 'start')}>
                                     <Play className="mr-2 h-4 w-4"/> Start
                                 </Button>
@@ -409,7 +410,7 @@ function RoomCard({
                                 </Button>
                                 <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-black" onClick={() => onCallPatient(patient)}>
                                     <PhoneCall className="mr-2 h-4 w-4"/> Call Patient
-                                </Button>
+                                 </Button>
                                  <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onViewHistory(patient)}>
                                     <History className="mr-2 h-4 w-4"/> History
                                  </Button>

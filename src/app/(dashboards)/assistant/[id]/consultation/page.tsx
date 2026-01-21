@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, use, useMemo, useCallback } from 'react';
@@ -325,19 +326,19 @@ function RoomCard({
                             <p className="text-sm text-muted-foreground">{patient.age} / {patient.gender?.charAt(0).toUpperCase()}</p>
                         </div>
                         {patient.status === 'consulting' ? (
-                             <div className="grid grid-cols-2 gap-2 w-full">
+                             <div className="grid grid-cols-1 gap-2 w-full">
                                 <Button size="sm" variant="outline" disabled>
                                     <Square className="mr-2 h-4 w-4"/> In Consultation
                                 </Button>
                                 <Button size="sm" variant="outline" onClick={() => onAddNotes(patient!)}>
                                     <FileText className="mr-2 h-4 w-4"/> Add Notes
                                 </Button>
-                                <Button size="sm" className="col-span-2 bg-green-600 hover:bg-green-700 text-white" onClick={() => onViewHistory(patient)}>
+                                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onViewHistory(patient)}>
                                     <History className="mr-2 h-4 w-4"/> Show History
                                 </Button>
                             </div>
                         ) : ( // 'calling' status
-                             <div className="grid grid-cols-2 gap-2 w-full">
+                             <div className="grid grid-cols-1 gap-2 w-full">
                                 <Button size="sm" variant="outline" disabled>
                                     <Play className="mr-2 h-4 w-4"/> Waiting for Dr
                                 </Button>
