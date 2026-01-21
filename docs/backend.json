@@ -305,6 +305,10 @@
           "type": "string",
           "description": "Unique identifier for the Campaign entity."
         },
+        "advertiserId": {
+          "type": "string",
+          "description": "ID of the advertiser who owns this campaign."
+        },
         "name": {
           "type": "string",
           "description": "Name of the campaign."

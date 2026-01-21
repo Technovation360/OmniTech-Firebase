@@ -129,4 +129,11 @@ export type User = {
     specialty?: string;
 };
 
+export type Campaign = {
+  id: string;
+  name: string;
+  advertiserId?: string;
+  advertisementIds: string[];
+  groupIds: string[];
+};
     
