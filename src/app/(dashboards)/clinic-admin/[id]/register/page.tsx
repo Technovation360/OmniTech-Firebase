@@ -1,12 +1,15 @@
 
 'use client';
-import { useState, useEffect, use, useCallback, useMemo } from 'react';
+
+import { use, useState, useEffect, useMemo, useActionState, useCallback } from 'react';
+import { getPatientHistory } from '@/lib/data';
+import type { Patient, Group, PatientHistoryEntry, User, PatientTransaction, PatientMaster, EnrichedPatient } from '@/lib/types';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from '@/components/ui/card';
 import {
   Table,
@@ -34,18 +37,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowUp, ArrowDown, Search, History, PlusCircle, Loader } from 'lucide-react';
-import { getPatientHistory } from '@/lib/data';
-import type { Patient, Group, PatientHistoryEntry, PatientTransaction, EnrichedPatient, PatientMaster } from '@/lib/types';
+import { ArrowUp, ArrowDown, Search, History, Loader, PlusCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { collection, doc, query, where, Timestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { registerPatient } from '@/lib/actions';
-import { useActionState } from 'react';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where, Timestamp, documentId } from 'firebase/firestore';
-
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const badgeColors: Record<Patient['status'], string> = {
   waiting: 'bg-blue-100 text-blue-800',
@@ -61,7 +60,6 @@ const genderBadgeColors: Record<Patient['gender'], string> = {
     'other': "bg-purple-100 text-purple-800",
 };
 
-
 function VisitHistoryModal({
   isOpen,
   onClose,
@@ -72,11 +70,11 @@ function VisitHistoryModal({
   patient: Patient | null;
 }) {
   const [history, setHistory] = useState<PatientHistoryEntry[]>([]);
-
+  
   useEffect(() => {
-    if (patient) {
+    if (patient && isOpen) {
       getPatientHistory(patient.id).then(setHistory);
-    } else {
+    } else if (!isOpen) {
       setHistory([]);
     }
   }, [patient, isOpen]);
@@ -91,7 +89,7 @@ function VisitHistoryModal({
             Visit History: {patient.name}
           </DialogTitle>
         </DialogHeader>
-        <div className="p-4">
+        <div className="p-4 max-h-[60vh] overflow-y-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -134,6 +132,13 @@ function VisitHistoryModal({
                   </TableCell>
                 </TableRow>
               ))}
+               {history.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-4">
+                        No visit history found.
+                    </TableCell>
+                </TableRow>
+               )}
             </TableBody>
           </Table>
         </div>
@@ -142,6 +147,85 @@ function VisitHistoryModal({
             DONE
           </Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function GenerateTokenModal({
+  isOpen,
+  onClose,
+  patient,
+  groups,
+  onTokenGenerated,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  patient: EnrichedPatient | null;
+  groups: Group[];
+  onTokenGenerated: () => void;
+}) {
+  const [state, formAction] = useActionState(registerPatient, null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (state?.success && state.tokenNumber) {
+      toast({
+        title: 'Token Generated',
+        description: `New token ${state.tokenNumber} generated for ${patient?.name}.`,
+      });
+      onTokenGenerated();
+      onClose();
+    } else if (state?.message && !state.success) {
+      toast({
+        variant: 'destructive',
+        title: 'Failed to generate token',
+        description: state.message,
+      });
+    }
+  }, [state, toast, onClose, onTokenGenerated, patient]);
+
+  if (!patient) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader className="p-4 pb-2">
+          <DialogTitle>Generate New Token for {patient.name}</DialogTitle>
+          <CardDescription>Select a group to generate a new token.</CardDescription>
+        </DialogHeader>
+        <form action={formAction}>
+          <div className="p-4 space-y-4">
+            <input type="hidden" name="name" value={patient.name} />
+            <input type="hidden" name="age" value={patient.age} />
+            <input type="hidden" name="gender" value={patient.gender} />
+            <input type="hidden" name="contactNumber" value={patient.contactNumber} />
+            <input type="hidden" name="emailAddress" value={patient.emailAddress || ''} />
+
+            <div className="space-y-2">
+              <Label htmlFor="groupId">Select Group</Label>
+              <Select name="groupId" required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a Group" />
+                </SelectTrigger>
+                <SelectContent>
+                  {groups.map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name} ({group.doctors.map(d => d.name).join(', ')})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {state?.errors?.groupId && (
+                <p className="text-sm text-destructive">{state.errors.groupId[0]}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter className="bg-muted/50 px-4 py-3 mt-4 rounded-b-lg">
+            <Button variant="outline" type="button" onClick={onClose}>Cancel</Button>
+            <Button type="submit">Generate Token</Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
@@ -298,44 +382,8 @@ function ManualCheckInModal({
 }
 
 
-export default function PatientRegistryPage({ params }: { params: Promise<{ id: string }> }) {
+export default function PatientRegistryPage({ params }: { params: { id: string } }) {
   const { id: clinicId } = use(params);
-  const firestore = useFirestore();
-  const { user, isUserLoading } = useUser();
-
-  const patientsQuery = useMemoFirebase(() => {
-    return query(collection(firestore, 'patient_transactions'), where('clinicId', '==', clinicId));
-  }, [firestore, clinicId]);
-  const { data: patientTransactions, isLoading: patientsLoading, refetch } = useCollection<PatientTransaction>(patientsQuery);
-  
-  const groupsQuery = useMemoFirebase(() => {
-    return query(collection(firestore, 'groups'), where('clinicId', '==', clinicId));
-  }, [firestore, clinicId]);
-  const { data: groups, isLoading: groupsLoading } = useCollection<Group>(groupsQuery);
-
-  const contactNumbers = useMemo(() => {
-    if (!patientTransactions) return [];
-    return [...new Set(patientTransactions.map(p => p.contactNumber).filter(Boolean))];
-  }, [patientTransactions]);
-
-  const patientMastersQuery = useMemoFirebase(() => {
-      if (contactNumbers.length === 0) return null;
-      return query(collection(firestore, 'patient_master'), where('contactNumber', 'in', contactNumbers.slice(0, 30)));
-  }, [firestore, contactNumbers]);
-  
-  const { data: patientMasters, isLoading: mastersLoading } = useCollection<PatientMaster>(patientMastersQuery);
-
-  const allPatients = useMemo<EnrichedPatient[]>(() => {
-      if (!patientTransactions || !patientMasters) return [];
-      const mastersMap = new Map(patientMasters.map(m => [m.contactNumber, m]));
-      return patientTransactions.map(t => {
-          const master = mastersMap.get(t.contactNumber);
-          if (!master) return null;
-          return { ...master, ...t };
-      }).filter((p): p is EnrichedPatient => p !== null);
-  }, [patientTransactions, patientMasters]);
-
-
   const [filteredPatients, setFilteredPatients] = useState<EnrichedPatient[]>([]);
   const [sortConfig, setSortConfig] = useState<{
     key: keyof Patient;
@@ -343,31 +391,78 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
   } | null>({ key: 'name', direction: 'asc' });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [patientForToken, setPatientForToken] = useState<EnrichedPatient | null>(null);
+  const [isTokenModalOpen, setTokenModalOpen] = useState(false);
   const [isCheckInModalOpen, setCheckInModalOpen] = useState(false);
-  const { toast } = useToast();
 
-  const closeCheckInModal = useCallback(() => {
-    setCheckInModalOpen(false);
-  }, []);
+  const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
 
-  const onPatientRegistered = useCallback(() => {
-    refetch();
-  }, [refetch]);
+  const transactionsQuery = useMemoFirebase(() => {
+    if (!clinicId) return null;
+    return query(collection(firestore, 'patient_transactions'), where('clinicId', '==', clinicId));
+  }, [firestore, clinicId]);
 
+  const { data: patientTransactions, isLoading: transactionsLoading, refetch: refetchTransactions } = useCollection<PatientTransaction>(transactionsQuery);
+  
+  const groupsQuery = useMemoFirebase(() => {
+    return query(collection(firestore, 'groups'), where('clinicId', '==', clinicId));
+  }, [firestore, clinicId]);
+  const { data: groups, isLoading: groupsLoading } = useCollection<Group>(groupsQuery);
+  
+  const contactNumbers = useMemo(() => {
+    if (!patientTransactions) return [];
+    return [...new Set(patientTransactions.map(p => p.contactNumber).filter(Boolean))];
+  }, [patientTransactions]);
+
+  const patientMastersQuery = useMemoFirebase(() => {
+      if (contactNumbers.length === 0) return null;
+      const chunks = [];
+      for (let i = 0; i < contactNumbers.length; i += 30) {
+          chunks.push(contactNumbers.slice(i, i + 30));
+      }
+      if(chunks.length > 1) {
+          console.warn("This page currently only supports fetching master records for up to 30 unique patients at a time.")
+      }
+      if (chunks.length === 0) return null;
+      return query(collection(firestore, 'patient_master'), where('contactNumber', 'in', chunks[0]));
+  }, [firestore, contactNumbers]);
+  const { data: patientMasters, isLoading: mastersLoading } = useCollection<PatientMaster>(patientMastersQuery);
+  
+  const allPatients = useMemo<EnrichedPatient[]>(() => {
+    if (!patientTransactions || !patientMasters) return [];
+    const mastersMap = new Map(patientMasters.map(m => [m.contactNumber, m]));
+    return patientTransactions.map(t => {
+        const master = mastersMap.get(t.contactNumber);
+        if (!master) return null;
+        return { ...master, ...t, id: t.id };
+    }).filter((p): p is EnrichedPatient => p !== null);
+  }, [patientTransactions, patientMasters]);
+  
+  const uniquePatients = useMemo(() => {
+    if (!allPatients) return [];
+    const patientMap = new Map<string, EnrichedPatient>();
+    allPatients.forEach(p => {
+        const existingPatient = patientMap.get(p.contactNumber);
+        if (!existingPatient || new Date(p.registeredAt) > new Date(existingPatient.registeredAt)) {
+            patientMap.set(p.contactNumber, p);
+        }
+    });
+    return Array.from(patientMap.values());
+  }, [allPatients]);
+  
   useEffect(() => {
-    if (!allPatients) {
+    if (!uniquePatients) {
         setFilteredPatients([]);
         return;
     }
-
-    let filteredData = [...allPatients];
+    let filteredData = [...uniquePatients];
 
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
         filteredData = filteredData.filter(patient => 
             patient.name.toLowerCase().includes(lowercasedQuery) ||
-            (patient.tokenNumber && patient.tokenNumber.toLowerCase().includes(lowercasedQuery)) ||
-            patient.contactNumber.toLowerCase().includes(lowercasedQuery) ||
+            (patient.contactNumber && patient.contactNumber.toLowerCase().includes(lowercasedQuery)) ||
             (patient.emailAddress && patient.emailAddress.toLowerCase().includes(lowercasedQuery))
         );
     }
@@ -385,7 +480,7 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
         setFilteredPatients(filteredData);
     }
 
-  }, [searchQuery, allPatients, sortConfig]);
+  }, [searchQuery, uniquePatients, sortConfig]);
 
   const handleSort = (key: keyof Patient) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -404,66 +499,52 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
   const openHistoryModal = (patient: Patient) => {
     setSelectedPatient(patient);
   };
+  
+  const openTokenModal = useCallback((patient: EnrichedPatient) => {
+    setPatientForToken(patient);
+    setTokenModalOpen(true);
+  }, []);
 
   const closeHistoryModal = () => {
     setSelectedPatient(null);
   };
+  
+  const closeTokenModal = useCallback(() => {
+    setTokenModalOpen(false);
+    setPatientForToken(null);
+  }, []);
 
-  const handleGenerateToken = async (patient: Patient) => {
-    if (!patient.groupId) {
-         toast({
-            title: "Error",
-            description: `Could not determine the group for ${patient.name}. Please use manual check-in.`
-        });
-        return;
-    }
+  const onTokenGenerated = useCallback(() => {
+    refetchTransactions();
+  }, [refetchTransactions]);
 
-    const formData = new FormData();
-    formData.append('name', patient.name);
-    formData.append('age', patient.age.toString());
-    formData.append('gender', patient.gender);
-    formData.append('groupId', patient.groupId);
-    formData.append('contactNumber', patient.contactNumber);
-    formData.append('emailAddress', patient.emailAddress || '');
+  const closeCheckInModal = useCallback(() => {
+    setCheckInModalOpen(false);
+  }, []);
 
-    const result = await registerPatient(null, formData);
+  const onPatientRegistered = useCallback(() => {
+    refetchTransactions();
+  }, [refetchTransactions]);
 
-    if (result.success) {
-        toast({
-            title: "Token Generated",
-            description: `New token ${result.tokenNumber} generated for ${patient.name}.`
-        });
-        refetch();
-    } else {
-         toast({
-            variant: "destructive",
-            title: "Failed to generate token",
-            description: result.message || "An unknown error occurred."
-        });
-    }
-  }
-
-  const isLoading = isUserLoading || patientsLoading || groupsLoading || mastersLoading;
+  const isLoading = isUserLoading || transactionsLoading || mastersLoading || groupsLoading;
 
   return (
-    <div className="space-y-6">
-       <h1 className="text-3xl font-bold">Patients Register</h1>
+    <>
+      <h1 className="text-3xl font-bold mb-6">Patients Register</h1>
       <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row items-center justify-end gap-4">
-            <div className="flex items-end gap-4">
-              <div className="space-y-1 w-full sm:w-auto">
-                  <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">PATIENT SEARCH</Label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="search"
-                      placeholder="Name, Phone, Email..."
-                      className="pl-9 h-10 w-full sm:w-64"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
+        <CardHeader className="p-4">
+           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+             <CardTitle>All Patients</CardTitle>
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="search"
+                  placeholder="Name, Phone, Email..."
+                  className="pl-9 h-10 w-full sm:w-64"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
               <Button onClick={() => setCheckInModalOpen(true)} className="h-10">
                   <PlusCircle className="mr-2 h-4 w-4" />
@@ -472,7 +553,7 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
@@ -486,7 +567,7 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
                     {getSortIcon('name')}
                   </Button>
                 </TableHead>
-                <TableHead>
+                <TableHead className="px-2">
                   <Button
                     variant="ghost"
                     className="text-xs p-0 hover:bg-transparent"
@@ -496,7 +577,7 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
                     {getSortIcon('age')}
                   </Button>
                 </TableHead>
-                <TableHead>
+                <TableHead className="px-2">
                    <Button
                     variant="ghost"
                     className="text-xs p-0 hover:bg-transparent"
@@ -506,17 +587,17 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
                     {getSortIcon('gender')}
                   </Button>
                 </TableHead>
-                <TableHead>
+                <TableHead className="px-2">
                    <Button
                     variant="ghost"
                     className="text-xs p-0 hover:bg-transparent"
                     onClick={() => handleSort('contactNumber')}
                   >
-                    Mobile
+                    Contact
                     {getSortIcon('contactNumber')}
                   </Button>
                 </TableHead>
-                <TableHead>
+                <TableHead className="px-2">
                    <Button
                     variant="ghost"
                     className="text-xs p-0 hover:bg-transparent"
@@ -532,34 +613,34 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
                     className="text-xs p-0 hover:bg-transparent"
                     onClick={() => handleSort('registeredAt')}
                   >
-                    Last Token Generated
+                    Last Visit
                     {getSortIcon('registeredAt')}
                   </Button>
                 </TableHead>
-                <TableHead className="text-center">Token</TableHead>
-                <TableHead className="text-center">History</TableHead>
+                <TableHead className="text-center">Generate Token</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={8} className="text-center py-4"><Loader className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>}
+              {isLoading && <TableRow><TableCell colSpan={8} className="text-center py-4"><Loader className="animate-spin mx-auto h-6 w-6" /></TableCell></TableRow>}
               {!isLoading && filteredPatients.map((patient) => (
-                <TableRow key={patient.id}>
+                <TableRow key={patient.contactNumber}>
                   <TableCell className="font-medium py-2 text-xs">{patient.name}</TableCell>
-                  <TableCell className="py-2 text-xs text-center">{patient.age}</TableCell>
-                  <TableCell className="py-2 text-xs capitalize">
+                  <TableCell className="py-2 px-2 text-xs">{patient.age}</TableCell>
+                  <TableCell className="py-2 px-2 text-xs capitalize">
                     <Badge variant="secondary" className={cn('text-[10px] border-transparent capitalize', genderBadgeColors[patient.gender])}>
                         {patient.gender}
                     </Badge>
                   </TableCell>
-                  <TableCell className="py-2 text-xs">{patient.contactNumber}</TableCell>
-                  <TableCell className="py-2 text-xs">{patient.emailAddress || '-'}</TableCell>
+                  <TableCell className="py-2 px-2 text-xs">{patient.contactNumber}</TableCell>
+                  <TableCell className="py-2 px-2 text-xs">{patient.emailAddress || '-'}</TableCell>
                   <TableCell className="py-2 text-xs">
-                     {patient.registeredAt ? format(new Date(patient.registeredAt), 'P, pp') : ''}
+                     {format(new Date(patient.registeredAt), 'P, pp')}
                   </TableCell>
                   <TableCell className="py-2 text-xs text-center">
-                     <Button size="xs" onClick={() => handleGenerateToken(patient)}>GENERATE</Button>
+                    <Button size="xs" onClick={() => openTokenModal(patient)}>GENERATE</Button>
                   </TableCell>
-                  <TableCell className="py-2 text-xs text-center">
+                  <TableCell className="py-2 text-xs">
                     <Button
                       variant="default"
                       size="xs"
@@ -567,7 +648,7 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
                       className="bg-green-600 hover:bg-green-700 text-white text-[11px] h-7 gap-1"
                     >
                       <History className="h-3 w-3" />
-                      Show History
+                      Visit History
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -575,7 +656,7 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
                {!isLoading && filteredPatients.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={8} className="text-center text-muted-foreground py-4 text-sm">
-                        No patients found for this clinic.
+                        No patients found.
                     </TableCell>
                 </TableRow>
              )}
@@ -589,12 +670,19 @@ export default function PatientRegistryPage({ params }: { params: Promise<{ id: 
         onClose={closeHistoryModal}
         patient={selectedPatient}
       />
-      <ManualCheckInModal 
+      <GenerateTokenModal 
+        isOpen={isTokenModalOpen}
+        onClose={closeTokenModal}
+        patient={patientForToken}
+        groups={groups || []}
+        onTokenGenerated={onTokenGenerated}
+      />
+       <ManualCheckInModal 
         isOpen={isCheckInModalOpen}
         onClose={closeCheckInModal}
         groups={groups || []}
         onPatientRegistered={onPatientRegistered}
       />
-    </div>
+    </>
   );
 }
