@@ -19,10 +19,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  Users,
-  Clock,
-  CheckSquare,
-  XCircle,
   Loader,
   Lock,
   Play,
@@ -275,9 +271,7 @@ function ManualCheckInModal({
             </div>
           </div>
           <DialogFooter className="bg-muted/50 px-6 py-4 mt-6 rounded-b-lg">
-            <Button variant="outline" type="button" onClick={onClose}>
-              Cancel
-            </Button>
+            <Button variant="outline" type="button" onClick={onClose}>Cancel</Button>
             <Button type="submit">Register Patient</Button>
           </DialogFooter>
         </form>
@@ -680,10 +674,6 @@ function DoctorConsultationDashboard({
         }).filter((p): p is EnrichedPatient => p !== null);
     }, [patientTransactions, patientMasters]);
     
-    const selectedGroupPatients = useMemo(() => {
-        return allPatients.filter(p => p.groupId === selectedGroupId);
-    }, [allPatients, selectedGroupId]);
-    
     const cabinIds = useMemo(() => selectedGroup?.cabins.map(c => c.id) || [], [selectedGroup]);
     const cabinsQuery = useMemoFirebase(() => {
         if (cabinIds.length === 0) return null;
@@ -777,21 +767,8 @@ function DoctorConsultationDashboard({
     const getQueueCountForGroup = (groupId: string) => {
       return (allPatients || []).filter(p => p.groupId === groupId && p.status === 'waiting').length;
     }
-
-    const activePatients = selectedGroupPatients.filter(p => p.status === 'waiting' || p.status === 'calling' || p.status === 'consulting');
-    const totalPatients = activePatients.length;
-    const waitingPatients = selectedGroupPatients.filter(p => p.status === 'waiting');
-    const inQueue = waitingPatients.length;
-    const attendedToday = selectedGroupPatients.filter(p => p.status === 'consultation-done').length;
-    const noShowsToday = selectedGroupPatients.filter(p => p.status === 'no-show').length;
-
-
-    const stats = [
-    { title: 'TOTAL ACTIVE', value: totalPatients, icon: Users, color: 'bg-indigo-100 text-indigo-600' },
-    { title: 'IN QUEUE', value: inQueue, icon: Clock, color: 'bg-yellow-100 text-yellow-600' },
-    { title: 'ATTENDED TODAY', value: attendedToday, icon: CheckSquare, color: 'bg-green-100 text-green-600' },
-    { title: 'NO SHOWS TODAY', value: noShowsToday, icon: XCircle, color: 'bg-red-100 text-red-600' },
-    ];
+    
+    const waitingPatients = allPatients.filter(p => p.groupId === selectedGroupId && p.status === 'waiting');
   
     const nextToken = waitingPatients.length > 0
     ? [...waitingPatients].sort((a, b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime())[0].tokenNumber
@@ -809,22 +786,6 @@ function DoctorConsultationDashboard({
 
     return (
         <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {stats.map((stat) => (
-            <Card key={stat.title}>
-                <CardContent className="p-4 flex items-center gap-4">
-                <div className={`p-3 rounded-lg ${stat.color}`}>
-                    <stat.icon className="h-6 w-6" />
-                </div>
-                <div>
-                    <p className="text-xs text-muted-foreground font-semibold">{stat.title}</p>
-                    <p className="text-2xl font-bold">{stat.value}</p>
-                </div>
-                </CardContent>
-            </Card>
-            ))}
-        </div>
-        
         <div className="flex justify-between items-center">
             <div className="flex items-center gap-2 flex-wrap">
                 {groups.map(group => (
