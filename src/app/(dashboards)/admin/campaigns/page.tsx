@@ -62,9 +62,8 @@ export default function CampaignsPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold font-headline">Campaigns Management</h1>
+          <h1 className="text-3xl font-bold font-headline">Campaigns Dashboard</h1>
         </div>
-        <Button>New Campaign</Button>
       </div>
 
        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

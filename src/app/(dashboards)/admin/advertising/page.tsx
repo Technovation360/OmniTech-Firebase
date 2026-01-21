@@ -20,16 +20,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Eye, Film, Users, Monitor, ArrowUp, ArrowDown } from 'lucide-react';
+import { Film, ArrowUp, ArrowDown } from 'lucide-react';
 
-const stats = [
-    { title: "Total Impressions", value: "20,879", icon: Eye },
-    { title: "Active Campaigns", value: "2", icon: Film },
-    { title: "Clinic Count", value: "1", icon: Users },
-    { title: "Screen Count", value: "1", icon: Monitor },
-]
-
-export default function AdvertisingPage() {
+export default function VideosPage() {
   const [ads, setAds] = useState<Advertisement[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: keyof Advertisement; direction: 'asc' | 'desc' } | null>({ key: 'campaign', direction: 'asc'});
 
@@ -62,30 +55,17 @@ export default function AdvertisingPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold font-headline">Advertising Management</h1>
+          <h1 className="text-3xl font-bold font-headline">Video Library</h1>
+          <p className="text-muted-foreground">Manage your video assets.</p>
         </div>
-        <Button>New Campaign</Button>
-      </div>
-
-       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <stat.icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-            </CardContent>
-          </Card>
-        ))}
+        <Button>Upload Video</Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Active Campaigns</CardTitle>
+          <CardTitle>Uploaded Videos</CardTitle>
           <CardDescription>
-            List of all video advertisements currently in rotation.
+            List of all video assets available for campaigns.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -94,7 +74,7 @@ export default function AdvertisingPage() {
               <TableRow>
                 <TableHead>
                     <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('campaign')}>
-                        Campaign
+                        Video Title
                         {getSortIcon('campaign')}
                     </Button>
                 </TableHead>
@@ -104,13 +84,7 @@ export default function AdvertisingPage() {
                         {getSortIcon('advertiser')}
                     </Button>
                 </TableHead>
-                <TableHead>
-                    <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('impressions')}>
-                        Impressions
-                        {getSortIcon('impressions')}
-                    </Button>
-                </TableHead>
-                <TableHead>Video</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -118,7 +92,6 @@ export default function AdvertisingPage() {
                 <TableRow key={ad.id}>
                   <TableCell className="font-medium py-2 text-xs">{ad.campaign}</TableCell>
                   <TableCell className="py-2 text-xs">{ad.advertiser}</TableCell>
-                  <TableCell className="py-2 text-xs">{ad.impressions.toLocaleString()}</TableCell>
                   <TableCell className="py-2 text-xs">
                     <a href={ad.videoUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                       Watch Video

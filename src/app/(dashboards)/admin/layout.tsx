@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -74,9 +73,9 @@ function AdminSidebar() {
   ];
   
   const advertiserNavItems = [
-    { href: `${basePath}`, icon: LayoutDashboard, label: 'Dashboard', active: pathname === `${basePath}` },
     { href: `${basePath}/campaigns`, icon: Film, label: 'Campaigns', active: pathname.startsWith(`${basePath}/campaigns`) },
-    { href: `${basePath}/reports`, icon: FileText, label: 'Reports', active: pathname.startsWith(`${basePath}/reports`) },
+    { href: `${basePath}/advertising`, icon: Film, label: 'Videos', active: pathname.startsWith(`${basePath}/advertising`) },
+    { href: `${basePath}/reports`, icon: FileText, label: 'Statistics', active: pathname.startsWith(`${basePath}/reports`) },
   ];
   
   let menuToRender;
