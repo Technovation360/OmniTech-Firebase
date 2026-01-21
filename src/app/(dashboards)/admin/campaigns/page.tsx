@@ -29,7 +29,7 @@ const stats = [
     { title: "Screen Count", value: "1", icon: Monitor },
 ]
 
-export default function CampaignsPage() {
+export default function DashboardPage() {
   const [ads, setAds] = useState<Advertisement[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: keyof Advertisement; direction: 'asc' | 'desc' } | null>({ key: 'campaign', direction: 'asc'});
 
@@ -62,7 +62,7 @@ export default function CampaignsPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold font-headline">Campaigns Dashboard</h1>
+          <h1 className="text-3xl font-bold font-headline">Dashboard</h1>
         </div>
       </div>
 
