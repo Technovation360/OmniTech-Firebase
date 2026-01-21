@@ -527,26 +527,26 @@ export default function PatientRegistryPage() {
       <h1 className="text-3xl font-bold mb-6">Patient Registry</h1>
       <Card>
         <CardHeader>
-           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-4 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+             <CardTitle>All Patients</CardTitle>
+            <div className="flex items-center gap-4">
                 <div className="space-y-1 w-full sm:w-auto">
                   <Label htmlFor="search" className="text-xs font-semibold text-muted-foreground">PATIENT SEARCH</Label>
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
                       id="search"
                       placeholder="Name, Phone, Email..."
-                      className="pl-9 h-8 w-full sm:w-64"
+                      className="pl-9 h-10 w-full sm:w-64"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                    />
+                      />
                   </div>
                 </div>
                 <div className="space-y-1 w-full sm:w-auto">
                   <Label htmlFor="clinicFilter" className="text-xs font-semibold text-muted-foreground">FILTER BY CLINIC</Label>
                   <Select value={selectedClinic} onValueChange={setSelectedClinic}>
-                      <SelectTrigger id="clinicFilter" className="h-8 w-full sm:w-48 text-sm">
+                      <SelectTrigger id="clinicFilter" className="h-10 w-full sm:w-48 text-sm">
                           <SelectValue placeholder="Filter by Clinic" />
                       </SelectTrigger>
                       <SelectContent>
@@ -557,13 +557,12 @@ export default function PatientRegistryPage() {
                       </SelectContent>
                   </Select>
                 </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 self-end">
-                <Button onClick={() => setCheckInModalOpen(true)} size="sm" className="h-8">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    MANUAL CHECK-IN
-                </Button>
+                 <div className="flex items-center gap-4 self-end">
+                    <Button onClick={() => setCheckInModalOpen(true)} size="sm" className="h-10 mt-5">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        MANUAL CHECK-IN
+                    </Button>
+                </div>
             </div>
           </div>
         </CardHeader>
@@ -696,4 +695,3 @@ export default function PatientRegistryPage() {
     </>
   );
 }
-    
