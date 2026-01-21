@@ -366,18 +366,16 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
 
   return (
     <>
+      <h1 className="text-3xl font-bold mb-6">Patients Register</h1>
       <Card>
         <CardHeader className="p-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <CardTitle className="text-lg">Patients Register</CardTitle>
-            </div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-end gap-4">
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search..."
-                  className="pl-9 h-9"
+                  className="pl-9 h-10"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
