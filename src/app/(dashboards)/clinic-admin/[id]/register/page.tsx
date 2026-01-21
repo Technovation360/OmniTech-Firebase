@@ -534,7 +534,6 @@ export default function PatientRegistryPage({ params }: { params: { id: string }
       <Card>
         <CardHeader className="p-4">
            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-             <CardTitle>All Patients</CardTitle>
             <div className="flex items-center gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -686,3 +685,5 @@ export default function PatientRegistryPage({ params }: { params: { id: string }
     </>
   );
 }
+
+    
