@@ -301,7 +301,7 @@ function RoomCard({
                         <Lock className="h-6 w-6 text-yellow-500" />
                     </div>
                     <p className="text-sm font-semibold text-muted-foreground mb-4">ROOM VACANT</p>
-                    <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => onAssignDoctor(cabin.id)}>
+                    <Button size="xs" className="bg-green-600 hover:bg-green-700" onClick={() => onAssignDoctor(cabin.id)}>
                         <PlusCircle className="mr-1 h-3 w-3" />
                         Assign
                     </Button>
@@ -341,13 +341,13 @@ function RoomCard({
                     </div>
                     <p className="text-sm font-semibold text-muted-foreground mb-4">ROOM AVAILABLE</p>
                     <div className="flex flex-col gap-2 w-full">
-                       <Button size="sm" onClick={() => onCallNext(cabin.id)}>
+                       <Button size="xs" onClick={() => onCallNext(cabin.id)}>
                            <PhoneCall className="mr-2 h-4 w-4"/>
-                           Call Patient
+                           Call Next
                        </Button>
-                        <Button variant="destructive" size="sm" onClick={() => onLeave(cabin.id)}>
+                        <Button variant="destructive" size="xs" onClick={() => onLeave(cabin.id)}>
                             <LogOut className="mr-1 h-3 w-3" />
-                            Leave Room
+                            Leave
                         </Button>
                     </div>
                 </CardContent>
@@ -372,9 +372,9 @@ function RoomCard({
                            <Stethoscope className="h-6 w-6 text-blue-500" />
                        </div>
                        <p className="text-sm font-semibold text-muted-foreground mb-4">ROOM ASSIGNED</p>
-                       <Button size="sm" onClick={() => onCallNext(cabin.id)}>
+                       <Button size="xs" onClick={() => onCallNext(cabin.id)}>
                            <PhoneCall className="mr-2 h-4 w-4"/>
-                           Call Patient
+                           Call Next
                        </Button>
                    </>
                 ) : (
@@ -386,32 +386,32 @@ function RoomCard({
                         </div>
                         {patient.status === 'consulting' ? (
                              <div className="grid grid-cols-1 gap-2 w-full">
-                                <Button size="sm" className="bg-red-500 hover:bg-red-600" onClick={() => onAction(patient!.id, cabin.id, 'end')}>
+                                <Button size="xs" className="bg-red-500 hover:bg-red-600" onClick={() => onAction(patient!.id, cabin.id, 'end')}>
                                     <Square className="mr-2 h-4 w-4"/> End
                                 </Button>
-                                <Button size="sm" variant="outline" onClick={() => onAddNotes(patient!)}>
-                                    <FileText className="mr-2 h-4 w-4"/> Add Notes
+                                <Button size="xs" variant="outline" onClick={() => onAddNotes(patient!)}>
+                                    <FileText className="mr-2 h-4 w-4"/> Notes
                                 </Button>
-                                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onViewHistory(patient)}>
-                                    <History className="mr-2 h-4 w-4"/> Show History
+                                <Button size="xs" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onViewHistory(patient)}>
+                                    <History className="mr-2 h-4 w-4"/> History
                                 </Button>
                             </div>
                         ) : ( // 'calling' status
                              <div className="grid grid-cols-1 gap-2 w-full">
-                                <Button size="sm" className="bg-primary hover:bg-primary/90" onClick={() => onAction(patient!.id, cabin.id, 'start')}>
+                                <Button size="xs" className="bg-primary hover:bg-primary/90" onClick={() => onAction(patient!.id, cabin.id, 'start')}>
                                     <Play className="mr-2 h-4 w-4"/> Start
                                 </Button>
-                                <Button size="sm" variant="outline" disabled={!noShowEnabled} onClick={() => onAction(patient!.id, cabin.id, 'no-show')} className={cn(noShowEnabled && 'text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive')}>
+                                <Button size="xs" variant="outline" disabled={!noShowEnabled} onClick={() => onAction(patient!.id, cabin.id, 'no-show')} className={cn(noShowEnabled && 'text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive')}>
                                     { !noShowEnabled ? (
                                         <span className="text-xs font-mono w-full text-center">No Show ({timer}s)</span>
                                     ) : (
                                         <><UserX className="mr-2 h-4 w-4"/> No Show</>
                                     )}
                                 </Button>
-                                <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-black" onClick={() => onCallPatient(patient)}>
-                                    <PhoneCall className="mr-2 h-4 w-4"/> Call Patient
+                                <Button size="xs" className="bg-yellow-500 hover:bg-yellow-600 text-black" onClick={() => onCallPatient(patient)}>
+                                    <PhoneCall className="mr-2 h-4 w-4"/> Re-Call
                                  </Button>
-                                 <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onViewHistory(patient)}>
+                                 <Button size="xs" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onViewHistory(patient)}>
                                     <History className="mr-2 h-4 w-4"/> History
                                  </Button>
                             </div>
