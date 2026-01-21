@@ -41,7 +41,7 @@ export function getRedirectUrlForRole(role: UserRole, userId: string): string | 
         case 'display':
             return `/display/${userId}`; // e.g. /display/scr_main_hall
         case 'advertiser':
-            return '/admin/campaigns';
+            return '/admin';
         default:
             return null;
     }

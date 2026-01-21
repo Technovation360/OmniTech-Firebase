@@ -74,7 +74,8 @@ function AdminSidebar() {
   ];
   
   const advertiserNavItems = [
-    { href: `${basePath}/campaigns`, icon: LayoutDashboard, label: 'Dashboard', active: pathname.startsWith(`${basePath}/campaigns`) },
+    { href: `${basePath}`, icon: LayoutDashboard, label: 'Dashboard', active: pathname === `${basePath}` },
+    { href: `${basePath}/campaigns`, icon: Megaphone, label: 'Campaigns', active: pathname.startsWith(`${basePath}/campaigns`) },
     { href: `${basePath}/advertising`, icon: Film, label: 'Videos', active: pathname.startsWith(`${basePath}/advertising`) },
     { href: `${basePath}/reports`, icon: FileText, label: 'Statistics', active: pathname.startsWith(`${basePath}/reports`) },
   ];
