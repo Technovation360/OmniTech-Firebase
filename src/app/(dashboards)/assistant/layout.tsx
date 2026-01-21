@@ -20,6 +20,7 @@ import {
   PanelLeft,
   LogOut,
   ChevronLeft,
+  Stethoscope,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useParams, useRouter } from 'next/navigation';
@@ -41,6 +42,12 @@ function AssistantSidebar() {
       icon: LayoutDashboard,
       label: 'Dashboard',
       active: pathname === basePath,
+    },
+     {
+      href: `${basePath}/consultation`,
+      icon: Stethoscope,
+      label: 'Consultation',
+      active: pathname.startsWith(`${basePath}/consultation`),
     },
     {
       href: `${basePath}/live-queue`,
