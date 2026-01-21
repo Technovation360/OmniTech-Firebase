@@ -1,6 +1,7 @@
+
 'use client';
 
-import { use, useState, useEffect, useMemo, useActionState } from 'react';
+import { use, useState, useEffect, useMemo, useActionState, useCallback } from 'react';
 import { getPatientHistory } from '@/lib/data';
 import type { Patient, Group, PatientHistoryEntry, User, PatientTransaction, PatientMaster, EnrichedPatient } from '@/lib/types';
 import {
@@ -358,9 +359,13 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
     setSelectedPatient(null);
   };
   
-  const onTokenGenerated = () => {
+  const closeTokenModal = useCallback(() => {
+    setTokenModalOpen(false);
+  }, []);
+
+  const onTokenGenerated = useCallback(() => {
     refetchTransactions();
-  };
+  }, [refetchTransactions]);
 
   const isLoading = isUserLoading || doctorUserLoading || groupsLoading || transactionsLoading || mastersLoading;
 
@@ -502,7 +507,7 @@ export default function DoctorPatientsPage({ params }: { params: { id: string } 
       />
       <GenerateTokenModal 
         isOpen={isTokenModalOpen}
-        onClose={() => setTokenModalOpen(false)}
+        onClose={closeTokenModal}
         patient={patientForToken}
         groups={doctorGroups || []}
         onTokenGenerated={onTokenGenerated}
