@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,16 +58,16 @@ function AdvertiserForm({
   isOpen: boolean;
   onClose: () => void;
   advertiser: Advertiser | null;
-  onConfirm: (formData: Omit<Advertiser, 'id' | 'campaigns' | 'status'>) => void;
+  onConfirm: (formData: Omit<Advertiser, 'id' | 'campaigns'>) => void;
 }) {
   const isEditMode = !!advertiser;
-  const [formData, setFormData] = useState({ name: '' });
+  const [formData, setFormData] = useState({ name: '', status: 'inactive' as 'active' | 'inactive' });
 
   useEffect(() => {
       if (advertiser) {
-          setFormData({ name: advertiser.name });
+          setFormData({ name: advertiser.name, status: advertiser.status });
       } else {
-          setFormData({ name: ''});
+          setFormData({ name: '', status: 'inactive' });
       }
   }, [advertiser]);
 
@@ -85,11 +86,28 @@ function AdvertiserForm({
             {isEditMode ? 'EDIT ADVERTISER' : 'ADD ADVERTISER'}
           </DialogTitle>
         </DialogHeader>
-        <div className="p-4 pb-4">
+        <div className="p-4 pb-4 space-y-4">
             <div className="space-y-1">
                 <Label htmlFor="advertiserName" className="text-[10px] font-semibold text-gray-600">ADVERTISER NAME</Label>
-                <Input id="advertiserName" className="h-7 text-[11px]" value={formData.name} onChange={(e) => setFormData({ name: e.target.value})} />
+                <Input id="advertiserName" className="h-7 text-[11px]" value={formData.name} onChange={(e) => setFormData(prev => ({...prev, name: e.target.value}))} />
             </div>
+            {isEditMode && (
+                <div className="flex items-center space-x-2 pt-2">
+                    <Switch
+                        id="status"
+                        checked={formData.status === 'active'}
+                        onCheckedChange={(checked) =>
+                            setFormData((prev) => ({
+                            ...prev,
+                            status: checked ? 'active' : 'inactive',
+                            }))
+                        }
+                    />
+                    <Label htmlFor="status" className="text-xs">
+                        {formData.status === 'active' ? 'Active' : 'Inactive'}
+                    </Label>
+                </div>
+            )}
         </div>
         <DialogFooter className="bg-gray-50 px-4 py-2 flex justify-end gap-2 rounded-b-lg">
             <Button variant="destructive" onClick={onClose} size="xs">CANCEL</Button>
@@ -196,14 +214,13 @@ export default function AdvertisersPage() {
     }
   }
 
-  const handleFormConfirm = (formData: Omit<Advertiser, 'id' | 'campaigns' | 'status'>) => {
+  const handleFormConfirm = (formData: Omit<Advertiser, 'id' | 'campaigns'>) => {
     if (advertiserToEdit) {
         setDocumentNonBlocking(doc(firestore, 'advertisers', advertiserToEdit.id), formData, { merge: true });
     } else {
         const newAdvertiser: Omit<Advertiser, 'id'> = {
             ...formData,
             campaigns: 0,
-            status: 'inactive'
         };
         addDocumentNonBlocking(collection(firestore, 'advertisers'), newAdvertiser);
     }
