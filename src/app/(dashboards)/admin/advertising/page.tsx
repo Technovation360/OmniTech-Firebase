@@ -44,6 +44,7 @@ import { collection, doc, query, where, getDoc, getDocs } from 'firebase/firesto
 import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { uploadVideo } from '@/ai/flows/upload-video';
 
 type Advertiser = {
   id: string;
@@ -75,42 +76,82 @@ function AdvertisementForm({
     advertiserId: '',
     categoryId: '',
   });
+  const [file, setFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
-    if (advertisement) {
-      setFormData({
-        title: advertisement.title,
-        videoUrl: advertisement.videoUrl,
-        advertiserId: advertisement.advertiserId,
-        categoryId: advertisement.categoryId || '',
-      });
-    } else {
-      setFormData({ title: '', videoUrl: '', advertiserId: '', categoryId: '' });
+    if (isOpen) {
+      if (advertisement) {
+        setFormData({
+          title: advertisement.title,
+          videoUrl: advertisement.videoUrl,
+          advertiserId: advertisement.advertiserId,
+          categoryId: advertisement.categoryId || '',
+        });
+      } else {
+        setFormData({ title: '', videoUrl: '', advertiserId: '', categoryId: '' });
+      }
+      setFileName('');
+      setFile(null);
     }
-    setFileName('');
-  }, [advertisement]);
+  }, [advertisement, isOpen]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFileName(file.name);
-      const reader = new FileReader();
-      reader.onload = () => {
-        if(reader.result) {
-            setFormData(prev => ({...prev, videoUrl: reader.result as string}));
-        }
-      };
-      reader.readAsDataURL(file);
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+        setFile(selectedFile);
+        setFileName(selectedFile.name);
     }
   }
 
-  const handleConfirm = () => {
-    if (formData.title && formData.videoUrl && (currentUser?.role === 'advertiser' || formData.advertiserId) && formData.categoryId) {
-        onConfirm(formData);
-        onClose();
-    } else {
-        toast({ title: 'Please fill all fields', variant: 'destructive' });
+  const handleConfirm = async () => {
+    if (
+      !formData.title ||
+      !(currentUser?.role === 'advertiser' || formData.advertiserId) ||
+      !formData.categoryId
+    ) {
+      toast({ title: 'Please fill all required fields', variant: 'destructive' });
+      return;
+    }
+  
+    setIsUploading(true);
+  
+    try {
+      let finalVideoUrl = formData.videoUrl;
+  
+      if (file) {
+        // New file is being uploaded
+        const reader = new FileReader();
+        const fileContent = await new Promise<string>((resolve, reject) => {
+          reader.onloadend = () => {
+            const base64data = reader.result as string;
+            resolve(base64data.substring(base64data.indexOf(',') + 1));
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+  
+        const result = await uploadVideo({
+          fileContent,
+          fileName: file.name,
+          fileType: file.type,
+        });
+        finalVideoUrl = result.videoUrl;
+      } else if (!isEditMode) {
+        toast({ title: 'Please select a video file to upload.', variant: 'destructive' });
+        setIsUploading(false);
+        return;
+      }
+      // If in edit mode and no new file, finalVideoUrl is already set from formData
+  
+      onConfirm({ ...formData, videoUrl: finalVideoUrl });
+      onClose();
+    } catch (error: any) {
+      console.error('Upload failed:', error);
+      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -132,6 +173,11 @@ function AdvertisementForm({
             <Label htmlFor="videoFile">Upload File</Label>
             <Input id="videoFile" type="file" accept="video/*" onChange={handleFileChange} />
             {fileName && <p className="text-sm text-muted-foreground mt-1">{fileName}</p>}
+            {isEditMode && !fileName && formData.videoUrl && (
+                <p className="text-sm text-muted-foreground mt-1 truncate">
+                    Current: <a href={formData.videoUrl} target="_blank" rel="noopener noreferrer" className="underline text-primary">{formData.videoUrl}</a>
+                </p>
+            )}
           </div>
           {currentUser?.role === 'central-admin' && (
             <div className="space-y-2">
@@ -155,8 +201,10 @@ function AdvertisementForm({
           </div>
         </div>
         <DialogFooter className="bg-muted/50 px-6 py-4 rounded-b-lg">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleConfirm}>{isEditMode ? 'Save Changes' : 'Add Video'}</Button>
+          <Button variant="outline" onClick={onClose} disabled={isUploading}>Cancel</Button>
+          <Button onClick={handleConfirm} disabled={isUploading}>
+            {isUploading ? <><Loader className="mr-2 h-4 w-4 animate-spin"/> Uploading...</> : isEditMode ? 'Save Changes' : 'Add Video'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
