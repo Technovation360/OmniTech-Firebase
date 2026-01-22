@@ -1,11 +1,12 @@
-
 'use client';
 
-import { useState, useEffect, useRef, use } from 'react';
+import { useState, useEffect, useRef, use, useCallback } from 'react';
 import type { Patient, Advertisement } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnimatePresence, motion } from 'framer-motion';
 import { getSignedVideoUrl } from '@/ai/flows/get-signed-video-url';
+import VideoPlayer from '@/components/VideoPlayer';
+import type { VideoJsPlayer } from 'video.js';
 
 type QueueInfo = {
   waiting: Patient[];
@@ -51,10 +52,11 @@ function useQueue(screenId: string) {
   return { queueInfo, error };
 }
 
-function VideoPlayer({ advertisements }: { advertisements: Advertisement[] }) {
+function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[] }) {
   const [videoSources, setVideoSources] = useState<{ src: string; type: string }[]>([]);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const onEndCallbackRef = useRef<() => void>();
 
   useEffect(() => {
     const fetchVideoUrls = async () => {
@@ -83,11 +85,15 @@ function VideoPlayer({ advertisements }: { advertisements: Advertisement[] }) {
     fetchVideoUrls();
   }, [advertisements]);
 
-  const handleVideoEnd = () => {
+  const handleVideoEnd = useCallback(() => {
     if (videoSources.length > 0) {
       setCurrentVideoIndex((prevIndex) => (prevIndex + 1) % videoSources.length);
     }
-  };
+  }, [videoSources.length]);
+
+  useEffect(() => {
+    onEndCallbackRef.current = handleVideoEnd;
+  }, [handleVideoEnd]);
   
   if (isLoading) {
     return <div className="w-full h-full bg-black flex items-center justify-center text-white">Loading Advertisements...</div>;
@@ -96,19 +102,19 @@ function VideoPlayer({ advertisements }: { advertisements: Advertisement[] }) {
   if (videoSources.length === 0) {
     return <div className="w-full h-full bg-black flex items-center justify-center text-muted-foreground">No advertisements scheduled for this display.</div>;
   }
+  
+  const playerOptions = {
+    autoplay: true,
+    controls: false,
+    muted: true,
+    fluid: true,
+    sources: videoSources.length > 0 ? [videoSources[currentVideoIndex]] : [],
+  };
 
   return (
-      <video
-        key={currentVideoIndex}
-        className="w-full h-full object-cover"
-        autoPlay
-        muted
-        onEnded={handleVideoEnd}
-        playsInline
-      >
-        <source src={videoSources[currentVideoIndex].src} type={videoSources[currentVideoIndex].type} />
-        Your browser does not support the video tag.
-      </video>
+      <VideoPlayer options={playerOptions} onReady={(player) => {
+          player.on('ended', () => onEndCallbackRef.current?.());
+      }} />
   );
 }
 
@@ -162,7 +168,7 @@ export default function DisplayPage({ params }: { params: Promise<{ id: string }
       </AnimatePresence>
 
       <div className="w-[70%] h-full bg-gray-800">
-        <VideoPlayer advertisements={queueInfo.advertisements} />
+        <VideoPlayerDisplay advertisements={queueInfo.advertisements} />
       </div>
       <div className="w-[30%] h-full flex flex-col">
         <div className="h-[50%] bg-blue-900 p-4 overflow-hidden">
