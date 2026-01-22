@@ -75,7 +75,7 @@ const uploadVideoFlow = ai.defineFlow(
     
     // Construct the public URL from environment variables.
     const bucketHost = `${process.env.B2_BUCKET_NAME}.${process.env.B2_BUCKET_Endpoint}`;
-    const fileUrl = `https://${bucketHost}/${uniqueFileName}`;
+    const fileUrl = `https://${bucketHost}/${encodeURIComponent(uniqueFileName)}`;
 
     return { videoUrl: fileUrl };
   }
