@@ -1,6 +1,5 @@
 
-import { getQueueInfoByScreenId } from '@/lib/server-data';
-import { getClinicGroups, getPatients } from '@/lib/server-data';
+import { getQueueInfoByScreenId, getClinicGroups, getPatients, getCampaigns, getAdvertiserClinicGroups, getAdvertisements } from '@/lib/server-data';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic'; // prevent caching
@@ -15,10 +14,22 @@ export async function GET(
       return NextResponse.json({ message: 'Screen ID is required' }, { status: 400 });
     }
 
-    const allGroups = await getClinicGroups();
-    const allPatients = await getPatients();
+    const [allGroups, allPatients, allCampaigns, allAdvertiserClinicGroups, allAdvertisements] = await Promise.all([
+        getClinicGroups(),
+        getPatients(),
+        getCampaigns(),
+        getAdvertiserClinicGroups(),
+        getAdvertisements()
+    ]);
 
-    const queueInfo = await getQueueInfoByScreenId(screenId, allGroups, allPatients);
+    const queueInfo = await getQueueInfoByScreenId(
+        screenId, 
+        allGroups, 
+        allPatients, 
+        allCampaigns, 
+        allAdvertiserClinicGroups, 
+        allAdvertisements
+    );
 
     return NextResponse.json(queueInfo);
   } catch (error) {
@@ -26,5 +37,3 @@ export async function GET(
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }
-
-    

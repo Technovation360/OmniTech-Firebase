@@ -12,6 +12,7 @@ import {
   updateDoc,
   runTransaction,
   setDoc,
+  documentId,
 } from 'firebase/firestore';
 import { initializeServerFirebase } from '@/firebase/server-init';
 
@@ -23,6 +24,9 @@ import type {
   Consultation,
   PatientMaster,
   EnrichedPatient,
+  Advertisement,
+  Campaign,
+  AdvertiserClinicGroup,
 } from './types';
 
 const { firestore: db } = initializeServerFirebase();
@@ -246,4 +250,84 @@ export const addConsultation = async (
   return { id: docRef.id, ...data } as Consultation;
 };
 
+export const getAdvertisements = async (): Promise<Advertisement[]> => {
+  const snapshot = await getDocs(collection(db, 'advertisements'));
+  const ads = snapshot.docs.map(
+    doc => ({ id: doc.id, ...doc.data() } as Advertisement)
+  );
+  return ads;
+};
+
+export const getCampaigns = async (): Promise<Campaign[]> => {
+  const snapshot = await getDocs(collection(db, 'campaigns'));
+  const campaigns = snapshot.docs.map(
+    doc => ({ id: doc.id, ...doc.data() } as Campaign)
+  );
+  return campaigns;
+};
+
+export const getAdvertiserClinicGroups = async (): Promise<AdvertiserClinicGroup[]> => {
+  const snapshot = await getDocs(collection(db, 'advertiser_clinic_groups'));
+  const groups = snapshot.docs.map(
+    doc => ({ id: doc.id, ...doc.data() } as AdvertiserClinicGroup)
+  );
+  return groups;
+};
+
+export const getQueueInfoByScreenId = async (
+  screenId: string, 
+  allGroups: Group[], 
+  allPatients: EnrichedPatient[],
+  allCampaigns: Campaign[],
+  allAdvertiserClinicGroups: AdvertiserClinicGroup[],
+  allAdvertisements: Advertisement[]
+) => {
+    const groupForScreen = allGroups.find(g => g.screens.some(s => s.id === screenId));
     
+    let advertisementsForScreen: Advertisement[] = [];
+    if (groupForScreen) {
+        const clinicId = groupForScreen.clinicId;
+        
+        const relevantAdvGroupIds = allAdvertiserClinicGroups
+            .filter(ag => ag.clinicIds.includes(clinicId))
+            .map(ag => ag.id);
+
+        if (relevantAdvGroupIds.length > 0) {
+            const relevantCampaigns = allCampaigns
+                .filter(c => c.clinicGroupIds.some(cgId => relevantAdvGroupIds.includes(cgId)));
+            
+            if (relevantCampaigns.length > 0) {
+                const advertisementIds = [...new Set(relevantCampaigns.flatMap(c => c.advertisementIds))];
+                
+                if (advertisementIds.length > 0) {
+                    advertisementsForScreen = allAdvertisements.filter(ad => advertisementIds.includes(ad.id));
+                }
+            }
+        }
+    }
+
+    if (!groupForScreen) {
+        return { waiting: [], inConsultation: [], nowCalling: null, advertisements: advertisementsForScreen };
+    }
+    
+    const patients = allPatients.filter(p => p.groupId === groupForScreen.id);
+    
+    const queuePatients = patients.filter(p => ['waiting', 'calling', 'consulting'].includes(p.status));
+    
+    const callingPatient = queuePatients.find(p => p.status === 'calling');
+    
+    let calledPatientInfo = null;
+    if (callingPatient) {
+        calledPatientInfo = {
+            ...callingPatient,
+            cabinName: groupForScreen?.cabins[0]?.name || 'Consultation Room',
+        }
+    }
+
+    return {
+        waiting: queuePatients.filter(p => p.status === 'waiting').sort((a, b) => a.tokenNumber.localeCompare(b.tokenNumber)),
+        inConsultation: queuePatients.filter(p => p.status === 'consulting').sort((a, b) => a.tokenNumber.localeCompare(b.tokenNumber)),
+        nowCalling: calledPatientInfo,
+        advertisements: advertisementsForScreen
+    };
+};

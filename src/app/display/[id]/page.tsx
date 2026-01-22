@@ -1,14 +1,16 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import type { Patient } from '@/lib/types';
+import type { Patient, Advertisement } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnimatePresence, motion } from 'framer-motion';
+import { getSignedVideoUrl } from '@/ai/flows/get-signed-video-url';
 
 type QueueInfo = {
   waiting: Patient[];
   inConsultation: Patient[];
   nowCalling: (Patient & { cabinName: string }) | null;
+  advertisements: Advertisement[];
 };
 
 async function fetchQueueInfo(screenId: string): Promise<QueueInfo> {
@@ -24,6 +26,7 @@ function useQueue(screenId: string) {
     waiting: [],
     inConsultation: [],
     nowCalling: null,
+    advertisements: [],
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -47,30 +50,61 @@ function useQueue(screenId: string) {
   return { queueInfo, error };
 }
 
-function VideoPlayer() {
-  const videoUrls = [
-    'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-    'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-    'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
-  ];
+function VideoPlayer({ advertisements }: { advertisements: Advertisement[] }) {
+  const [videoSources, setVideoSources] = useState<{ src: string; type: string }[]>([]);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
 
+  useEffect(() => {
+    const fetchVideoUrls = async () => {
+      if (advertisements.length === 0) {
+        // Fallback to default videos if no ads
+        setVideoSources([
+            { src: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', type: 'video/mp4' },
+            { src: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4', type: 'video/mp4' },
+            { src: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', type: 'video/mp4' },
+        ]);
+        return;
+      }
+
+      const sources = await Promise.all(
+          advertisements.map(async (ad) => {
+              try {
+                  const { signedUrl } = await getSignedVideoUrl({ fileName: ad.videoUrl });
+                  return { src: signedUrl, type: ad.contentType || 'video/mp4' };
+              } catch (e) {
+                  console.error(`Failed to get signed URL for ${ad.videoUrl}`, e);
+                  return null;
+              }
+          })
+      );
+      setVideoSources(sources.filter((s): s is {src: string; type: string} => s !== null));
+    };
+
+    fetchVideoUrls();
+  }, [advertisements]);
+
   const handleVideoEnd = () => {
-    setCurrentVideoIndex((prevIndex) => (prevIndex + 1) % videoUrls.length);
+    if (videoSources.length > 0) {
+      setCurrentVideoIndex((prevIndex) => (prevIndex + 1) % videoSources.length);
+    }
   };
+  
+  if (videoSources.length === 0) {
+      return <div className="w-full h-full bg-black flex items-center justify-center">Loading videos...</div>;
+  }
 
   return (
-    <video
-      key={currentVideoIndex}
-      className="w-full h-full object-cover"
-      autoPlay
-      muted
-      onEnded={handleVideoEnd}
-      playsInline
-    >
-      <source src={videoUrls[currentVideoIndex]} type="video/mp4" />
-      Your browser does not support the video tag.
-    </video>
+      <video
+        key={currentVideoIndex}
+        className="w-full h-full object-cover"
+        autoPlay
+        muted
+        onEnded={handleVideoEnd}
+        playsInline
+      >
+        <source src={videoSources[currentVideoIndex].src} type={videoSources[currentVideoIndex].type} />
+        Your browser does not support the video tag.
+      </video>
   );
 }
 
@@ -123,7 +157,7 @@ export default function DisplayPage({ params }: { params: { id: string } }) {
       </AnimatePresence>
 
       <div className="w-[70%] h-full bg-gray-800">
-        <VideoPlayer />
+        <VideoPlayer advertisements={queueInfo.advertisements} />
       </div>
       <div className="w-[30%] h-full flex flex-col">
         <div className="h-[50%] bg-blue-900 p-4 overflow-hidden">
