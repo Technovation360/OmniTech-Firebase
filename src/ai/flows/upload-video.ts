@@ -56,7 +56,7 @@ const uploadVideoFlow = ai.defineFlow(
       return { videoUrl: `https://fake-b2-url.com/${input.fileName}` };
     }
     
-    await b2.authorize();
+    const authResponse = await b2.authorize();
 
     const { data: { uploadUrl, authorizationToken } } = await b2.getUploadUrl({
         bucketId: process.env.B2_BUCKET_ID!,
@@ -73,9 +73,10 @@ const uploadVideoFlow = ai.defineFlow(
         mime: input.fileType,
     });
     
-    // Construct the public URL from environment variables.
-    const bucketHost = `${process.env.B2_BUCKET_NAME}.${process.env.B2_BUCKET_Endpoint}`;
-    const fileUrl = `https://${bucketHost}/${encodeURIComponent(uniqueFileName)}`;
+    // Construct the public URL from the authorization response.
+    const downloadUrl = authResponse.data.downloadUrl;
+    const bucketName = process.env.B2_BUCKET_NAME;
+    const fileUrl = `${downloadUrl}/file/${bucketName}/${encodeURIComponent(uniqueFileName)}`;
 
     return { videoUrl: fileUrl };
   }
