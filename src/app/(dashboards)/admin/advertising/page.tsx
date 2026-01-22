@@ -142,7 +142,7 @@ function AdvertisementForm({
         const fileBuffer = await fileToArrayBuffer(file);
         const sha1 = await crypto.subtle.digest('SHA-1', fileBuffer);
         const sha1Hex = bufferToHex(sha1);
-        const uniqueFileName = `${uuidv4()}-${encodeURIComponent(file.name)}`;
+        const uniqueFileName = `${uuidv4()}-${file.name.replace(/\s/g, '_')}`;
 
         // Step 3: Upload the file directly to B2
         const b2Response = await fetch(uploadUrl, {
@@ -168,7 +168,7 @@ function AdvertisementForm({
         if (!bucketName) {
             throw new Error("Bucket name is not configured on the client.");
         }
-        const friendlyUrl = `https://${downloadHost}/file/${bucketName}/${b2UploadResult.fileName}`;
+        const friendlyUrl = `https://f005.backblazeb2.com/file/${bucketName}/${b2UploadResult.fileName}`;
         finalVideoUrl = friendlyUrl;
 
       } else if (!isEditMode) {
@@ -289,6 +289,7 @@ export default function VideosPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [advertisementToEdit, setAdvertisementToEdit] = useState<Advertisement | null>(null);
   const [advertisementToDelete, setAdvertisementToDelete] = useState<Advertisement | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<Advertisement | null>(null);
   
   const handleFormConfirm = (formData: any) => {
     const { title, videoUrl, categoryId, advertiserId: formAdvertiserId } = formData;
@@ -379,10 +380,8 @@ export default function VideosPage() {
                   <TableCell className="py-2 text-xs">{ad.categoryName || 'N/A'}</TableCell>
                   <TableCell className="py-2 text-xs">
                     <div className="flex gap-2">
-                        <Button variant="ghost" size="icon-xs" asChild>
-                            <a href={ad.videoUrl} target="_blank" rel="noopener noreferrer" title="Watch Video">
-                                <Film className="h-4 w-4 text-primary" />
-                            </a>
+                        <Button variant="ghost" size="icon-xs" onClick={() => setSelectedVideo(ad)} title="Watch Video">
+                            <Film className="h-4 w-4 text-primary" />
                         </Button>
                          <Button variant="ghost" size="icon-xs" onClick={() => { setAdvertisementToEdit(ad); setIsModalOpen(true); }}>
                             <Edit className="h-4 w-4" />
@@ -429,6 +428,19 @@ export default function VideosPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!selectedVideo} onOpenChange={() => setSelectedVideo(null)}>
+        <DialogContent className="max-w-3xl p-0">
+            <DialogHeader className="p-6 pb-4">
+                <DialogTitle>{selectedVideo?.title}</DialogTitle>
+            </DialogHeader>
+            {selectedVideo?.videoUrl && (
+                <div className="aspect-video">
+                    <video src={selectedVideo.videoUrl} controls autoPlay className="w-full h-full rounded-b-lg" />
+                </div>
+            )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
