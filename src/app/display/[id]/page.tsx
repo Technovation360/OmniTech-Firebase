@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, use } from 'react';
@@ -53,16 +54,14 @@ function useQueue(screenId: string) {
 function VideoPlayer({ advertisements }: { advertisements: Advertisement[] }) {
   const [videoSources, setVideoSources] = useState<{ src: string; type: string }[]>([]);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchVideoUrls = async () => {
+      setIsLoading(true);
       if (advertisements.length === 0) {
-        // Fallback to default videos if no ads
-        setVideoSources([
-            { src: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', type: 'video/mp4' },
-            { src: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4', type: 'video/mp4' },
-            { src: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', type: 'video/mp4' },
-        ]);
+        setVideoSources([]);
+        setIsLoading(false);
         return;
       }
 
@@ -78,6 +77,7 @@ function VideoPlayer({ advertisements }: { advertisements: Advertisement[] }) {
           })
       );
       setVideoSources(sources.filter((s): s is {src: string; type: string} => s !== null));
+      setIsLoading(false);
     };
 
     fetchVideoUrls();
@@ -89,8 +89,12 @@ function VideoPlayer({ advertisements }: { advertisements: Advertisement[] }) {
     }
   };
   
+  if (isLoading) {
+    return <div className="w-full h-full bg-black flex items-center justify-center text-white">Loading Advertisements...</div>;
+  }
+
   if (videoSources.length === 0) {
-      return <div className="w-full h-full bg-black flex items-center justify-center">Loading videos...</div>;
+    return <div className="w-full h-full bg-black flex items-center justify-center text-muted-foreground">No advertisements scheduled for this display.</div>;
   }
 
   return (
