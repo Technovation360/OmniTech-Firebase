@@ -81,18 +81,18 @@ function AdvertisementForm({
   const [fileName, setFileName] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
-  const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
+  const fileToArrayBuffer = (file: File): Promise<ArrayBuffer> => new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-        if (typeof reader.result === 'string') {
-            resolve(reader.result.split(',')[1]);
-        } else {
-            reject(new Error('Failed to read file as data URL.'));
-        }
-    };
-    reader.onerror = error => reject(error);
+    reader.onload = () => resolve(reader.result as ArrayBuffer);
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
   });
+  
+  const bufferToHex = (buffer: ArrayBuffer): string => {
+    return [...new Uint8Array(buffer)]
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -135,15 +135,42 @@ function AdvertisementForm({
       let finalVideoUrl = formData.videoUrl;
   
       if (file) {
-        const base64Content = await toBase64(file);
+        // Step 1: Get the upload URL from our backend
+        const { uploadUrl, authorizationToken, downloadHost } = await uploadVideo({});
 
-        const result = await uploadVideo({
-          fileName: file.name,
-          fileType: file.type,
-          fileContent: base64Content,
+        // Step 2: Prepare file and headers for direct B2 upload
+        const fileBuffer = await fileToArrayBuffer(file);
+        const sha1 = await crypto.subtle.digest('SHA-1', fileBuffer);
+        const sha1Hex = bufferToHex(sha1);
+        const uniqueFileName = `${uuidv4()}-${encodeURIComponent(file.name)}`;
+
+        // Step 3: Upload the file directly to B2
+        const b2Response = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': authorizationToken,
+                'Content-Type': file.type,
+                'X-Bz-File-Name': uniqueFileName,
+                'X-Bz-Content-Sha1': sha1Hex
+            },
+            body: fileBuffer
         });
-        finalVideoUrl = result.videoUrl;
+
+        if (!b2Response.ok) {
+            const errorBody = await b2Response.json();
+            throw new Error(`B2 Upload failed: ${errorBody.message || 'Unknown error'}`);
+        }
         
+        const b2UploadResult = await b2Response.json();
+
+        // Step 4: Construct the final public URL
+        const bucketName = process.env.NEXT_PUBLIC_B2_BUCKET_NAME;
+        if (!bucketName) {
+            throw new Error("Bucket name is not configured on the client.");
+        }
+        const friendlyUrl = `https://${downloadHost}/file/${bucketName}/${b2UploadResult.fileName}`;
+        finalVideoUrl = friendlyUrl;
+
       } else if (!isEditMode) {
         toast({ title: 'Please select a video file to upload.', variant: 'destructive' });
         setIsUploading(false);
