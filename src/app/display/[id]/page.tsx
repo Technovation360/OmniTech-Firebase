@@ -7,12 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnimatePresence, motion } from 'framer-motion';
 import { getSignedVideoUrl } from '@/ai/flows/get-signed-video-url';
 import VideoPlayer from '@/components/VideoPlayer';
-import type { VideoJsPlayer } from 'video.js';
+import type { VideoJsPlayer, VideoJsPlayerOptions } from 'video.js';
 
 type QueueInfo = {
   waiting: Patient[];
-  inConsultation: (Patient & { cabinName: string })[];
-  nowCalling: (Patient & { cabinName: string }) | null;
+  inConsultation: (Patient & { cabinName: string; clinicName: string })[];
+  nowCalling: (Patient & { cabinName: string; clinicName: string }) | null;
   advertisements: Advertisement[];
 };
 
@@ -68,8 +68,8 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
   useEffect(() => {
     const fetchVideoUrls = async () => {
       const newAdsId = advertisements.map(ad => ad.id).sort().join(',');
-      if (newAdsId === adsIdRef.current) {
-        return; // No change in advertisements
+      if (newAdsId === adsIdRef.current && videoSources.length > 0) { // Keep playing if list is same and not empty
+        return; 
       }
       adsIdRef.current = newAdsId;
       
@@ -93,13 +93,33 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
           })
       );
       const validSources = sources.filter((s): s is {src: string; type: string} => s !== null);
-      setVideoSources(validSources);
-      setCurrentVideoIndex(0);
+      
+      if (validSources.length > 0) {
+        setVideoSources(validSources);
+        setCurrentVideoIndex(0);
+      } else {
+        setVideoSources([]);
+      }
       setIsLoading(false);
     };
 
     fetchVideoUrls();
-  }, [advertisements]);
+  }, [advertisements, videoSources.length]); // Depend on videoSources.length to re-evaluate if it becomes empty
+
+  const playerRef = useRef<VideoJsPlayer | null>(null);
+
+  const playerOptions: VideoJsPlayerOptions = {
+    autoplay: true,
+    controls: false,
+    muted: true,
+    fluid: true,
+    sources: videoSources.length > 0 ? [videoSources[currentVideoIndex]] : [],
+  };
+
+  const handlePlayerReady = (player: VideoJsPlayer) => {
+    playerRef.current = player;
+    player.on('ended', handleNextVideo);
+  };
 
   if (isLoading) {
     return <div className="w-full h-full bg-black flex items-center justify-center text-white">Loading Advertisements...</div>;
@@ -108,19 +128,11 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
   if (videoSources.length === 0) {
     return <div className="w-full h-full bg-black flex items-center justify-center text-muted-foreground">No advertisements scheduled for this display.</div>;
   }
-  
-  const playerOptions = {
-    autoplay: true,
-    controls: false,
-    muted: true,
-    fluid: true,
-    sources: videoSources.length > 0 ? [videoSources[currentVideoIndex]] : [],
-  };
 
   return (
       <VideoPlayer 
         options={playerOptions}
-        onEnd={handleNextVideo}
+        onReady={handlePlayerReady}
       />
   );
 }
@@ -182,16 +194,17 @@ export default function DisplayPage({ params }: { params: Promise<{ id: string }
         <div className="h-[50%] bg-blue-900 p-4 overflow-hidden">
           <Card className="h-full bg-transparent border-0 text-white flex flex-col">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold text-center text-yellow-300">
+              <CardTitle className="text-xl font-bold text-center text-yellow-300">
                 IN CONSULTATION
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto px-2">
               <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                 {queueInfo.inConsultation.map((p) => (
-                  <div key={p.id} className="bg-black/20 rounded-lg p-2 flex justify-between items-center">
-                    <span className="text-lg font-medium">{p.cabinName}</span>
-                    <span className="text-xl font-bold tracking-wider">{p.tokenNumber}</span>
+                  <div key={p.id} className="bg-black/20 rounded-lg p-2 text-center">
+                    <div className="text-xs font-medium truncate" title={`${p.clinicName}`}>{p.clinicName}</div>
+                    <div className="text-sm font-semibold truncate" title={p.cabinName}>{p.cabinName}</div>
+                    <div className="text-3xl font-bold tracking-wider mt-1">{p.tokenNumber}</div>
                   </div>
                 ))}
               </div>
@@ -201,7 +214,7 @@ export default function DisplayPage({ params }: { params: Promise<{ id: string }
         <div className="h-[50%] bg-gray-800 p-4 overflow-hidden">
           <Card className="h-full bg-transparent border-0 text-white flex flex-col">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold text-center">
+              <CardTitle className="text-xl font-bold text-center">
                 NEXT IN LINE
               </CardTitle>
             </CardHeader>

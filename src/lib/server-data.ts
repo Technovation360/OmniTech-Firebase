@@ -280,7 +280,8 @@ export const getQueueInfoByScreenId = async (
   allPatients: EnrichedPatient[],
   allCampaigns: Campaign[],
   allAdvertiserClinicGroups: AdvertiserClinicGroup[],
-  allAdvertisements: Advertisement[]
+  allAdvertisements: Advertisement[],
+  allClinics: Clinic[]
 ) => {
     const groupForScreen = allGroups.find(g => g.screens.some(s => s.id === screenId));
     
@@ -310,6 +311,9 @@ export const getQueueInfoByScreenId = async (
         return { waiting: [], inConsultation: [], nowCalling: null, advertisements: advertisementsForScreen };
     }
     
+    const clinic = allClinics.find(c => c.id === groupForScreen.clinicId);
+    const clinicName = clinic?.name || 'Unknown Clinic';
+
     const patients = allPatients.filter(p => p.groupId === groupForScreen.id);
     
     const queuePatients = patients.filter(p => ['waiting', 'calling', 'consulting'].includes(p.status));
@@ -322,6 +326,7 @@ export const getQueueInfoByScreenId = async (
         calledPatientInfo = {
             ...callingPatient,
             cabinName: cabin?.name || 'Consultation Room',
+            clinicName: clinicName,
         }
     }
 
@@ -329,7 +334,7 @@ export const getQueueInfoByScreenId = async (
         .filter(p => p.status === 'consulting')
         .map(p => {
             const cabin = groupForScreen.cabins.find(c => c.id === p.cabinId);
-            return { ...p, cabinName: cabin?.name || 'Room' };
+            return { ...p, cabinName: cabin?.name || 'Room', clinicName: clinicName };
         })
         .sort((a, b) => (a.cabinName || '').localeCompare(b.cabinName || ''));
 

@@ -1,5 +1,5 @@
 
-import { getQueueInfoByScreenId, getClinicGroups, getPatients, getCampaigns, getAdvertiserClinicGroups, getAdvertisements } from '@/lib/server-data';
+import { getQueueInfoByScreenId, getClinicGroups, getPatients, getCampaigns, getAdvertiserClinicGroups, getAdvertisements, getClinics } from '@/lib/server-data';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic'; // prevent caching
@@ -14,12 +14,13 @@ export async function GET(
       return NextResponse.json({ message: 'Screen ID is required' }, { status: 400 });
     }
 
-    const [allGroups, allPatients, allCampaigns, allAdvertiserClinicGroups, allAdvertisements] = await Promise.all([
+    const [allGroups, allPatients, allCampaigns, allAdvertiserClinicGroups, allAdvertisements, allClinics] = await Promise.all([
         getClinicGroups(),
         getPatients(),
         getCampaigns(),
         getAdvertiserClinicGroups(),
-        getAdvertisements()
+        getAdvertisements(),
+        getClinics(),
     ]);
 
     const queueInfo = await getQueueInfoByScreenId(
@@ -28,7 +29,8 @@ export async function GET(
         allPatients, 
         allCampaigns, 
         allAdvertiserClinicGroups, 
-        allAdvertisements
+        allAdvertisements,
+        allClinics
     );
 
     return NextResponse.json(queueInfo);
