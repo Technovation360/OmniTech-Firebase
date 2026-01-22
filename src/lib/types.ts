@@ -94,6 +94,7 @@ export type Advertisement = {
   categoryId?: string;
   categoryName?: string;
   advertiser?: string; 
+  contentType?: string;
 };
 
 export type Consultation = {
@@ -161,5 +162,3 @@ export type Advertiser = {
   status: 'active' | 'inactive';
   campaignsLimit?: number;
 };
-
-    

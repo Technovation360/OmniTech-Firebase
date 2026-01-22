@@ -78,6 +78,7 @@ function AdvertisementForm({
     videoUrl: '',
     advertiserId: '',
     categoryId: '',
+    contentType: '',
   });
   const [file, setFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState('');
@@ -104,9 +105,10 @@ function AdvertisementForm({
           videoUrl: advertisement.videoUrl,
           advertiserId: advertisement.advertiserId,
           categoryId: advertisement.categoryId || '',
+          contentType: advertisement.contentType || '',
         });
       } else {
-        setFormData({ title: '', videoUrl: '', advertiserId: '', categoryId: '' });
+        setFormData({ title: '', videoUrl: '', advertiserId: '', categoryId: '', contentType: '' });
       }
       setFileName('');
       setFile(null);
@@ -135,6 +137,7 @@ function AdvertisementForm({
   
     try {
       let finalVideoUrl = formData.videoUrl;
+      let finalContentType = formData.contentType;
   
       if (file) {
         // Step 1: Get the upload URL from our backend
@@ -167,6 +170,7 @@ function AdvertisementForm({
 
         // Step 4: Store only the filename
         finalVideoUrl = b2UploadResult.fileName;
+        finalContentType = file.type;
 
       } else if (!isEditMode) {
         toast({ title: 'Please select a video file to upload.', variant: 'destructive' });
@@ -174,7 +178,7 @@ function AdvertisementForm({
         return;
       }
   
-      onConfirm({ ...formData, videoUrl: finalVideoUrl });
+      onConfirm({ ...formData, videoUrl: finalVideoUrl, contentType: finalContentType });
       onClose();
     } catch (error: any) {
       console.error('Upload failed:', error);
@@ -310,7 +314,7 @@ export default function VideosPage() {
   }, [selectedVideo, toast]);
   
   const handleFormConfirm = (formData: any) => {
-    const { title, videoUrl, categoryId, advertiserId: formAdvertiserId } = formData;
+    const { title, videoUrl, categoryId, advertiserId: formAdvertiserId, contentType } = formData;
     
     let finalAdvertiserId: string | null = null;
     let finalAdvertiserName: string | undefined;
@@ -337,6 +341,7 @@ export default function VideosPage() {
       advertiser: finalAdvertiserName,
       categoryId,
       categoryName: category?.name,
+      contentType,
     };
     
     if (advertisementToEdit) {
@@ -468,7 +473,7 @@ export default function VideosPage() {
                             fluid: true,
                             sources: [{
                                 src: playingUrl,
-                                type: 'video/mp4'
+                                type: selectedVideo?.contentType || 'video/mp4'
                             }]
                         }}
                      />
