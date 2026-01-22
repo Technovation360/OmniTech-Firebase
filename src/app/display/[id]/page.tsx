@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, use, useCallback } from 'react';
@@ -57,10 +58,20 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const onEndCallbackRef = useRef<() => void>();
+  const adsIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const fetchVideoUrls = async () => {
+      const newAdsId = advertisements.map(ad => ad.id).join(',');
+
+      // Only refetch if the list of ads has actually changed.
+      if (newAdsId === adsIdRef.current) {
+        return;
+      }
+      
+      adsIdRef.current = newAdsId;
       setIsLoading(true);
+
       if (advertisements.length === 0) {
         setVideoSources([]);
         setIsLoading(false);
@@ -79,6 +90,7 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
           })
       );
       setVideoSources(sources.filter((s): s is {src: string; type: string} => s !== null));
+      setCurrentVideoIndex(0); // Reset to first video on list change
       setIsLoading(false);
     };
 
