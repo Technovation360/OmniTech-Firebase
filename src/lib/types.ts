@@ -137,6 +137,8 @@ export type AdvertiserClinicGroup = {
   name: string;
   advertiserId: string;
   clinicIds: string[];
+  categoryId: string;
+  categoryName: string;
 };
 
 export type Campaign = {
@@ -159,3 +161,5 @@ export type Advertiser = {
   status: 'active' | 'inactive';
   campaignsLimit?: number;
 };
+
+    

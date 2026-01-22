@@ -36,7 +36,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Edit, Trash2, Search, Loader, PlusCircle } from 'lucide-react';
-import type { AdvertiserClinicGroup, Clinic } from '@/lib/types';
+import type { AdvertiserClinicGroup, Clinic, Category } from '@/lib/types';
 import { collection, doc, query } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
@@ -53,7 +53,8 @@ function ClinicGroupForm({
   clinicGroup,
   onConfirm,
   clinics,
-  advertisers
+  advertisers,
+  categories,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -61,6 +62,7 @@ function ClinicGroupForm({
   onConfirm: (formData: Omit<AdvertiserClinicGroup, 'id'>) => void;
   clinics: MultiSelectOption[];
   advertisers: Advertiser[];
+  categories: Category[];
 }) {
   const isEditMode = !!clinicGroup;
   const { toast } = useToast();
@@ -68,6 +70,7 @@ function ClinicGroupForm({
     name: '',
     advertiserId: '',
     clinicIds: [] as string[],
+    categoryId: '',
   });
 
   useEffect(() => {
@@ -76,9 +79,10 @@ function ClinicGroupForm({
         name: clinicGroup.name,
         advertiserId: clinicGroup.advertiserId,
         clinicIds: clinicGroup.clinicIds || [],
+        categoryId: clinicGroup.categoryId || '',
       });
     } else {
-      setFormData({ name: '', advertiserId: '', clinicIds: [] });
+      setFormData({ name: '', advertiserId: '', clinicIds: [], categoryId: '' });
     }
   }, [clinicGroup]);
 
@@ -87,11 +91,12 @@ function ClinicGroupForm({
   }
 
   const handleConfirm = () => {
-    if (!formData.name || !formData.advertiserId || formData.clinicIds.length === 0) {
+    if (!formData.name || !formData.advertiserId || formData.clinicIds.length === 0 || !formData.categoryId) {
         toast({ variant: 'destructive', title: "All fields are required."});
         return;
     }
-    onConfirm(formData);
+    const category = categories.find(c => c.id === formData.categoryId);
+    onConfirm({ ...formData, categoryName: category?.name || '' });
     onClose();
   };
 
@@ -104,8 +109,8 @@ function ClinicGroupForm({
             Group clinics together and assign them to an advertiser for targeted campaigns.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 px-6 pb-6">
-            <div className="space-y-2">
+        <div className="grid grid-cols-2 gap-4 px-6 pb-6">
+            <div className="col-span-2 space-y-2">
                 <Label htmlFor="groupName">Group Name</Label>
                 <Input id="groupName" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} />
             </div>
@@ -121,6 +126,17 @@ function ClinicGroupForm({
                 </Select>
             </div>
             <div className="space-y-2">
+                <Label htmlFor="category">Category</Label>
+                <Select value={formData.categoryId} onValueChange={(value) => handleInputChange('categoryId', value)}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select a category..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {categories.map(cat => <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="col-span-2 space-y-2">
                 <Label htmlFor="clinics">Clinics</Label>
                 <MultiSelect
                     options={clinics}
@@ -179,6 +195,9 @@ export default function ClinicGroupsPage() {
   
   const clinicsQuery = useMemoFirebase(() => query(collection(firestore, 'clinics')), [firestore]);
   const { data: clinics, isLoading: clinicsLoading } = useCollection<Clinic>(clinicsQuery);
+  
+  const categoriesQuery = useMemoFirebase(() => query(collection(firestore, 'categories')), [firestore]);
+  const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
   const [filteredClinicGroups, setFilteredClinicGroups] = useState<AdvertiserClinicGroup[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -195,6 +214,11 @@ export default function ClinicGroupsPage() {
     if (!advertisers) return new Map();
     return new Map(advertisers.map(a => [a.id, a.name]));
   }, [advertisers]);
+  
+  const categoryMap = useMemo(() => {
+    if (!categories) return new Map();
+    return new Map(categories.map(c => [c.id, c.name]));
+  }, [categories]);
 
   useEffect(() => {
     let sourceData = allClinicGroups ? [...allClinicGroups] : [];
@@ -202,11 +226,12 @@ export default function ClinicGroupsPage() {
         const lowercasedQuery = searchQuery.toLowerCase();
         sourceData = sourceData.filter(group => 
             group.name.toLowerCase().includes(lowercasedQuery) ||
-            (advertiserMap.get(group.advertiserId) || '').toLowerCase().includes(lowercasedQuery)
+            (advertiserMap.get(group.advertiserId) || '').toLowerCase().includes(lowercasedQuery) ||
+            (categoryMap.get(group.categoryId) || '').toLowerCase().includes(lowercasedQuery)
         );
     }
     setFilteredClinicGroups(sourceData);
-  }, [searchQuery, allClinicGroups, advertiserMap]);
+  }, [searchQuery, allClinicGroups, advertiserMap, categoryMap]);
   
   const openEditModal = (group: AdvertiserClinicGroup) => {
     setGroupToEdit(group);
@@ -247,7 +272,7 @@ export default function ClinicGroupsPage() {
     closeModal();
   };
 
-  const isLoading = groupsLoading || advertisersLoading || clinicsLoading;
+  const isLoading = groupsLoading || advertisersLoading || clinicsLoading || categoriesLoading;
 
   return (
     <>
@@ -263,7 +288,7 @@ export default function ClinicGroupsPage() {
             <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
-                    placeholder="Search by group or advertiser..." 
+                    placeholder="Search by group, advertiser, category..." 
                     className="pl-9 h-9" 
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
@@ -276,6 +301,7 @@ export default function ClinicGroupsPage() {
               <TableRow>
                 <TableHead>Group Name</TableHead>
                 <TableHead>Advertiser</TableHead>
+                <TableHead>Category</TableHead>
                 <TableHead># Clinics</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -283,7 +309,7 @@ export default function ClinicGroupsPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-10">
+                  <TableCell colSpan={5} className="text-center py-10">
                     <Loader className="mx-auto h-6 w-6 animate-spin" />
                   </TableCell>
                 </TableRow>
@@ -291,6 +317,7 @@ export default function ClinicGroupsPage() {
                 <TableRow key={group.id}>
                   <TableCell className="font-medium py-2 text-xs">{group.name}</TableCell>
                   <TableCell className="py-2 text-xs">{advertiserMap.get(group.advertiserId) || 'Unknown'}</TableCell>
+                  <TableCell className="py-2 text-xs">{categoryMap.get(group.categoryId) || 'N/A'}</TableCell>
                   <TableCell className="py-2 text-xs">
                     <Badge variant="secondary">{group.clinicIds.length}</Badge>
                   </TableCell>
@@ -306,7 +333,7 @@ export default function ClinicGroupsPage() {
               ))}
                {!isLoading && filteredClinicGroups.length === 0 && (
                  <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-4">No clinic groups found.</TableCell>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-4">No clinic groups found.</TableCell>
                  </TableRow>
               )}
             </TableBody>
@@ -320,6 +347,7 @@ export default function ClinicGroupsPage() {
         onConfirm={handleFormConfirm}
         clinics={clinicOptions}
         advertisers={advertisers || []}
+        categories={categories || []}
       />
       <DeleteClinicGroupDialog 
         isOpen={!!groupToDelete}
@@ -330,3 +358,5 @@ export default function ClinicGroupsPage() {
     </>
   )
 }
+
+    
