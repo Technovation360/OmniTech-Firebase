@@ -21,13 +21,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
+  AlertDialogDescription as AlertDialogDesc,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -85,11 +86,14 @@ function CampaignForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md p-0">
+        <DialogHeader className="p-6 pb-4">
           <DialogTitle>{isEditMode ? 'Edit Campaign' : 'Create Campaign'}</DialogTitle>
+           <DialogDescription>
+            Create a new campaign by assigning advertisements to clinic groups.
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
+        <div className="px-6 pb-6 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Campaign Name</Label>
             <Input id="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
@@ -113,7 +117,7 @@ function CampaignForm({
             />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="bg-muted/50 px-6 py-4 rounded-b-lg">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleConfirm}>Save</Button>
         </DialogFooter>
@@ -296,9 +300,9 @@ export default function CampaignsPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDesc>
               This will permanently delete the campaign "{campaignToDelete?.name}".
-            </AlertDialogDescription>
+            </AlertDialogDesc>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -309,5 +313,3 @@ export default function CampaignsPage() {
     </div>
   );
 }
-
-    

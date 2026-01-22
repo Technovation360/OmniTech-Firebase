@@ -21,13 +21,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
+  AlertDialogDescription as AlertDialogDesc,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -96,11 +97,14 @@ function ClinicGroupForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-lg p-0">
+        <DialogHeader className="p-6 pb-4">
           <DialogTitle>{isEditMode ? 'Edit Clinic Group' : 'Create Clinic Group'}</DialogTitle>
+          <DialogDescription>
+            Group clinics together and assign them to an advertiser for targeted campaigns.
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 px-6 pb-6">
             <div className="space-y-2">
                 <Label htmlFor="groupName">Group Name</Label>
                 <Input id="groupName" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} />
@@ -126,7 +130,7 @@ function ClinicGroupForm({
                 />
             </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="bg-muted/50 px-6 py-4 rounded-b-lg">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleConfirm}>Save</Button>
         </DialogFooter>
@@ -151,9 +155,9 @@ function DeleteClinicGroupDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-          <AlertDialogDescription>
+          <AlertDialogDesc>
             This action cannot be undone. This will permanently delete the clinic group "{groupName}".
-          </AlertDialogDescription>
+          </AlertDialogDesc>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onClose}>Cancel</AlertDialogCancel>
@@ -326,5 +330,3 @@ export default function ClinicGroupsPage() {
     </>
   )
 }
-
-    
