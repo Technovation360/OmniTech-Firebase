@@ -36,9 +36,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Edit, Trash2, Search, Loader, PlusCircle } from 'lucide-react';
-import type { AdvertiserClinicGroup, Clinic, Category } from '@/lib/types';
-import { collection, doc, query } from 'firebase/firestore';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import type { AdvertiserClinicGroup, Clinic, Category, User } from '@/lib/types';
+import { collection, doc, query, getDocs, where } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/multi-select';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -55,6 +55,7 @@ function ClinicGroupForm({
   clinics,
   advertisers,
   categories,
+  currentUser
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -63,6 +64,7 @@ function ClinicGroupForm({
   clinics: MultiSelectOption[];
   advertisers: Advertiser[];
   categories: Category[];
+  currentUser: User | null;
 }) {
   const isEditMode = !!clinicGroup;
   const { toast } = useToast();
@@ -91,7 +93,7 @@ function ClinicGroupForm({
   }
 
   const handleConfirm = () => {
-    if (!formData.name || !formData.advertiserId || formData.clinicIds.length === 0 || !formData.categoryId) {
+    if (!formData.name || (currentUser?.role !== 'advertiser' && !formData.advertiserId) || formData.clinicIds.length === 0 || !formData.categoryId) {
         toast({ variant: 'destructive', title: "All fields are required."});
         return;
     }
@@ -114,17 +116,19 @@ function ClinicGroupForm({
                 <Label htmlFor="groupName">Group Name</Label>
                 <Input id="groupName" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} />
             </div>
-            <div className="space-y-2">
-                <Label htmlFor="advertiser">Advertiser</Label>
-                 <Select value={formData.advertiserId} onValueChange={(value) => handleInputChange('advertiserId', value)}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select an advertiser..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {advertisers.map(ad => <SelectItem key={ad.id} value={ad.id}>{ad.name}</SelectItem>)}
-                    </SelectContent>
-                </Select>
-            </div>
+            {currentUser?.role !== 'advertiser' && (
+              <div className="space-y-2">
+                  <Label htmlFor="advertiser">Advertiser</Label>
+                   <Select value={formData.advertiserId} onValueChange={(value) => handleInputChange('advertiserId', value)}>
+                      <SelectTrigger>
+                          <SelectValue placeholder="Select an advertiser..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                          {advertisers.map(ad => <SelectItem key={ad.id} value={ad.id}>{ad.name}</SelectItem>)}
+                      </SelectContent>
+                  </Select>
+              </div>
+            )}
             <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
                 <Select value={formData.categoryId} onValueChange={(value) => handleInputChange('categoryId', value)}>
@@ -186,8 +190,42 @@ function DeleteClinicGroupDialog({
 
 export default function ClinicGroupsPage() {
   const firestore = useFirestore();
+  const { user: authUser, isUserLoading } = useUser();
+  const [currentUserData, setCurrentUserData] = useState<User | null>(null);
+  const [advertiserId, setAdvertiserId] = useState<string | null>(null);
 
-  const clinicGroupsQuery = useMemoFirebase(() => query(collection(firestore, 'advertiser_clinic_groups')), [firestore]);
+  useEffect(() => {
+    if (authUser && !isUserLoading) {
+      const userDocRef = doc(firestore, 'users', authUser.uid);
+      getDoc(userDocRef).then(snap => {
+        if (snap.exists()) {
+          const userData = snap.data() as User;
+          setCurrentUserData(userData);
+          if (userData.role === 'advertiser' && userData.affiliation) {
+            const advQuery = query(collection(firestore, 'advertisers'), where('name', '==', userData.affiliation));
+            getDocs(advQuery).then((advSnap) => {
+              if (!advSnap.empty) {
+                setAdvertiserId(advSnap.docs[0].id);
+              }
+            });
+          }
+        }
+      });
+    }
+  }, [authUser, isUserLoading, firestore]);
+  
+  const clinicGroupsQuery = useMemoFirebase(() => {
+    if (!currentUserData) return null;
+    const baseQuery = collection(firestore, 'advertiser_clinic_groups');
+    if (currentUserData.role === 'central-admin') {
+      return query(baseQuery);
+    }
+    if (currentUserData.role === 'advertiser' && advertiserId) {
+      return query(baseQuery, where('advertiserId', '==', advertiserId));
+    }
+    return null;
+  }, [firestore, currentUserData, advertiserId]);
+
   const { data: allClinicGroups, isLoading: groupsLoading } = useCollection<AdvertiserClinicGroup>(clinicGroupsQuery);
   
   const advertisersQuery = useMemoFirebase(() => query(collection(firestore, 'advertisers')), [firestore]);
@@ -264,15 +302,19 @@ export default function ClinicGroupsPage() {
   }
 
   const handleFormConfirm = (formData: Omit<AdvertiserClinicGroup, 'id'>) => {
+    const dataToSave = { ...formData };
+    if (currentUserData?.role === 'advertiser' && advertiserId) {
+        dataToSave.advertiserId = advertiserId;
+    }
     if (groupToEdit) {
-      setDocumentNonBlocking(doc(firestore, 'advertiser_clinic_groups', groupToEdit.id), formData, { merge: true });
+      setDocumentNonBlocking(doc(firestore, 'advertiser_clinic_groups', groupToEdit.id), dataToSave, { merge: true });
     } else {
-      addDocumentNonBlocking(collection(firestore, 'advertiser_clinic_groups'), formData);
+      addDocumentNonBlocking(collection(firestore, 'advertiser_clinic_groups'), dataToSave);
     }
     closeModal();
   };
 
-  const isLoading = groupsLoading || advertisersLoading || clinicsLoading || categoriesLoading;
+  const isLoading = isUserLoading || groupsLoading || advertisersLoading || clinicsLoading || categoriesLoading;
 
   return (
     <>
@@ -348,6 +390,7 @@ export default function ClinicGroupsPage() {
         clinics={clinicOptions}
         advertisers={advertisers || []}
         categories={categories || []}
+        currentUser={currentUserData}
       />
       <DeleteClinicGroupDialog 
         isOpen={!!groupToDelete}
@@ -358,5 +401,3 @@ export default function ClinicGroupsPage() {
     </>
   )
 }
-
-    
