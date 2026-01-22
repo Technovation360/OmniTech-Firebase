@@ -4,3 +4,4 @@ config();
 import '@/ai/flows/summarize-consultation-notes.ts';
 import '@/ai/flows/set-custom-claims.ts';
 import '@/ai/flows/upload-video.ts';
+import '@/ai/flows/get-signed-video-url.ts';

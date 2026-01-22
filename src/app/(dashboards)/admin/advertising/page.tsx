@@ -45,6 +45,7 @@ import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocki
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { uploadVideo } from '@/ai/flows/upload-video';
+import { getSignedVideoUrl } from '@/ai/flows/get-signed-video-url';
 import { v4 as uuidv4 } from 'uuid';
 
 type Advertiser = {
@@ -136,7 +137,7 @@ function AdvertisementForm({
   
       if (file) {
         // Step 1: Get the upload URL from our backend
-        const { uploadUrl, authorizationToken, downloadHost } = await uploadVideo({});
+        const { uploadUrl, authorizationToken } = await uploadVideo({});
 
         // Step 2: Prepare file and headers for direct B2 upload
         const fileBuffer = await fileToArrayBuffer(file);
@@ -150,7 +151,7 @@ function AdvertisementForm({
             headers: {
                 'Authorization': authorizationToken,
                 'Content-Type': file.type,
-                'X-Bz-File-Name': uniqueFileName,
+                'X-Bz-File-Name': encodeURIComponent(uniqueFileName),
                 'X-Bz-Content-Sha1': sha1Hex
             },
             body: fileBuffer
@@ -163,13 +164,8 @@ function AdvertisementForm({
         
         const b2UploadResult = await b2Response.json();
 
-        // Step 4: Construct the final public URL
-        const bucketName = process.env.NEXT_PUBLIC_B2_BUCKET_NAME;
-        if (!bucketName) {
-            throw new Error("Bucket name is not configured on the client.");
-        }
-        const friendlyUrl = `https://f005.backblazeb2.com/file/${bucketName}/${b2UploadResult.fileName}`;
-        finalVideoUrl = friendlyUrl;
+        // Step 4: Store only the filename
+        finalVideoUrl = b2UploadResult.fileName;
 
       } else if (!isEditMode) {
         toast({ title: 'Please select a video file to upload.', variant: 'destructive' });
@@ -207,7 +203,7 @@ function AdvertisementForm({
             {fileName && <p className="text-sm text-muted-foreground mt-1">{fileName}</p>}
             {isEditMode && !fileName && formData.videoUrl && (
                 <p className="text-sm text-muted-foreground mt-1 truncate">
-                    Current: <a href={formData.videoUrl} target="_blank" rel="noopener noreferrer" className="underline text-primary">{formData.videoUrl}</a>
+                    Current File: {formData.videoUrl}
                 </p>
             )}
           </div>
@@ -290,6 +286,27 @@ export default function VideosPage() {
   const [advertisementToEdit, setAdvertisementToEdit] = useState<Advertisement | null>(null);
   const [advertisementToDelete, setAdvertisementToDelete] = useState<Advertisement | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<Advertisement | null>(null);
+  const [playingUrl, setPlayingUrl] = useState<string | null>(null);
+  const [isFetchingUrl, setIsFetchingUrl] = useState(false);
+
+  useEffect(() => {
+    if (selectedVideo?.videoUrl) {
+        const fetchUrl = async () => {
+            setIsFetchingUrl(true);
+            setPlayingUrl(null);
+            try {
+                const { signedUrl } = await getSignedVideoUrl({ fileName: selectedVideo.videoUrl });
+                setPlayingUrl(signedUrl);
+            } catch (error) {
+                console.error("Failed to get signed URL", error);
+                toast({ title: 'Error', description: 'Could not load video.', variant: 'destructive' });
+            } finally {
+                setIsFetchingUrl(false);
+            }
+        };
+        fetchUrl();
+    }
+  }, [selectedVideo, toast]);
   
   const handleFormConfirm = (formData: any) => {
     const { title, videoUrl, categoryId, advertiserId: formAdvertiserId } = formData;
@@ -341,6 +358,11 @@ export default function VideosPage() {
   };
   
   const isLoading = adsLoading || catsLoading || advertisersLoading || isUserLoading;
+
+  const handleClosePlayer = () => {
+      setSelectedVideo(null);
+      setPlayingUrl(null);
+  }
 
   return (
     <>
@@ -429,16 +451,20 @@ export default function VideosPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={!!selectedVideo} onOpenChange={() => setSelectedVideo(null)}>
+      <Dialog open={!!selectedVideo} onOpenChange={handleClosePlayer}>
         <DialogContent className="max-w-3xl p-0">
             <DialogHeader className="p-6 pb-4">
                 <DialogTitle>{selectedVideo?.title}</DialogTitle>
             </DialogHeader>
-            {selectedVideo?.videoUrl && (
-                <div className="aspect-video">
-                    <video src={selectedVideo.videoUrl} controls autoPlay className="w-full h-full rounded-b-lg" />
-                </div>
-            )}
+            <div className="aspect-video bg-black flex items-center justify-center">
+                {isFetchingUrl && <Loader className="animate-spin text-white h-8 w-8" />}
+                {!isFetchingUrl && playingUrl && (
+                     <video src={playingUrl} controls autoPlay className="w-full h-full rounded-b-lg" />
+                )}
+                {!isFetchingUrl && !playingUrl && (
+                    <p className="text-white">Could not load video.</p>
+                )}
+            </div>
         </DialogContent>
       </Dialog>
     </>
