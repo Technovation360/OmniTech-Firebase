@@ -187,7 +187,7 @@ export default function DisplayPage({ params }: { params: Promise<{ id: string }
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto">
               {queueInfo.inConsultation.map((p) => (
-                <div key={p.id} className="text-center text-4xl font-bold p-3">
+                <div key={p.id} className="text-center text-[34px] font-bold p-3">
                   {p.tokenNumber}
                 </div>
               ))}
