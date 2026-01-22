@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -485,7 +484,7 @@ export default function VideosPage() {
                         options={{
                             autoplay: true,
                             controls: true,
-                            responsive: true,
+                            fluid: true,
                             sources: [{
                                 src: playingUrl,
                                 type: selectedVideo?.contentType || 'video/mp4'

@@ -18,7 +18,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ options, onReady }) => {
     if (!playerRef.current && videoContainerRef.current) {
       // Create the video element dynamically
       const videoElement = document.createElement("video");
-      videoElement.className = "video-js vjs-big-play-centered";
+      videoElement.className = "video-js vjs-big-play-centered vjs-fill";
       videoContainerRef.current.appendChild(videoElement);
 
       playerRef.current = videojs(videoElement, options, function() {
