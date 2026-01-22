@@ -11,7 +11,7 @@ import type { VideoJsPlayer } from 'video.js';
 
 type QueueInfo = {
   waiting: Patient[];
-  inConsultation: Patient[];
+  inConsultation: (Patient & { cabinName: string })[];
   nowCalling: (Patient & { cabinName: string }) | null;
   advertisements: Advertisement[];
 };
@@ -58,15 +58,21 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const adsIdRef = useRef<string | null>(null);
+  
+  const handleNextVideo = useCallback(() => {
+    if (videoSources.length > 0) {
+      setCurrentVideoIndex(prevIndex => (prevIndex + 1) % videoSources.length);
+    }
+  }, [videoSources.length]);
 
   useEffect(() => {
     const fetchVideoUrls = async () => {
-      const newAdsId = advertisements.map(ad => ad.id).join(',');
+      const newAdsId = advertisements.map(ad => ad.id).sort().join(',');
       if (newAdsId === adsIdRef.current) {
-        return;
+        return; // No change in advertisements
       }
       adsIdRef.current = newAdsId;
-
+      
       setIsLoading(true);
 
       if (advertisements.length === 0) {
@@ -88,18 +94,12 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
       );
       const validSources = sources.filter((s): s is {src: string; type: string} => s !== null);
       setVideoSources(validSources);
-      setCurrentVideoIndex(0); // Reset to first video on list change
+      setCurrentVideoIndex(0);
       setIsLoading(false);
     };
 
     fetchVideoUrls();
   }, [advertisements]);
-
-  const handleVideoEnd = useCallback(() => {
-    if (videoSources.length > 0) {
-      setCurrentVideoIndex((prevIndex) => (prevIndex + 1) % videoSources.length);
-    }
-  }, [videoSources.length]);
 
   if (isLoading) {
     return <div className="w-full h-full bg-black flex items-center justify-center text-white">Loading Advertisements...</div>;
@@ -113,13 +113,14 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
     autoplay: true,
     controls: false,
     muted: true,
+    fluid: true,
     sources: videoSources.length > 0 ? [videoSources[currentVideoIndex]] : [],
   };
 
   return (
       <VideoPlayer 
-        options={playerOptions} 
-        onEnd={handleVideoEnd}
+        options={playerOptions}
+        onEnd={handleNextVideo}
       />
   );
 }
@@ -185,12 +186,15 @@ export default function DisplayPage({ params }: { params: Promise<{ id: string }
                 IN CONSULTATION
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 overflow-y-auto">
-              {queueInfo.inConsultation.map((p) => (
-                <div key={p.id} className="text-center text-[34px] font-bold p-3">
-                  {p.tokenNumber}
-                </div>
-              ))}
+            <CardContent className="flex-1 overflow-y-auto px-2">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                {queueInfo.inConsultation.map((p) => (
+                  <div key={p.id} className="bg-black/20 rounded-lg p-2 flex justify-between items-center">
+                    <span className="text-lg font-medium">{p.cabinName}</span>
+                    <span className="text-xl font-bold tracking-wider">{p.tokenNumber}</span>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -198,13 +202,13 @@ export default function DisplayPage({ params }: { params: Promise<{ id: string }
           <Card className="h-full bg-transparent border-0 text-white flex flex-col">
             <CardHeader>
               <CardTitle className="text-2xl font-bold text-center">
-                NOW WAITING
+                NEXT IN LINE
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto">
               <div className="grid grid-cols-2 gap-4 text-center">
                 {queueInfo.waiting.map((p) => (
-                  <div key={p.id} className="text-4xl font-semibold p-2">
+                  <div key={p.id} className="text-3xl font-semibold p-2">
                     {p.tokenNumber}
                   </div>
                 ))}

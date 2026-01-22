@@ -318,15 +318,25 @@ export const getQueueInfoByScreenId = async (
     
     let calledPatientInfo = null;
     if (callingPatient) {
+        const cabin = groupForScreen.cabins.find(c => c.id === callingPatient.cabinId);
         calledPatientInfo = {
             ...callingPatient,
-            cabinName: groupForScreen?.cabins[0]?.name || 'Consultation Room',
+            cabinName: cabin?.name || 'Consultation Room',
         }
     }
 
+    const inConsultationPatients = queuePatients
+        .filter(p => p.status === 'consulting')
+        .map(p => {
+            const cabin = groupForScreen.cabins.find(c => c.id === p.cabinId);
+            return { ...p, cabinName: cabin?.name || 'Room' };
+        })
+        .sort((a, b) => (a.cabinName || '').localeCompare(b.cabinName || ''));
+
+
     return {
         waiting: queuePatients.filter(p => p.status === 'waiting').sort((a, b) => a.tokenNumber.localeCompare(b.tokenNumber)),
-        inConsultation: queuePatients.filter(p => p.status === 'consulting').sort((a, b) => a.tokenNumber.localeCompare(b.tokenNumber)),
+        inConsultation: inConsultationPatients,
         nowCalling: calledPatientInfo,
         advertisements: advertisementsForScreen
     };
