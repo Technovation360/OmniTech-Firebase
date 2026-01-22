@@ -80,6 +80,7 @@ function AdvertisementForm({
     advertiserId: '',
     categoryId: '',
     contentType: '',
+    duration: 0,
   });
   const [file, setFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState('');
@@ -107,9 +108,10 @@ function AdvertisementForm({
           advertiserId: advertisement.advertiserId,
           categoryId: advertisement.categoryId || '',
           contentType: advertisement.contentType || '',
+          duration: advertisement.duration || 0,
         });
       } else {
-        setFormData({ title: '', videoUrl: '', advertiserId: '', categoryId: '', contentType: '' });
+        setFormData({ title: '', videoUrl: '', advertiserId: '', categoryId: '', contentType: '', duration: 0 });
       }
       setFileName('');
       setFile(null);
@@ -121,6 +123,13 @@ function AdvertisementForm({
     if (selectedFile) {
         setFile(selectedFile);
         setFileName(selectedFile.name);
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.onloadedmetadata = function() {
+            window.URL.revokeObjectURL(video.src);
+            setFormData(prev => ({...prev, duration: Math.round(video.duration) }));
+        }
+        video.src = URL.createObjectURL(selectedFile);
     }
   }
 
@@ -311,7 +320,7 @@ export default function VideosPage() {
   }, [selectedVideo, toast]);
   
   const handleFormConfirm = (formData: any) => {
-    const { title, videoUrl, categoryId, advertiserId: formAdvertiserId, contentType } = formData;
+    const { title, videoUrl, categoryId, advertiserId: formAdvertiserId, contentType, duration } = formData;
     
     let finalAdvertiserId: string | null = null;
     let finalAdvertiserName: string | undefined;
@@ -339,6 +348,7 @@ export default function VideosPage() {
       categoryId,
       categoryName: category?.name,
       contentType,
+      duration,
     };
     
     if (advertisementToEdit) {
@@ -358,6 +368,13 @@ export default function VideosPage() {
       setAdvertisementToDelete(null);
       toast({ title: 'Video deleted.' });
     }
+  };
+
+  const formatDuration = (seconds: number | undefined) => {
+    if (seconds === undefined || isNaN(seconds) || seconds < 0) return 'N/A';
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
   
   const isLoading = adsLoading || catsLoading || advertisersLoading || isUserLoading;
@@ -388,13 +405,14 @@ export default function VideosPage() {
               <TableRow>
                 <TableHead>Video Title</TableHead>
                 <TableHead>Category</TableHead>
+                <TableHead>Duration</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center py-10">
+                  <TableCell colSpan={4} className="text-center py-10">
                     <Loader className="mx-auto h-6 w-6 animate-spin" />
                   </TableCell>
                 </TableRow>
@@ -403,6 +421,7 @@ export default function VideosPage() {
                 <TableRow key={ad.id}>
                   <TableCell className="font-medium py-2 text-xs">{ad.title}</TableCell>
                   <TableCell className="py-2 text-xs">{ad.categoryName || 'N/A'}</TableCell>
+                  <TableCell className="py-2 text-xs">{formatDuration(ad.duration)}</TableCell>
                   <TableCell className="py-2 text-xs">
                     <div className="flex gap-2">
                         <Button variant="ghost" size="icon-xs" onClick={() => setSelectedVideo(ad)} title="Watch Video">
@@ -420,7 +439,7 @@ export default function VideosPage() {
               ))}
                {!isLoading && advertisements?.length === 0 && (
                  <TableRow>
-                    <TableCell colSpan={3} className="text-center text-muted-foreground py-4">No videos found.</TableCell>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground py-4">No videos found.</TableCell>
                  </TableRow>
               )}
             </TableBody>
@@ -466,7 +485,7 @@ export default function VideosPage() {
                         options={{
                             autoplay: true,
                             controls: true,
-                            fluid: true,
+                            responsive: true,
                             sources: [{
                                 src: playingUrl,
                                 type: selectedVideo?.contentType || 'video/mp4'

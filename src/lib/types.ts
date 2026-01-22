@@ -95,6 +95,7 @@ export type Advertisement = {
   categoryName?: string;
   advertiser?: string; 
   contentType?: string;
+  duration?: number;
 };
 
 export type Consultation = {
