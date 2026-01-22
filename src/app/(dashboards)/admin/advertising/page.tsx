@@ -47,6 +47,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { uploadVideo } from '@/ai/flows/upload-video';
 import { getSignedVideoUrl } from '@/ai/flows/get-signed-video-url';
 import { v4 as uuidv4 } from 'uuid';
+import VideoPlayer from '@/components/VideoPlayer';
 
 type Advertiser = {
   id: string;
@@ -459,7 +460,18 @@ export default function VideosPage() {
             <div className="aspect-video bg-black flex items-center justify-center">
                 {isFetchingUrl && <Loader className="animate-spin text-white h-8 w-8" />}
                 {!isFetchingUrl && playingUrl && (
-                     <video src={playingUrl} controls autoPlay className="w-full h-full rounded-b-lg" />
+                     <VideoPlayer
+                        options={{
+                            autoplay: true,
+                            controls: true,
+                            responsive: true,
+                            fluid: true,
+                            sources: [{
+                                src: playingUrl,
+                                type: 'video/mp4'
+                            }]
+                        }}
+                     />
                 )}
                 {!isFetchingUrl && !playingUrl && (
                     <p className="text-white">Could not load video.</p>
