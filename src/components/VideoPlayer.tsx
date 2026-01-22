@@ -14,33 +14,24 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ options, onReady }) => {
   const videoRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<VideoJsPlayer | null>(null);
 
-  // Initialize the player
+  // 1. Initialize player
   useEffect(() => {
-    // This effect should only run once on mount
     if (!playerRef.current && videoRef.current) {
+      // Create video element
       const videoElement = document.createElement("video");
-      // Use vjs-fill so it takes up 100% of the container
       videoElement.className = "video-js vjs-big-play-centered vjs-fill";
       videoRef.current.appendChild(videoElement);
 
-      const player = videojs(videoElement, {
-          // Pass only the relevant options that don't change often
-          autoplay: options.autoplay,
-          controls: options.controls,
-          muted: options.muted,
-          sources: options.sources
-      }, function() {
-        playerRef.current = this;
-        // Style the actual <video> tag to cover the container
-        const techEl = this.el().querySelector('.vjs-tech');
-        if (techEl) {
-            (techEl as HTMLElement).style.objectFit = 'cover';
-        }
+      // Initialize video.js. Pass static options. Dynamic ones are handled in the next effect.
+      const staticOptions = { ...options };
+      delete staticOptions.sources;
+
+      playerRef.current = videojs(videoElement, staticOptions, function() {
         onReady?.(this);
       });
     }
 
-    // Cleanup on unmount
+    // 2. Dispose player on unmount
     return () => {
       const player = playerRef.current;
       if (player && !player.isDisposed()) {
@@ -49,20 +40,51 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ options, onReady }) => {
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array ensures this runs only once
+  }, []); // Run only once
 
-  // Handle source changes
+  // 3. Handle dynamic prop changes
   useEffect(() => {
     const player = playerRef.current;
-    if (player && !player.isDisposed() && options.sources && options.sources.length > 0) {
-      const currentSrc = player.currentSrc();
-      const newSrc = options.sources[0]?.src;
-      // Only change source if it's different
-      if (newSrc && newSrc !== currentSrc) {
-        player.src(options.sources);
-      }
+
+    if (player && !player.isDisposed()) {
+        // Update sources
+        if (options.sources && options.sources.length > 0) {
+            const currentSrc = player.currentSrc();
+            const newSrc = options.sources[0]?.src;
+            
+            // Only update if the source is different to prevent interruptions
+            if (newSrc && newSrc !== currentSrc) {
+                player.src(options.sources);
+                
+                // After setting the source, attempt to play
+                const playPromise = player.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        // This is common in browsers that block autoplay with sound.
+                        console.warn("Autoplay with sound was prevented. Muting and retrying.");
+                        if (!player.muted()) {
+                            player.muted(true);
+                        }
+                        // Retry playing now that it's muted
+                        player.play().catch(finalError => {
+                            console.error("Video failed to play even after muting.", finalError);
+                        });
+                    });
+                }
+            }
+        }
+        
+        // Update other options like controls if they change
+        if (player.controls() !== (options.controls ?? false)) {
+            player.controls(options.controls ?? false);
+        }
+
+        // Ensure muted state matches options, unless it was already muted by autoplay fallback
+        if (!player.muted() && player.muted() !== (options.muted ?? false)) {
+             player.muted(options.muted ?? false);
+        }
     }
-  }, [options.sources]); // This effect only runs when the sources change
+  }, [options.sources, options.controls, options.muted]);
 
   return (
     <div data-vjs-player className="w-full h-full">
