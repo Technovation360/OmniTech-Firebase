@@ -1,27 +1,19 @@
 'use server';
 /**
- * @fileOverview A server-side flow to upload a video to Backblaze B2
- * and generate a pre-signed URL for streaming.
+ * @fileOverview A server-side flow to get a pre-signed URL for uploading a video to Backblaze B2.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import B2 from 'backblaze-b2';
-import { v4 as uuidv4 } from 'uuid';
 
-const UploadVideoInputSchema = z.object({
-  fileContent: z.string().describe('The base64 encoded content of the video file.'),
-  fileName: z.string().describe('The name of the file.'),
-  fileType: z.string().describe('The MIME type of the file.'),
+const GetB2UploadUrlOutputSchema = z.object({
+  uploadUrl: z.string(),
+  authorizationToken: z.string(),
+  downloadUrl: z.string(), // Base URL for downloads
 });
 
-export type UploadVideoInput = z.infer<typeof UploadVideoInputSchema>;
-
-const UploadVideoOutputSchema = z.object({
-  videoUrl: z.string().url().describe('The pre-signed URL of the uploaded video.'),
-});
-
-export type UploadVideoOutput = z.infer<typeof UploadVideoOutputSchema>;
+export type GetB2UploadUrlOutput = z.infer<typeof GetB2UploadUrlOutputSchema>;
 
 // Ensure B2 credentials are set in environment variables
 if (!process.env.B2_APPLICATION_KEY_ID || !process.env.B2_APPLICATION_KEY || !process.env.B2_BUCKET_ID) {
@@ -38,53 +30,35 @@ const b2 = new B2({
 });
 
 
-export async function uploadVideo(input: UploadVideoInput): Promise<UploadVideoOutput> {
-  return uploadVideoFlow(input);
+export async function getB2UploadUrl(): Promise<GetB2UploadUrlOutput> {
+  return getB2UploadUrlFlow();
 }
 
 
-const uploadVideoFlow = ai.defineFlow(
+const getB2UploadUrlFlow = ai.defineFlow(
   {
-    name: 'uploadVideoFlow',
-    inputSchema: UploadVideoInputSchema,
-    outputSchema: UploadVideoOutputSchema,
+    name: 'getB2UploadUrlFlow',
+    inputSchema: z.void(), // No input needed
+    outputSchema: GetB2UploadUrlOutputSchema,
   },
-  async (input) => {
-    // In a real app, you'd want more robust error handling and to authorize the B2 instance properly.
-    if (!process.env.B2_APPLICATION_KEY_ID || !process.env.B2_APPLICATION_KEY || !process.env.B2_BUCKET_ID || !process.env.B2_BUCKET_NAME) {
-      console.log('Mocking B2 upload since credentials are not set.');
-      // Return a placeholder URL for development without credentials
-      return { videoUrl: `https://fake-b2-url.com/${input.fileName}` };
+  async () => {
+    if (!process.env.B2_APPLICATION_KEY_ID || !process.env.B2_APPLICATION_KEY || !process.env.B2_BUCKET_ID) {
+        console.log('Mocking B2 getUploadUrl since credentials are not set.');
+        // Return a placeholder URL for development without credentials
+        return { 
+            uploadUrl: `https://mock-upload-url.com/b2api/v2/b2_upload_file`,
+            authorizationToken: 'mock-auth-token',
+            downloadUrl: 'https://f005.backblazeb2.com', // mock download url
+        };
     }
     
-    const authResponse = await b2.authorize();
-    const { downloadUrl } = authResponse.data;
+    const { data: authData } = await b2.authorize();
+    const { downloadUrl } = authData;
 
     const { data: { uploadUrl, authorizationToken } } = await b2.getUploadUrl({
         bucketId: process.env.B2_BUCKET_ID!,
     });
 
-    const fileBuffer = Buffer.from(input.fileContent, 'base64');
-    const uniqueFileName = `${uuidv4()}-${input.fileName}`;
-
-    await b2.uploadFile({
-        uploadUrl: uploadUrl,
-        uploadAuthToken: authorizationToken,
-        fileName: uniqueFileName,
-        data: fileBuffer,
-        mime: input.fileType,
-    });
-    
-    // Generate a signed URL for download, valid for 48 hours.
-    const { data: { authorizationToken: downloadAuthToken } } = await b2.getDownloadAuthorization({
-        bucketId: process.env.B2_BUCKET_ID!,
-        fileNamePrefix: uniqueFileName,
-        validDurationInSeconds: 172800, // 48 hours
-    });
-    
-    const bucketName = process.env.B2_BUCKET_NAME!;
-    const signedUrl = `${downloadUrl}/file/${bucketName}/${encodeURIComponent(uniqueFileName)}?Authorization=${downloadAuthToken}`;
-
-    return { videoUrl: signedUrl };
+    return { uploadUrl, authorizationToken, downloadUrl };
   }
 );

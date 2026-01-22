@@ -44,7 +44,8 @@ import { collection, doc, query, where, getDoc, getDocs } from 'firebase/firesto
 import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { uploadVideo } from '@/ai/flows/upload-video';
+import { getB2UploadUrl } from '@/ai/flows/upload-video';
+import { v4 as uuidv4 } from 'uuid';
 
 type Advertiser = {
   id: string;
@@ -121,29 +122,44 @@ function AdvertisementForm({
       let finalVideoUrl = formData.videoUrl;
   
       if (file) {
-        // New file is being uploaded
-        const reader = new FileReader();
-        const fileContent = await new Promise<string>((resolve, reject) => {
-          reader.onloadend = () => {
-            const base64data = reader.result as string;
-            resolve(base64data.substring(base64data.indexOf(',') + 1));
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
+        // 1. Get upload URL from our backend
+        const { uploadUrl, authorizationToken, downloadUrl } = await getB2UploadUrl();
+        
+        // 2. Calculate SHA1 of the file
+        const fileBuffer = await file.arrayBuffer();
+        const hashBuffer = await crypto.subtle.digest('SHA-1', fileBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const sha1 = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+        // 3. Upload file directly to B2
+        const uniqueFileName = `${uuidv4()}-${file.name}`;
+        const response = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': authorizationToken,
+                'X-Bz-File-Name': encodeURIComponent(uniqueFileName),
+                'Content-Type': file.type,
+                'Content-Length': file.size.toString(),
+                'X-Bz-Content-Sha1': sha1,
+            },
+            body: file,
         });
-  
-        const result = await uploadVideo({
-          fileContent,
-          fileName: file.name,
-          fileType: file.type,
-        });
-        finalVideoUrl = result.videoUrl;
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`B2 Upload Failed: ${errorData.message || JSON.stringify(errorData)}`);
+        }
+        
+        const b2Response = await response.json();
+
+        // 4. Construct the final public URL
+        finalVideoUrl = `${downloadUrl}/file/${process.env.NEXT_PUBLIC_B2_BUCKET_NAME}/${b2Response.fileName}`;
+
       } else if (!isEditMode) {
         toast({ title: 'Please select a video file to upload.', variant: 'destructive' });
         setIsUploading(false);
         return;
       }
-      // If in edit mode and no new file, finalVideoUrl is already set from formData
   
       onConfirm({ ...formData, videoUrl: finalVideoUrl });
       onClose();
