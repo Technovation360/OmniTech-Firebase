@@ -11,30 +11,28 @@ interface VideoPlayerProps {
 }
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ options, onReady }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoContainerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<VideoJsPlayer | null>(null);
 
   useEffect(() => {
-    // Make sure Video.js player is only initialized once
-    if (!playerRef.current && videoRef.current) {
-      const videoElement = videoRef.current;
-      playerRef.current = videojs(videoElement, options, () => {
-        onReady?.(playerRef.current!);
+    if (!playerRef.current && videoContainerRef.current) {
+      // Create the video element dynamically
+      const videoElement = document.createElement("video");
+      videoElement.className = "video-js vjs-big-play-centered";
+      videoContainerRef.current.appendChild(videoElement);
+
+      playerRef.current = videojs(videoElement, options, function() {
+        onReady?.(this);
       });
     } else if(playerRef.current && !playerRef.current.isDisposed()) {
-      // The player is already initialized. Update its options.
       const player = playerRef.current;
       player.autoplay(options.autoplay || false);
       player.src(options.sources || []);
     }
-  // videojs, onReady, and options are dependencies that could change.
-  // Including them ensures the player is re-initialized if they do.
   }, [options, onReady]);
 
-  // Dispose the player on unmount
   useEffect(() => {
     const player = playerRef.current;
-
     return () => {
       if (player && !player.isDisposed()) {
         player.dispose();
@@ -44,8 +42,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ options, onReady }) => {
   }, []);
 
   return (
-    <div data-vjs-player>
-      <video ref={videoRef} className="video-js vjs-big-play-centered" />
+    <div data-vjs-player className="w-full h-full">
+      <div ref={videoContainerRef} className="w-full h-full" />
     </div>
   );
 };
