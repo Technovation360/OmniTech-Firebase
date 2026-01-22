@@ -37,7 +37,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Edit, Trash2, Search, Loader, PlusCircle } from 'lucide-react';
 import type { AdvertiserClinicGroup, Clinic, Category, User } from '@/lib/types';
-import { collection, doc, query, getDocs, where } from 'firebase/firestore';
+import { collection, doc, query, getDocs, where, getDoc } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/multi-select';
