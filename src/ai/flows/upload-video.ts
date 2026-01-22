@@ -50,7 +50,7 @@ const uploadVideoFlow = ai.defineFlow(
   },
   async (input) => {
     // In a real app, you'd want more robust error handling and to authorize the B2 instance properly.
-    if (!process.env.B2_APPLICATION_KEY_ID || !process.env.B2_APPLICATION_KEY || !process.env.B2_BUCKET_ID || !process.env.B2_BUCKET_NAME) {
+    if (!process.env.B2_APPLICATION_KEY_ID || !process.env.B2_APPLICATION_KEY || !process.env.B2_BUCKET_ID || !process.env.B2_BUCKET_NAME || !process.env.B2_BUCKET_Endpoint) {
       console.log('Mocking B2 upload since credentials are not set.');
       // Return a placeholder URL for development without credentials
       return { videoUrl: `https://fake-b2-url.com/${input.fileName}` };
@@ -65,7 +65,7 @@ const uploadVideoFlow = ai.defineFlow(
     const fileBuffer = Buffer.from(input.fileContent, 'base64');
     const uniqueFileName = `${uuidv4()}-${input.fileName}`;
 
-    const response = await b2.uploadFile({
+    await b2.uploadFile({
         uploadUrl: uploadUrl,
         uploadAuthToken: authorizationToken,
         fileName: uniqueFileName,
@@ -73,13 +73,8 @@ const uploadVideoFlow = ai.defineFlow(
         mime: input.fileType,
     });
     
-    const { data: { s3ApiUrl } } = await b2.getBucket({ bucketId: process.env.B2_BUCKET_ID! });
-
-    // The public URL can be constructed from the S3 API URL and bucket name.
-    // Example s3ApiUrl: s3.us-west-004.backblazeb2.com
-    // We need to replace 's3' with the bucket name.
-    const bucketHost = s3ApiUrl.replace('s3.', `${process.env.B2_BUCKET_NAME}.s3.`);
-    
+    // Construct the public URL from environment variables.
+    const bucketHost = `${process.env.B2_BUCKET_NAME}.${process.env.B2_BUCKET_Endpoint}`;
     const fileUrl = `https://${bucketHost}/${uniqueFileName}`;
 
     return { videoUrl: fileUrl };
