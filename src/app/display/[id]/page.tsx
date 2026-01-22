@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect, useRef, use, useCallback } from 'react';
+import { useState, useEffect, useRef, use, useCallback, Suspense, useMemo } from 'react';
 import type { Patient, Advertisement } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -197,7 +198,7 @@ function DisplayPageContent({ params }: { params: { id: string } }) {
         <div className="h-[50%] bg-blue-900 p-4 overflow-hidden">
           <Card className="h-full bg-transparent border-0 text-white flex flex-col">
             <CardHeader>
-              <CardTitle className="text-xl font-bold text-center text-yellow-300">
+              <CardTitle className="text-3xl font-bold text-center text-yellow-300">
                 IN CONSULTATION
               </CardTitle>
             </CardHeader>
@@ -207,7 +208,7 @@ function DisplayPageContent({ params }: { params: { id: string } }) {
                   <TableRow className="border-b-white/20">
                     <TableHead className="text-white font-semibold">Cabin</TableHead>
                     <TableHead className="text-white font-semibold">Group</TableHead>
-                    <TableHead className="text-white font-semibold">Token</TableHead>
+                    <TableHead className="text-white font-semibold text-right">Token</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -215,7 +216,7 @@ function DisplayPageContent({ params }: { params: { id: string } }) {
                     <TableRow key={p.id} className="border-b-white/10">
                       <TableCell>{p.cabinName}</TableCell>
                       <TableCell>{p.groupName}</TableCell>
-                      <TableCell className="font-bold text-lg">{p.tokenNumber}</TableCell>
+                      <TableCell className="font-bold text-lg text-right">{p.tokenNumber}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -226,7 +227,7 @@ function DisplayPageContent({ params }: { params: { id: string } }) {
         <div className="h-[50%] bg-gray-800 p-4 overflow-hidden">
           <Card className="h-full bg-transparent border-0 text-white flex flex-col">
             <CardHeader>
-              <CardTitle className="text-xl font-bold text-center">
+              <CardTitle className="text-3xl font-bold text-center">
                 NEXT IN LINE
               </CardTitle>
             </CardHeader>
@@ -235,14 +236,14 @@ function DisplayPageContent({ params }: { params: { id: string } }) {
                 <TableHeader>
                   <TableRow className="border-b-white/20">
                     <TableHead className="text-white font-semibold">Group</TableHead>
-                    <TableHead className="text-white font-semibold">Token</TableHead>
+                    <TableHead className="text-white font-semibold text-right">Token</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {queueInfo.waiting.map((p) => (
                     <TableRow key={p.id} className="border-b-white/10">
                       <TableCell>{p.groupName}</TableCell>
-                      <TableCell className="font-bold text-lg">{p.tokenNumber}</TableCell>
+                      <TableCell className="font-bold text-lg text-right">{p.tokenNumber}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -257,6 +258,10 @@ function DisplayPageContent({ params }: { params: { id: string } }) {
 
 
 export default function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
-  return <DisplayPageContent params={resolvedParams} />;
+    const resolvedParams = use(params);
+    return (
+        <Suspense fallback={<div>Loading Display...</div>}>
+            <DisplayPageContent params={resolvedParams} />
+        </Suspense>
+    )
 }
