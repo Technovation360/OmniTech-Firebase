@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, use, useCallback } from 'react';
@@ -64,17 +63,17 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
   const adsIdRef = useRef<string | null>(null);
   
   const handleNextVideo = useCallback(() => {
-    if (videoSources.length > 0) {
-      setCurrentVideoIndex(prevIndex => (prevIndex + 1) % videoSources.length);
-    }
+    setCurrentVideoIndex(prevIndex => {
+        if (videoSources.length === 0) return 0;
+        return (prevIndex + 1) % videoSources.length;
+    });
   }, [videoSources.length]);
 
   useEffect(() => {
     const fetchVideoUrls = async () => {
       const newAdsId = advertisements.map(ad => ad.id).sort().join(',');
-       // Only refetch if the list of ad IDs has changed.
-      if (newAdsId === adsIdRef.current) {
-        return; 
+      if (newAdsId === adsIdRef.current && videoSources.length > 0) {
+        return;
       }
       adsIdRef.current = newAdsId;
       
@@ -113,13 +112,13 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
 
   const playerRef = useRef<VideoJsPlayer | null>(null);
 
-  const playerOptions: VideoJsPlayerOptions = {
+  const playerOptions: VideoJsPlayerOptions = useMemo(() => ({
     autoplay: true,
     controls: false,
     muted: true,
     fluid: true,
     sources: videoSources.length > 0 ? [videoSources[currentVideoIndex]] : [],
-  };
+  }), [videoSources, currentVideoIndex]);
 
   const handlePlayerReady = useCallback((player: VideoJsPlayer) => {
     playerRef.current = player;
@@ -142,9 +141,8 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
   );
 }
 
-export default function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
-  const { id } = resolvedParams;
+function DisplayPageContent({ params }: { params: { id: string } }) {
+  const { id } = params;
   const { queueInfo, error } = useQueue(id);
   const synthRef = useRef<SpeechSynthesis | null>(null);
 
@@ -199,18 +197,17 @@ export default function DisplayPage({ params }: { params: Promise<{ id: string }
         <div className="h-[50%] bg-blue-900 p-4 overflow-hidden">
           <Card className="h-full bg-transparent border-0 text-white flex flex-col">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold text-center text-yellow-300">
+              <CardTitle className="text-xl font-bold text-center text-yellow-300">
                 IN CONSULTATION
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto px-2">
-               <Table>
+              <Table>
                 <TableHeader>
                   <TableRow className="border-b-white/20">
                     <TableHead className="text-white font-semibold">Cabin</TableHead>
                     <TableHead className="text-white font-semibold">Group</TableHead>
                     <TableHead className="text-white font-semibold">Token</TableHead>
-                    <TableHead className="text-white font-semibold text-right">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -219,9 +216,6 @@ export default function DisplayPage({ params }: { params: Promise<{ id: string }
                       <TableCell>{p.cabinName}</TableCell>
                       <TableCell>{p.groupName}</TableCell>
                       <TableCell className="font-bold text-lg">{p.tokenNumber}</TableCell>
-                      <TableCell className="text-right">
-                        <Badge variant="secondary" className="bg-green-500/20 text-green-300">Consulting</Badge>
-                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -232,17 +226,16 @@ export default function DisplayPage({ params }: { params: Promise<{ id: string }
         <div className="h-[50%] bg-gray-800 p-4 overflow-hidden">
           <Card className="h-full bg-transparent border-0 text-white flex flex-col">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold text-center">
+              <CardTitle className="text-xl font-bold text-center">
                 NEXT IN LINE
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto">
-               <Table>
+              <Table>
                 <TableHeader>
                   <TableRow className="border-b-white/20">
                     <TableHead className="text-white font-semibold">Group</TableHead>
                     <TableHead className="text-white font-semibold">Token</TableHead>
-                    <TableHead className="text-white font-semibold text-right">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -250,9 +243,6 @@ export default function DisplayPage({ params }: { params: Promise<{ id: string }
                     <TableRow key={p.id} className="border-b-white/10">
                       <TableCell>{p.groupName}</TableCell>
                       <TableCell className="font-bold text-lg">{p.tokenNumber}</TableCell>
-                      <TableCell className="text-right">
-                        <Badge variant="secondary" className="bg-blue-500/20 text-blue-300">Waiting</Badge>
-                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -263,4 +253,10 @@ export default function DisplayPage({ params }: { params: Promise<{ id: string }
       </div>
     </div>
   );
+}
+
+
+export default function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
+  return <DisplayPageContent params={resolvedParams} />;
 }
