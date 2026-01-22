@@ -57,19 +57,16 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
   const [videoSources, setVideoSources] = useState<{ src: string; type: string }[]>([]);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const onEndCallbackRef = useRef<() => void>();
   const adsIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const fetchVideoUrls = async () => {
       const newAdsId = advertisements.map(ad => ad.id).join(',');
-
-      // Only refetch if the list of ads has actually changed.
       if (newAdsId === adsIdRef.current) {
         return;
       }
-      
       adsIdRef.current = newAdsId;
+
       setIsLoading(true);
 
       if (advertisements.length === 0) {
@@ -89,7 +86,8 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
               }
           })
       );
-      setVideoSources(sources.filter((s): s is {src: string; type: string} => s !== null));
+      const validSources = sources.filter((s): s is {src: string; type: string} => s !== null);
+      setVideoSources(validSources);
       setCurrentVideoIndex(0); // Reset to first video on list change
       setIsLoading(false);
     };
@@ -103,10 +101,6 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
     }
   }, [videoSources.length]);
 
-  useEffect(() => {
-    onEndCallbackRef.current = handleVideoEnd;
-  }, [handleVideoEnd]);
-  
   if (isLoading) {
     return <div className="w-full h-full bg-black flex items-center justify-center text-white">Loading Advertisements...</div>;
   }
@@ -123,14 +117,16 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
   };
 
   return (
-      <VideoPlayer options={playerOptions} onReady={(player) => {
-          player.on('ended', () => onEndCallbackRef.current?.());
-      }} />
+      <VideoPlayer 
+        options={playerOptions} 
+        onEnd={handleVideoEnd}
+      />
   );
 }
 
 export default function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+  const resolvedParams = use(params);
+  const { id } = resolvedParams;
   const { queueInfo, error } = useQueue(id);
   const synthRef = useRef<SpeechSynthesis | null>(null);
 
@@ -191,7 +187,7 @@ export default function DisplayPage({ params }: { params: Promise<{ id: string }
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto">
               {queueInfo.inConsultation.map((p) => (
-                <div key={p.id} className="text-center text-5xl font-bold p-3">
+                <div key={p.id} className="text-center text-4xl font-bold p-3">
                   {p.tokenNumber}
                 </div>
               ))}
