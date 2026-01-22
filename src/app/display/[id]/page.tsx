@@ -73,7 +73,8 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
   useEffect(() => {
     const fetchVideoUrls = async () => {
       const newAdsId = advertisements.map(ad => ad.id).sort().join(',');
-      if (newAdsId === adsIdRef.current && videoSources.length > 0) {
+      // Only refetch if the list of ads has actually changed.
+      if (newAdsId === adsIdRef.current) {
         return;
       }
       adsIdRef.current = newAdsId;
@@ -120,11 +121,12 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
     fluid: true,
     sources: videoSources.length > 0 ? [videoSources[currentVideoIndex]] : [],
   }), [videoSources, currentVideoIndex]);
-
+  
   const handlePlayerReady = useCallback((player: VideoJsPlayer) => {
     playerRef.current = player;
     player.on('ended', handleNextVideo);
-  },[handleNextVideo]);
+  }, [handleNextVideo]);
+
 
   if (isLoading) {
     return <div className="w-full h-full bg-black flex items-center justify-center text-white">Loading Advertisements...</div>;
@@ -198,7 +200,7 @@ function DisplayPageContent({ params }: { params: { id: string } }) {
         <div className="h-[50%] bg-blue-900 p-4 overflow-hidden">
           <Card className="h-full bg-transparent border-0 text-white flex flex-col">
             <CardHeader>
-              <CardTitle className="text-3xl font-bold text-center text-yellow-300">
+              <CardTitle className="text-lg font-bold text-center text-yellow-300">
                 IN CONSULTATION
               </CardTitle>
             </CardHeader>
@@ -227,7 +229,7 @@ function DisplayPageContent({ params }: { params: { id: string } }) {
         <div className="h-[50%] bg-gray-800 p-4 overflow-hidden">
           <Card className="h-full bg-transparent border-0 text-white flex flex-col">
             <CardHeader>
-              <CardTitle className="text-3xl font-bold text-center">
+              <CardTitle className="text-lg font-bold text-center">
                 NEXT IN LINE
               </CardTitle>
             </CardHeader>
@@ -265,3 +267,4 @@ export default function DisplayPage({ params }: { params: Promise<{ id: string }
         </Suspense>
     )
 }
+    
