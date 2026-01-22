@@ -1,6 +1,7 @@
 'use server';
 /**
- * @fileOverview A server-side flow to upload a video to Backblaze B2.
+ * @fileOverview A server-side flow to upload a video to Backblaze B2
+ * and generate a pre-signed URL for streaming.
  */
 
 import { ai } from '@/ai/genkit';
@@ -17,7 +18,7 @@ const UploadVideoInputSchema = z.object({
 export type UploadVideoInput = z.infer<typeof UploadVideoInputSchema>;
 
 const UploadVideoOutputSchema = z.object({
-  videoUrl: z.string().url().describe('The public URL of the uploaded video.'),
+  videoUrl: z.string().url().describe('The pre-signed URL of the uploaded video.'),
 });
 
 export type UploadVideoOutput = z.infer<typeof UploadVideoOutputSchema>;
@@ -50,13 +51,14 @@ const uploadVideoFlow = ai.defineFlow(
   },
   async (input) => {
     // In a real app, you'd want more robust error handling and to authorize the B2 instance properly.
-    if (!process.env.B2_APPLICATION_KEY_ID || !process.env.B2_APPLICATION_KEY || !process.env.B2_BUCKET_ID || !process.env.B2_BUCKET_NAME || !process.env.B2_BUCKET_Endpoint) {
+    if (!process.env.B2_APPLICATION_KEY_ID || !process.env.B2_APPLICATION_KEY || !process.env.B2_BUCKET_ID || !process.env.B2_BUCKET_NAME) {
       console.log('Mocking B2 upload since credentials are not set.');
       // Return a placeholder URL for development without credentials
       return { videoUrl: `https://fake-b2-url.com/${input.fileName}` };
     }
     
     const authResponse = await b2.authorize();
+    const { downloadUrl } = authResponse.data;
 
     const { data: { uploadUrl, authorizationToken } } = await b2.getUploadUrl({
         bucketId: process.env.B2_BUCKET_ID!,
@@ -73,11 +75,16 @@ const uploadVideoFlow = ai.defineFlow(
         mime: input.fileType,
     });
     
-    // Construct the public URL from the authorization response.
-    const downloadUrl = authResponse.data.downloadUrl;
-    const bucketName = process.env.B2_BUCKET_NAME;
-    const fileUrl = `${downloadUrl}/file/${bucketName}/${encodeURIComponent(uniqueFileName)}`;
+    // Generate a signed URL for download, valid for 1 hour.
+    const { data: { authorizationToken: downloadAuthToken } } = await b2.getDownloadAuthorization({
+        bucketId: process.env.B2_BUCKET_ID!,
+        fileNamePrefix: uniqueFileName,
+        validDurationInSeconds: 3600, // 1 hour
+    });
+    
+    const bucketName = process.env.B2_BUCKET_NAME!;
+    const signedUrl = `${downloadUrl}/file/${bucketName}/${encodeURIComponent(uniqueFileName)}?Authorization=${downloadAuthToken}`;
 
-    return { videoUrl: fileUrl };
+    return { videoUrl: signedUrl };
   }
 );
