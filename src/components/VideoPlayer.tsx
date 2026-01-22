@@ -26,8 +26,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ options, onReady }) => {
       });
     } else if(playerRef.current && !playerRef.current.isDisposed()) {
       const player = playerRef.current;
-      player.autoplay(options.autoplay || false);
-      player.src(options.sources || []);
+      // When options change, update player source and attempt to play.
+      if (options.sources && options.sources.length > 0) {
+        player.src(options.sources);
+        if (options.autoplay) {
+            player.ready(() => {
+                player.play().catch(error => {
+                    console.error("Video play failed:", error);
+                });
+            });
+        }
+      }
     }
   }, [options, onReady]);
 
