@@ -101,7 +101,7 @@ function CampaignForm({
           <div className="space-y-2">
             <Label htmlFor="advertisements">Advertisements</Label>
             <MultiSelect
-              options={advertisements.map(ad => ({ value: ad.id, label: ad.campaign }))}
+              options={advertisements.map(ad => ({ value: ad.id, label: ad.title }))}
               selected={formData.advertisementIds}
               onChange={(selected) => setFormData({ ...formData, advertisementIds: selected })}
               placeholder="Select advertisements..."
