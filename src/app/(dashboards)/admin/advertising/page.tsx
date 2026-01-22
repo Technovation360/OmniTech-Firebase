@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import type { Advertisement, Category } from '@/lib/types';
+import type { Advertisement, Category, User } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -39,8 +40,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { collection, doc, query, where, getDoc, getDocs } from 'firebase/firestore';
 import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -57,6 +58,7 @@ function AdvertisementForm({
   onConfirm,
   advertisers,
   categories,
+  currentUser,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -64,6 +66,7 @@ function AdvertisementForm({
   onConfirm: (formData: any) => void;
   advertisers: Advertiser[];
   categories: Category[];
+  currentUser: User | null;
 }) {
   const isEditMode = !!advertisement;
   const { toast } = useToast();
@@ -104,18 +107,8 @@ function AdvertisementForm({
   }
 
   const handleConfirm = () => {
-    if (formData.title && formData.videoUrl && formData.advertiserId && formData.categoryId) {
-        const advertiser = advertisers.find(a => a.id === formData.advertiserId);
-        const category = categories.find(c => c.id === formData.categoryId);
-
-        onConfirm({
-            title: formData.title,
-            videoUrl: formData.videoUrl,
-            advertiserId: formData.advertiserId,
-            advertiser: advertiser?.name,
-            categoryId: formData.categoryId,
-            categoryName: category?.name,
-        });
+    if (formData.title && formData.videoUrl && (currentUser?.role === 'advertiser' || formData.advertiserId) && formData.categoryId) {
+        onConfirm(formData);
         onClose();
     } else {
         toast({ title: 'Please fill all fields', variant: 'destructive' });
@@ -141,15 +134,17 @@ function AdvertisementForm({
             <Input id="videoFile" type="file" accept="video/*" onChange={handleFileChange} />
             {fileName && <p className="text-sm text-muted-foreground mt-1">{fileName}</p>}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="advertiser">Advertiser</Label>
-            <Select value={formData.advertiserId} onValueChange={(value) => setFormData({ ...formData, advertiserId: value })}>
-                <SelectTrigger><SelectValue placeholder="Select advertiser..." /></SelectTrigger>
-                <SelectContent>
-                    {advertisers.map(ad => <SelectItem key={ad.id} value={ad.id}>{ad.name}</SelectItem>)}
-                </SelectContent>
-            </Select>
-          </div>
+          {currentUser?.role === 'central-admin' && (
+            <div className="space-y-2">
+              <Label htmlFor="advertiser">Advertiser</Label>
+              <Select value={formData.advertiserId} onValueChange={(value) => setFormData({ ...formData, advertiserId: value })}>
+                  <SelectTrigger><SelectValue placeholder="Select advertiser..." /></SelectTrigger>
+                  <SelectContent>
+                      {advertisers.map(ad => <SelectItem key={ad.id} value={ad.id}>{ad.name}</SelectItem>)}
+                  </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="category">Category</Label>
              <Select value={formData.categoryId} onValueChange={(value) => setFormData({ ...formData, categoryId: value })}>
@@ -173,6 +168,29 @@ function AdvertisementForm({
 export default function VideosPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { user: authUser, isUserLoading } = useUser();
+  const [currentUserData, setCurrentUserData] = useState<User | null>(null);
+  const [advertiserId, setAdvertiserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (authUser && !isUserLoading) {
+      const userDocRef = doc(firestore, 'users', authUser.uid);
+      getDoc(userDocRef).then(snap => {
+        if (snap.exists()) {
+          const userData = snap.data() as User;
+          setCurrentUserData(userData);
+          if (userData.role === 'advertiser' && userData.affiliation) {
+            const advQuery = query(collection(firestore, 'advertisers'), where('name', '==', userData.affiliation));
+            getDocs(advQuery).then((advSnap) => {
+              if (!advSnap.empty) {
+                setAdvertiserId(advSnap.docs[0].id);
+              }
+            });
+          }
+        }
+      });
+    }
+  }, [authUser, isUserLoading, firestore]);
 
   const { data: advertisements, isLoading: adsLoading } = useCollection<Advertisement>(useMemoFirebase(() => collection(firestore, 'advertisements'), [firestore]));
   const { data: categories, isLoading: catsLoading } = useCollection<Category>(useMemoFirebase(() => collection(firestore, 'categories'), [firestore]));
@@ -183,7 +201,34 @@ export default function VideosPage() {
   const [advertisementToDelete, setAdvertisementToDelete] = useState<Advertisement | null>(null);
   
   const handleFormConfirm = (formData: any) => {
-    const dataToSave = { ...formData };
+    const { title, videoUrl, categoryId, advertiserId: formAdvertiserId } = formData;
+    
+    let finalAdvertiserId: string | null = null;
+    let finalAdvertiserName: string | undefined;
+
+    if (currentUserData?.role === 'advertiser') {
+      finalAdvertiserId = advertiserId;
+      finalAdvertiserName = currentUserData.affiliation;
+    } else { // central-admin
+      finalAdvertiserId = formAdvertiserId;
+      finalAdvertiserName = advertisers?.find(a => a.id === formAdvertiserId)?.name;
+    }
+
+    if (!finalAdvertiserId) {
+      toast({ title: 'Advertiser could not be determined.', variant: 'destructive' });
+      return;
+    }
+
+    const category = categories?.find(c => c.id === categoryId);
+
+    const dataToSave = {
+      title,
+      videoUrl,
+      advertiserId: finalAdvertiserId,
+      advertiser: finalAdvertiserName,
+      categoryId,
+      categoryName: category?.name,
+    };
     
     if (advertisementToEdit) {
       setDocumentNonBlocking(doc(firestore, 'advertisements', advertisementToEdit.id), dataToSave, { merge: true });
@@ -204,7 +249,7 @@ export default function VideosPage() {
     }
   };
   
-  const isLoading = adsLoading || catsLoading || advertisersLoading;
+  const isLoading = adsLoading || catsLoading || advertisersLoading || isUserLoading;
 
   return (
     <>
@@ -279,6 +324,7 @@ export default function VideosPage() {
         onConfirm={handleFormConfirm}
         advertisers={advertisers || []}
         categories={categories || []}
+        currentUser={currentUserData}
       />
       
       <AlertDialog open={!!advertisementToDelete} onOpenChange={() => setAdvertisementToDelete(null)}>
