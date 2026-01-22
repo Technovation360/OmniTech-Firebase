@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, use, useCallback, Suspense, useMemo } from 'react';
@@ -193,10 +192,10 @@ function DisplayPageContent({ params }: { params: { id: string } }) {
         )}
       </AnimatePresence>
 
-      <div className="w-[70%] h-full bg-gray-800">
+      <div className="w-[70vw] h-screen bg-gray-800">
         <VideoPlayerDisplay advertisements={queueInfo.advertisements} />
       </div>
-      <div className="w-[30%] h-full flex flex-col">
+      <div className="w-[30vw] h-screen flex flex-col">
         <div className="h-[50%] bg-blue-900 p-4 overflow-hidden">
           <Card className="h-full bg-transparent border-0 text-white flex flex-col">
             <CardHeader>
