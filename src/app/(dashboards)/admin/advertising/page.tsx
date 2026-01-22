@@ -124,10 +124,21 @@ function AdvertisementForm({
   }
 
   const handleConfirm = async () => {
+    const isAdmin = currentUser?.role === 'central-admin';
+    const isAdvertiser = currentUser?.role === 'advertiser';
+
+    let advertiserInfoMissing = false;
+    if (isAdmin && !formData.advertiserId) {
+        advertiserInfoMissing = true;
+    } else if (!isAdmin && !isAdvertiser) {
+        // If user is not admin or advertiser, or if currentUser is still loading
+        advertiserInfoMissing = true;
+    }
+    
     if (
       !formData.title ||
-      !(currentUser?.role === 'advertiser' || formData.advertiserId) ||
-      !formData.categoryId
+      !formData.categoryId ||
+      advertiserInfoMissing
     ) {
       toast({ title: 'Please fill all required fields', variant: 'destructive' });
       return;
