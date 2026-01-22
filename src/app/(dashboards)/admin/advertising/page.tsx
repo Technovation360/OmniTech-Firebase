@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -192,7 +191,18 @@ export default function VideosPage() {
     }
   }, [authUser, isUserLoading, firestore]);
 
-  const { data: advertisements, isLoading: adsLoading } = useCollection<Advertisement>(useMemoFirebase(() => collection(firestore, 'advertisements'), [firestore]));
+  const advertisementsQuery = useMemoFirebase(() => {
+    if (!currentUserData) return null;
+    if (currentUserData.role === 'central-admin') {
+        return collection(firestore, 'advertisements');
+    }
+    if (currentUserData.role === 'advertiser' && advertiserId) {
+        return query(collection(firestore, 'advertisements'), where('advertiserId', '==', advertiserId));
+    }
+    return null;
+  }, [firestore, currentUserData, advertiserId]);
+
+  const { data: advertisements, isLoading: adsLoading } = useCollection<Advertisement>(advertisementsQuery);
   const { data: categories, isLoading: catsLoading } = useCollection<Category>(useMemoFirebase(() => collection(firestore, 'categories'), [firestore]));
   const { data: advertisers, isLoading: advertisersLoading } = useCollection<Advertiser>(useMemoFirebase(() => collection(firestore, 'advertisers'), [firestore]));
 
@@ -271,7 +281,6 @@ export default function VideosPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Video Title</TableHead>
-                <TableHead>Advertiser</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -279,7 +288,7 @@ export default function VideosPage() {
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-10">
+                  <TableCell colSpan={3} className="text-center py-10">
                     <Loader className="mx-auto h-6 w-6 animate-spin" />
                   </TableCell>
                 </TableRow>
@@ -287,7 +296,6 @@ export default function VideosPage() {
               {!isLoading && advertisements?.map((ad) => (
                 <TableRow key={ad.id}>
                   <TableCell className="font-medium py-2 text-xs">{ad.title}</TableCell>
-                  <TableCell className="py-2 text-xs">{ad.advertiser}</TableCell>
                   <TableCell className="py-2 text-xs">{ad.categoryName || 'N/A'}</TableCell>
                   <TableCell className="py-2 text-xs">
                     <div className="flex gap-2">
@@ -308,7 +316,7 @@ export default function VideosPage() {
               ))}
                {!isLoading && advertisements?.length === 0 && (
                  <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-4">No videos found.</TableCell>
+                    <TableCell colSpan={3} className="text-center text-muted-foreground py-4">No videos found.</TableCell>
                  </TableRow>
               )}
             </TableBody>
