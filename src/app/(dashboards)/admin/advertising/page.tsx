@@ -125,20 +125,10 @@ function AdvertisementForm({
   }
 
   const handleConfirm = async () => {
-    const isAdmin = currentUser?.role === 'central-admin';
-    const isAdvertiser = currentUser?.role === 'advertiser';
-
-    let advertiserInfoMissing = false;
-    if (isAdmin && !formData.advertiserId) {
-        advertiserInfoMissing = true;
-    } else if (isAdvertiser && !currentUser?.affiliation) {
-        advertiserInfoMissing = true;
-    }
-    
     if (
       !formData.title ||
       !formData.categoryId ||
-      advertiserInfoMissing
+      (currentUser?.role === 'central-admin' && !formData.advertiserId)
     ) {
       toast({ title: 'Please fill all required fields', variant: 'destructive' });
       return;
@@ -151,16 +141,13 @@ function AdvertisementForm({
       let finalContentType = formData.contentType;
   
       if (file) {
-        // Step 1: Get the upload URL from our backend
         const { uploadUrl, authorizationToken } = await uploadVideo({});
 
-        // Step 2: Prepare file and headers for direct B2 upload
         const fileBuffer = await fileToArrayBuffer(file);
         const sha1 = await crypto.subtle.digest('SHA-1', fileBuffer);
         const sha1Hex = bufferToHex(sha1);
         const uniqueFileName = `${uuidv4()}-${file.name.replace(/\s/g, '_')}`;
 
-        // Step 3: Upload the file directly to B2
         const b2Response = await fetch(uploadUrl, {
             method: 'POST',
             headers: {
@@ -179,7 +166,6 @@ function AdvertisementForm({
         
         const b2UploadResult = await b2Response.json();
 
-        // Step 4: Store only the filename
         finalVideoUrl = b2UploadResult.fileName;
         finalContentType = file.type;
 

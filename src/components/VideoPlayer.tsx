@@ -11,45 +11,41 @@ interface VideoPlayerProps {
 }
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ options, onReady }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const playerRef = useRef<VideoJsPlayer | null>(null);
 
   useEffect(() => {
-    // Initialize the player only once
-    if (!playerRef.current && containerRef.current) {
-      // Create a <video> element and append it to the container
-      const videoElement = document.createElement("video");
-      videoElement.className = 'video-js vjs-big-play-centered';
-      containerRef.current.appendChild(videoElement);
-      
-      const player = playerRef.current = videojs(videoElement, options, function() {
-        onReady?.(this);
+    // Make sure Video.js player is only initialized once
+    if (!playerRef.current && videoRef.current) {
+      const videoElement = videoRef.current;
+      playerRef.current = videojs(videoElement, options, () => {
+        onReady?.(playerRef.current!);
       });
-    }
-
-    // Dispose the player on unmount
-    return () => {
+    } else if(playerRef.current && !playerRef.current.isDisposed()) {
+      // The player is already initialized. Update its options.
       const player = playerRef.current;
+      player.autoplay(options.autoplay || false);
+      player.src(options.sources || []);
+    }
+  // videojs, onReady, and options are dependencies that could change.
+  // Including them ensures the player is re-initialized if they do.
+  }, [options, onReady]);
+
+  // Dispose the player on unmount
+  useEffect(() => {
+    const player = playerRef.current;
+
+    return () => {
       if (player && !player.isDisposed()) {
         player.dispose();
         playerRef.current = null;
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array ensures this runs only once on mount
-
-  // This effect handles updates to the source
-  useEffect(() => {
-    const player = playerRef.current;
-    if (player && !player.isDisposed() && options.sources) {
-        player.src(options.sources);
-    }
-  }, [options.sources]);
-
+  }, []);
 
   return (
-    <div data-vjs-player className="w-full h-full">
-      <div ref={containerRef} className="w-full h-full" />
+    <div data-vjs-player>
+      <video ref={videoRef} className="video-js vjs-big-play-centered" />
     </div>
   );
 };
