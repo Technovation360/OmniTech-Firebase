@@ -73,6 +73,7 @@ function AdvertisementForm({
     advertiserId: '',
     categoryId: '',
   });
+  const [fileName, setFileName] = useState('');
 
   useEffect(() => {
     if (advertisement) {
@@ -85,7 +86,22 @@ function AdvertisementForm({
     } else {
       setFormData({ title: '', videoUrl: '', advertiserId: '', categoryId: '' });
     }
+    setFileName('');
   }, [advertisement]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFileName(file.name);
+      const reader = new FileReader();
+      reader.onload = () => {
+        if(reader.result) {
+            setFormData(prev => ({...prev, videoUrl: reader.result as string}));
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  }
 
   const handleConfirm = () => {
     if (formData.title && formData.videoUrl && formData.advertiserId && formData.categoryId) {
@@ -121,8 +137,9 @@ function AdvertisementForm({
             <Input id="title" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="videoUrl">Video URL</Label>
-            <Input id="videoUrl" value={formData.videoUrl} onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })} placeholder="https://example.com/video.mp4"/>
+            <Label htmlFor="videoFile">Upload File</Label>
+            <Input id="videoFile" type="file" accept="video/*" onChange={handleFileChange} />
+            {fileName && <p className="text-sm text-muted-foreground mt-1">{fileName}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="advertiser">Advertiser</Label>
