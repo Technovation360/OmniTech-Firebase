@@ -119,7 +119,6 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
     autoplay: true,
     controls: false,
     muted: true,
-    fluid: true,
     sources: videoSources.length > 0 ? [videoSources[currentVideoIndex]] : [],
   };
 
@@ -186,7 +185,7 @@ export default function DisplayPage({ params }: { params: Promise<{ id: string }
         <div className="h-[50%] bg-blue-900 p-4 overflow-hidden">
           <Card className="h-full bg-transparent border-0 text-white flex flex-col">
             <CardHeader>
-              <CardTitle className="text-3xl font-bold text-center text-yellow-300">
+              <CardTitle className="text-2xl font-bold text-center text-yellow-300">
                 IN CONSULTATION
               </CardTitle>
             </CardHeader>
@@ -202,7 +201,7 @@ export default function DisplayPage({ params }: { params: Promise<{ id: string }
         <div className="h-[50%] bg-gray-800 p-4 overflow-hidden">
           <Card className="h-full bg-transparent border-0 text-white flex flex-col">
             <CardHeader>
-              <CardTitle className="text-3xl font-bold text-center">
+              <CardTitle className="text-2xl font-bold text-center">
                 NOW WAITING
               </CardTitle>
             </CardHeader>
