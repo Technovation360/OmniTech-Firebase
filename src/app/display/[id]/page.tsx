@@ -117,7 +117,7 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
   const playerOptions: VideoJsPlayerOptions = useMemo(() => ({
     autoplay: true,
     controls: false,
-    muted: true,
+    muted: false,
     fluid: true,
     sources: videoSources.length > 0 ? [videoSources[currentVideoIndex]] : [],
   }), [videoSources, currentVideoIndex]);
@@ -267,4 +267,3 @@ export default function DisplayPage({ params }: { params: Promise<{ id: string }
         </Suspense>
     )
 }
-    
