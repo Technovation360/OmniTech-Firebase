@@ -204,13 +204,7 @@ export default function VideosPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Uploaded Videos</CardTitle>
-          <CardDescription>
-            List of all video assets available for campaigns.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           <Table>
             <TableHeader>
               <TableRow>
