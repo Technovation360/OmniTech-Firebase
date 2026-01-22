@@ -30,6 +30,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  experimental: {
+    allowedDevOrigins: ["https://6000-firebase-clinic-flow-omni-1768394723728.cluster-ejd22kqny5htuv5dfowoyipt52.cloudworkstations.dev"],
+  },
 };
 
 export default nextConfig;
