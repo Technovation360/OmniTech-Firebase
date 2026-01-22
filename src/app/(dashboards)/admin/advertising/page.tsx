@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -130,8 +131,7 @@ function AdvertisementForm({
     let advertiserInfoMissing = false;
     if (isAdmin && !formData.advertiserId) {
         advertiserInfoMissing = true;
-    } else if (!isAdmin && !isAdvertiser) {
-        // If user is not admin or advertiser, or if currentUser is still loading
+    } else if (isAdvertiser && !currentUser?.affiliation) {
         advertiserInfoMissing = true;
     }
     
@@ -480,7 +480,6 @@ export default function VideosPage() {
                         options={{
                             autoplay: true,
                             controls: true,
-                            responsive: true,
                             fluid: true,
                             sources: [{
                                 src: playingUrl,
