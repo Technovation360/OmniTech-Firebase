@@ -275,74 +275,100 @@ export const getAdvertiserClinicGroups = async (): Promise<AdvertiserClinicGroup
 };
 
 export const getQueueInfoByScreenId = async (
-  screenId: string, 
-  allGroups: Group[], 
+  screenId: string,
+  allGroups: Group[],
   allPatients: EnrichedPatient[],
   allCampaigns: Campaign[],
   allAdvertiserClinicGroups: AdvertiserClinicGroup[],
   allAdvertisements: Advertisement[],
   allClinics: Clinic[]
 ) => {
-    const groupForScreen = allGroups.find(g => g.screens.some(s => s.id === screenId));
-    
-    let advertisementsForScreen: Advertisement[] = [];
-    if (groupForScreen) {
-        const clinicId = groupForScreen.clinicId;
-        
-        const relevantAdvGroupIds = allAdvertiserClinicGroups
-            .filter(ag => ag.clinicIds.includes(clinicId))
-            .map(ag => ag.id);
+  const groupForScreen = allGroups.find((g) =>
+    g.screens.some((s) => s.id === screenId)
+  );
 
-        if (relevantAdvGroupIds.length > 0) {
-            const relevantCampaigns = allCampaigns
-                .filter(c => c.clinicGroupIds.some(cgId => relevantAdvGroupIds.includes(cgId)));
-            
-            if (relevantCampaigns.length > 0) {
-                const advertisementIds = [...new Set(relevantCampaigns.flatMap(c => c.advertisementIds))];
-                
-                if (advertisementIds.length > 0) {
-                    advertisementsForScreen = allAdvertisements.filter(ad => advertisementIds.includes(ad.id));
-                }
-            }
+  let advertisementsForScreen: Advertisement[] = [];
+  if (groupForScreen) {
+    const clinicId = groupForScreen.clinicId;
+
+    const relevantAdvGroupIds = allAdvertiserClinicGroups
+      .filter((ag) => ag.clinicIds.includes(clinicId))
+      .map((ag) => ag.id);
+
+    if (relevantAdvGroupIds.length > 0) {
+      const relevantCampaigns = allCampaigns.filter((c) =>
+        c.clinicGroupIds.some((cgId) => relevantAdvGroupIds.includes(cgId))
+      );
+
+      if (relevantCampaigns.length > 0) {
+        const advertisementIds = [
+          ...new Set(relevantCampaigns.flatMap((c) => c.advertisementIds)),
+        ];
+
+        if (advertisementIds.length > 0) {
+          advertisementsForScreen = allAdvertisements.filter((ad) =>
+            advertisementIds.includes(ad.id)
+          );
         }
+      }
     }
+  }
 
-    if (!groupForScreen) {
-        return { waiting: [], inConsultation: [], nowCalling: null, advertisements: advertisementsForScreen };
-    }
-    
-    const clinic = allClinics.find(c => c.id === groupForScreen.clinicId);
-    const clinicName = clinic?.name || 'Unknown Clinic';
-
-    const patients = allPatients.filter(p => p.groupId === groupForScreen.id);
-    
-    const queuePatients = patients.filter(p => ['waiting', 'calling', 'consulting'].includes(p.status));
-    
-    const callingPatient = queuePatients.find(p => p.status === 'calling');
-    
-    let calledPatientInfo = null;
-    if (callingPatient) {
-        const cabin = groupForScreen.cabins.find(c => c.id === callingPatient.cabinId);
-        calledPatientInfo = {
-            ...callingPatient,
-            cabinName: cabin?.name || 'Consultation Room',
-            clinicName: clinicName,
-        }
-    }
-
-    const inConsultationPatients = queuePatients
-        .filter(p => p.status === 'consulting')
-        .map(p => {
-            const cabin = groupForScreen.cabins.find(c => c.id === p.cabinId);
-            return { ...p, cabinName: cabin?.name || 'Room', clinicName: clinicName };
-        })
-        .sort((a, b) => (a.cabinName || '').localeCompare(b.cabinName || ''));
-
-
+  if (!groupForScreen) {
     return {
-        waiting: queuePatients.filter(p => p.status === 'waiting').sort((a, b) => a.tokenNumber.localeCompare(b.tokenNumber)),
-        inConsultation: inConsultationPatients,
-        nowCalling: calledPatientInfo,
-        advertisements: advertisementsForScreen
+      waiting: [],
+      inConsultation: [],
+      nowCalling: null,
+      advertisements: advertisementsForScreen,
     };
+  }
+
+  const clinic = allClinics.find((c) => c.id === groupForScreen.clinicId);
+  const clinicName = clinic?.name || 'Unknown Clinic';
+
+  const patients = allPatients.filter((p) => p.groupId === groupForScreen.id);
+
+  const queuePatients = patients.filter((p) =>
+    ['waiting', 'calling', 'consulting'].includes(p.status)
+  );
+
+  const callingPatient = queuePatients.find((p) => p.status === 'calling');
+
+  let calledPatientInfo = null;
+  if (callingPatient) {
+    const cabin = groupForScreen.cabins.find(
+      (c) => c.id === callingPatient.cabinId
+    );
+    calledPatientInfo = {
+      ...callingPatient,
+      cabinName: cabin?.name || 'Consultation Room',
+      clinicName: clinicName,
+      groupName: groupForScreen.name,
+    };
+  }
+
+  const inConsultationPatients = queuePatients
+    .filter((p) => p.status === 'consulting')
+    .map((p) => {
+      const cabin = groupForScreen.cabins.find((c) => c.id === p.cabinId);
+      return {
+        ...p,
+        cabinName: cabin?.name || 'Room',
+        clinicName: clinicName,
+        groupName: groupForScreen.name,
+      };
+    })
+    .sort((a, b) => (a.cabinName || '').localeCompare(b.cabinName || ''));
+
+  const waitingPatients = queuePatients
+    .filter((p) => p.status === 'waiting')
+    .map((p) => ({ ...p, groupName: groupForScreen.name }))
+    .sort((a, b) => a.tokenNumber.localeCompare(b.tokenNumber));
+
+  return {
+    waiting: waitingPatients,
+    inConsultation: inConsultationPatients,
+    nowCalling: calledPatientInfo,
+    advertisements: advertisementsForScreen,
+  };
 };

@@ -8,11 +8,15 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { getSignedVideoUrl } from '@/ai/flows/get-signed-video-url';
 import VideoPlayer from '@/components/VideoPlayer';
 import type { VideoJsPlayer, VideoJsPlayerOptions } from 'video.js';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+
+type EnrichedQueuePatient = Patient & { cabinName: string; clinicName: string; groupName: string };
 
 type QueueInfo = {
-  waiting: Patient[];
-  inConsultation: (Patient & { cabinName: string; clinicName: string })[];
-  nowCalling: (Patient & { cabinName: string; clinicName: string }) | null;
+  waiting: (Patient & { groupName: string })[];
+  inConsultation: EnrichedQueuePatient[];
+  nowCalling: EnrichedQueuePatient | null;
   advertisements: Advertisement[];
 };
 
@@ -68,7 +72,8 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
   useEffect(() => {
     const fetchVideoUrls = async () => {
       const newAdsId = advertisements.map(ad => ad.id).sort().join(',');
-      if (newAdsId === adsIdRef.current && videoSources.length > 0) { // Keep playing if list is same and not empty
+       // Only refetch if the list of ad IDs has changed.
+      if (newAdsId === adsIdRef.current) {
         return; 
       }
       adsIdRef.current = newAdsId;
@@ -104,7 +109,7 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
     };
 
     fetchVideoUrls();
-  }, [advertisements, videoSources.length]); // Depend on videoSources.length to re-evaluate if it becomes empty
+  }, [advertisements]);
 
   const playerRef = useRef<VideoJsPlayer | null>(null);
 
@@ -116,10 +121,10 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
     sources: videoSources.length > 0 ? [videoSources[currentVideoIndex]] : [],
   };
 
-  const handlePlayerReady = (player: VideoJsPlayer) => {
+  const handlePlayerReady = useCallback((player: VideoJsPlayer) => {
     playerRef.current = player;
     player.on('ended', handleNextVideo);
-  };
+  },[handleNextVideo]);
 
   if (isLoading) {
     return <div className="w-full h-full bg-black flex items-center justify-center text-white">Loading Advertisements...</div>;
@@ -194,38 +199,64 @@ export default function DisplayPage({ params }: { params: Promise<{ id: string }
         <div className="h-[50%] bg-blue-900 p-4 overflow-hidden">
           <Card className="h-full bg-transparent border-0 text-white flex flex-col">
             <CardHeader>
-              <CardTitle className="text-xl font-bold text-center text-yellow-300">
+              <CardTitle className="text-2xl font-bold text-center text-yellow-300">
                 IN CONSULTATION
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto px-2">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                {queueInfo.inConsultation.map((p) => (
-                  <div key={p.id} className="bg-black/20 rounded-lg p-2 text-center">
-                    <div className="text-xs font-medium truncate" title={`${p.clinicName}`}>{p.clinicName}</div>
-                    <div className="text-sm font-semibold truncate" title={p.cabinName}>{p.cabinName}</div>
-                    <div className="text-3xl font-bold tracking-wider mt-1">{p.tokenNumber}</div>
-                  </div>
-                ))}
-              </div>
+               <Table>
+                <TableHeader>
+                  <TableRow className="border-b-white/20">
+                    <TableHead className="text-white font-semibold">Cabin</TableHead>
+                    <TableHead className="text-white font-semibold">Group</TableHead>
+                    <TableHead className="text-white font-semibold">Token</TableHead>
+                    <TableHead className="text-white font-semibold text-right">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {queueInfo.inConsultation.map((p) => (
+                    <TableRow key={p.id} className="border-b-white/10">
+                      <TableCell>{p.cabinName}</TableCell>
+                      <TableCell>{p.groupName}</TableCell>
+                      <TableCell className="font-bold text-lg">{p.tokenNumber}</TableCell>
+                      <TableCell className="text-right">
+                        <Badge variant="secondary" className="bg-green-500/20 text-green-300">Consulting</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </div>
         <div className="h-[50%] bg-gray-800 p-4 overflow-hidden">
           <Card className="h-full bg-transparent border-0 text-white flex flex-col">
             <CardHeader>
-              <CardTitle className="text-xl font-bold text-center">
+              <CardTitle className="text-2xl font-bold text-center">
                 NEXT IN LINE
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto">
-              <div className="grid grid-cols-2 gap-4 text-center">
-                {queueInfo.waiting.map((p) => (
-                  <div key={p.id} className="text-3xl font-semibold p-2">
-                    {p.tokenNumber}
-                  </div>
-                ))}
-              </div>
+               <Table>
+                <TableHeader>
+                  <TableRow className="border-b-white/20">
+                    <TableHead className="text-white font-semibold">Group</TableHead>
+                    <TableHead className="text-white font-semibold">Token</TableHead>
+                    <TableHead className="text-white font-semibold text-right">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {queueInfo.waiting.map((p) => (
+                    <TableRow key={p.id} className="border-b-white/10">
+                      <TableCell>{p.groupName}</TableCell>
+                      <TableCell className="font-bold text-lg">{p.tokenNumber}</TableCell>
+                      <TableCell className="text-right">
+                        <Badge variant="secondary" className="bg-blue-500/20 text-blue-300">Waiting</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </div>
