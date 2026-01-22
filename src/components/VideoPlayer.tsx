@@ -11,48 +11,53 @@ interface VideoPlayerProps {
 }
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ options, onReady }) => {
-  const videoContainerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<VideoJsPlayer | null>(null);
 
   useEffect(() => {
-    if (!playerRef.current && videoContainerRef.current) {
-      // Create the video element dynamically
+    // Initialize player on mount
+    if (!playerRef.current && videoRef.current) {
       const videoElement = document.createElement("video");
       videoElement.className = "video-js vjs-big-play-centered vjs-fill";
-      videoContainerRef.current.appendChild(videoElement);
+      videoRef.current.appendChild(videoElement);
 
-      playerRef.current = videojs(videoElement, options, function() {
+      const player = videojs(videoElement, options, function() {
         onReady?.(this);
       });
-    } else if(playerRef.current && !playerRef.current.isDisposed()) {
-      const player = playerRef.current;
-      // When options change, update player source and attempt to play.
-      if (options.sources && options.sources.length > 0) {
-        player.src(options.sources);
-        if (options.autoplay) {
-            player.ready(() => {
-                player.play().catch(error => {
-                    console.error("Video play failed:", error);
-                });
-            });
-        }
-      }
+      playerRef.current = player;
     }
-  }, [options, onReady]);
 
-  useEffect(() => {
-    const player = playerRef.current;
+    // Cleanup on unmount
     return () => {
+      const player = playerRef.current;
       if (player && !player.isDisposed()) {
         player.dispose();
         playerRef.current = null;
       }
     };
-  }, []);
+  }, []); // <- Empty dependency array ensures this runs only once
+
+  useEffect(() => {
+    // Handle subsequent updates to options
+    const player = playerRef.current;
+    if (player && !player.isDisposed()) {
+      if (options.sources && options.sources.length > 0) {
+        const currentSrc = player.currentSrc();
+        const newSrc = options.sources[0]?.src;
+        
+        // Only update source if it's different to prevent interrupting playback
+        if (newSrc && currentSrc !== newSrc) {
+          player.src(options.sources);
+        }
+      }
+      player.autoplay(options.autoplay || false);
+      player.muted(options.muted || false);
+    }
+  }, [options]); // <- React to changes in the options object
 
   return (
     <div data-vjs-player className="w-full h-full">
-      <div ref={videoContainerRef} className="w-full h-full" />
+      <div ref={videoRef} className="w-full h-full" />
     </div>
   );
 };
