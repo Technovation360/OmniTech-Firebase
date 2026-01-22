@@ -75,11 +75,11 @@ const uploadVideoFlow = ai.defineFlow(
         mime: input.fileType,
     });
     
-    // Generate a signed URL for download, valid for 1 hour.
+    // Generate a signed URL for download, valid for 48 hours.
     const { data: { authorizationToken: downloadAuthToken } } = await b2.getDownloadAuthorization({
         bucketId: process.env.B2_BUCKET_ID!,
         fileNamePrefix: uniqueFileName,
-        validDurationInSeconds: 3600, // 1 hour
+        validDurationInSeconds: 172800, // 48 hours
     });
     
     const bucketName = process.env.B2_BUCKET_NAME!;
