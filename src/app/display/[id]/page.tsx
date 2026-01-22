@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, use } from 'react';
 import type { Patient, Advertisement } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -108,8 +108,9 @@ function VideoPlayer({ advertisements }: { advertisements: Advertisement[] }) {
   );
 }
 
-export default function DisplayPage({ params }: { params: { id: string } }) {
-  const { queueInfo, error } = useQueue(params.id);
+export default function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const { queueInfo, error } = useQueue(id);
   const synthRef = useRef<SpeechSynthesis | null>(null);
 
   useEffect(() => {
