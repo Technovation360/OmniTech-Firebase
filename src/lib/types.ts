@@ -86,10 +86,14 @@ export type Group = {
 
 export type Advertisement = {
   id: string;
-  advertiser: string;
-  campaign: string;
+  advertiserId: string;
+  title: string;
   videoUrl: string;
-  impressions: number;
+  startDate?: string;
+  endDate?: string;
+  categoryId?: string;
+  categoryName?: string;
+  advertiser?: string; 
 };
 
 export type Consultation = {
@@ -148,4 +152,10 @@ export type Category = {
   name: string;
 };
 
-    
+export type Advertiser = {
+  id: string;
+  name: string;
+  campaigns: number;
+  status: 'active' | 'inactive';
+  campaignsLimit?: number;
+};

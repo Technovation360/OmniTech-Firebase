@@ -283,15 +283,25 @@
           "type": "string",
           "description": "Date when the advertisement stops running.",
           "format": "date-time"
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to the advertisement category."
+        },
+        "categoryName": {
+          "type": "string",
+          "description": "Denormalized name of the category."
+        },
+        "advertiser": {
+          "type": "string",
+          "description": "Denormalized name of the advertiser."
         }
       },
       "required": [
         "id",
         "advertiserId",
         "title",
-        "videoUrl",
-        "startDate",
-        "endDate"
+        "videoUrl"
       ]
     },
     "AdvertiserClinicGroup": {

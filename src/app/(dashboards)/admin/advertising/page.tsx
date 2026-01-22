@@ -1,15 +1,13 @@
-
 'use client';
 
-import { getAdvertisements } from '@/lib/data';
-import { useState, useEffect } from 'react';
-import type { Advertisement } from '@/lib/types';
+import { useState, useEffect, useMemo } from 'react';
+import type { Advertisement, Category } from '@/lib/types';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from '@/components/ui/card';
 import {
   Table,
@@ -20,45 +18,189 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Film, ArrowUp, ArrowDown } from 'lucide-react';
+import { Film, Edit, Trash2, Loader, PlusCircle } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription as AlertDialogDesc,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
+import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-export default function VideosPage() {
-  const [ads, setAds] = useState<Advertisement[]>([]);
-  const [sortConfig, setSortConfig] = useState<{ key: keyof Advertisement; direction: 'asc' | 'desc' } | null>({ key: 'campaign', direction: 'asc'});
+type Advertiser = {
+  id: string;
+  name: string;
+};
+
+function AdvertisementForm({
+  isOpen,
+  onClose,
+  advertisement,
+  onConfirm,
+  advertisers,
+  categories,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  advertisement: Advertisement | null;
+  onConfirm: (formData: any) => void;
+  advertisers: Advertiser[];
+  categories: Category[];
+}) {
+  const isEditMode = !!advertisement;
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    title: '',
+    videoUrl: '',
+    advertiserId: '',
+    categoryId: '',
+  });
 
   useEffect(() => {
-    getAdvertisements().then(setAds);
-  }, []);
-
-  const handleSort = (key: keyof Advertisement) => {
-    let direction: 'asc' | 'desc' = 'asc';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
+    if (advertisement) {
+      setFormData({
+        title: advertisement.title,
+        videoUrl: advertisement.videoUrl,
+        advertiserId: advertisement.advertiserId,
+        categoryId: advertisement.categoryId || '',
+      });
+    } else {
+      setFormData({ title: '', videoUrl: '', advertiserId: '', categoryId: '' });
     }
-    setSortConfig({ key, direction });
+  }, [advertisement]);
 
-    const sortedAds = [...ads].sort((a, b) => {
-      if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
-      if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-    setAds(sortedAds);
-  };
+  const handleConfirm = () => {
+    if (formData.title && formData.videoUrl && formData.advertiserId && formData.categoryId) {
+        const advertiser = advertisers.find(a => a.id === formData.advertiserId);
+        const category = categories.find(c => c.id === formData.categoryId);
 
-  const getSortIcon = (key: keyof Advertisement) => {
-    if (!sortConfig || sortConfig.key !== key) return null;
-    if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3" />;
-    return <ArrowDown className="ml-2 h-3 w-3" />;
+        onConfirm({
+            title: formData.title,
+            videoUrl: formData.videoUrl,
+            advertiserId: formData.advertiserId,
+            advertiser: advertiser?.name,
+            categoryId: formData.categoryId,
+            categoryName: category?.name,
+        });
+        onClose();
+    } else {
+        toast({ title: 'Please fill all fields', variant: 'destructive' });
+    }
   };
 
   return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md p-0">
+        <DialogHeader className="p-6 pb-4">
+          <DialogTitle>{isEditMode ? 'Edit Video' : 'Upload Video'}</DialogTitle>
+          <DialogDescription>
+            Manage your video assets for campaigns.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="px-6 pb-6 space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Video Title</Label>
+            <Input id="title" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="videoUrl">Video URL</Label>
+            <Input id="videoUrl" value={formData.videoUrl} onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })} placeholder="https://example.com/video.mp4"/>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="advertiser">Advertiser</Label>
+            <Select value={formData.advertiserId} onValueChange={(value) => setFormData({ ...formData, advertiserId: value })}>
+                <SelectTrigger><SelectValue placeholder="Select advertiser..." /></SelectTrigger>
+                <SelectContent>
+                    {advertisers.map(ad => <SelectItem key={ad.id} value={ad.id}>{ad.name}</SelectItem>)}
+                </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="category">Category</Label>
+             <Select value={formData.categoryId} onValueChange={(value) => setFormData({ ...formData, categoryId: value })}>
+                <SelectTrigger><SelectValue placeholder="Select category..." /></SelectTrigger>
+                <SelectContent>
+                    {categories.map(cat => <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>)}
+                </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter className="bg-muted/50 px-6 py-4 rounded-b-lg">
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleConfirm}>{isEditMode ? 'Save Changes' : 'Add Video'}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
+export default function VideosPage() {
+  const firestore = useFirestore();
+  const { toast } = useToast();
+
+  const { data: advertisements, isLoading: adsLoading } = useCollection<Advertisement>(useMemoFirebase(() => collection(firestore, 'advertisements'), [firestore]));
+  const { data: categories, isLoading: catsLoading } = useCollection<Category>(useMemoFirebase(() => collection(firestore, 'categories'), [firestore]));
+  const { data: advertisers, isLoading: advertisersLoading } = useCollection<Advertiser>(useMemoFirebase(() => collection(firestore, 'advertisers'), [firestore]));
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [advertisementToEdit, setAdvertisementToEdit] = useState<Advertisement | null>(null);
+  const [advertisementToDelete, setAdvertisementToDelete] = useState<Advertisement | null>(null);
+  
+  const handleFormConfirm = (formData: any) => {
+    const dataToSave = { ...formData };
+    
+    if (advertisementToEdit) {
+      setDocumentNonBlocking(doc(firestore, 'advertisements', advertisementToEdit.id), dataToSave, { merge: true });
+      toast({ title: 'Video updated!' });
+    } else {
+      addDocumentNonBlocking(collection(firestore, 'advertisements'), dataToSave);
+      toast({ title: 'Video added!' });
+    }
+    setIsModalOpen(false);
+    setAdvertisementToEdit(null);
+  };
+  
+  const handleDeleteConfirm = () => {
+    if (advertisementToDelete) {
+      deleteDocumentNonBlocking(doc(firestore, 'advertisements', advertisementToDelete.id));
+      setAdvertisementToDelete(null);
+      toast({ title: 'Video deleted.' });
+    }
+  };
+  
+  const isLoading = adsLoading || catsLoading || advertisersLoading;
+
+  return (
+    <>
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold font-headline">Video Library</h1>
           <p className="text-muted-foreground">Manage your video assets.</p>
         </div>
-        <Button>Upload Video</Button>
+        <Button onClick={() => { setAdvertisementToEdit(null); setIsModalOpen(true); }}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Upload Video
+        </Button>
       </div>
 
       <Card>
@@ -72,37 +214,76 @@ export default function VideosPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>
-                    <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('campaign')}>
-                        Video Title
-                        {getSortIcon('campaign')}
-                    </Button>
-                </TableHead>
-                <TableHead>
-                    <Button variant="ghost" className="text-xs p-0 hover:bg-transparent" onClick={() => handleSort('advertiser')}>
-                        Advertiser
-                        {getSortIcon('advertiser')}
-                    </Button>
-                </TableHead>
+                <TableHead>Video Title</TableHead>
+                <TableHead>Advertiser</TableHead>
+                <TableHead>Category</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {ads.map((ad) => (
+              {isLoading && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-10">
+                    <Loader className="mx-auto h-6 w-6 animate-spin" />
+                  </TableCell>
+                </TableRow>
+              )}
+              {!isLoading && advertisements?.map((ad) => (
                 <TableRow key={ad.id}>
-                  <TableCell className="font-medium py-2 text-xs">{ad.campaign}</TableCell>
+                  <TableCell className="font-medium py-2 text-xs">{ad.title}</TableCell>
                   <TableCell className="py-2 text-xs">{ad.advertiser}</TableCell>
+                  <TableCell className="py-2 text-xs">{ad.categoryName || 'N/A'}</TableCell>
                   <TableCell className="py-2 text-xs">
-                    <a href={ad.videoUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                      Watch Video
-                    </a>
+                    <div className="flex gap-2">
+                        <Button variant="ghost" size="icon-xs" asChild>
+                            <a href={ad.videoUrl} target="_blank" rel="noopener noreferrer" title="Watch Video">
+                                <Film className="h-4 w-4 text-primary" />
+                            </a>
+                        </Button>
+                         <Button variant="ghost" size="icon-xs" onClick={() => { setAdvertisementToEdit(ad); setIsModalOpen(true); }}>
+                            <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon-xs" onClick={() => setAdvertisementToDelete(ad)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
+               {!isLoading && advertisements?.length === 0 && (
+                 <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground py-4">No videos found.</TableCell>
+                 </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
     </div>
+    
+     <AdvertisementForm
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        advertisement={advertisementToEdit}
+        onConfirm={handleFormConfirm}
+        advertisers={advertisers || []}
+        categories={categories || []}
+      />
+      
+      <AlertDialog open={!!advertisementToDelete} onOpenChange={() => setAdvertisementToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDesc>
+              This will permanently delete the video "{advertisementToDelete?.title}".
+            </AlertDialogDesc>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
