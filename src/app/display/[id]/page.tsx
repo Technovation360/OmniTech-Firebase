@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, use, useCallback, Suspense, useMemo } from 'react';
@@ -114,9 +115,8 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
   const playerRef = useRef<VideoJsPlayer | null>(null);
 
   const playerOptions: VideoJsPlayerOptions = useMemo(() => ({
-    autoplay: true,
     controls: false,
-    muted: false, // Attempt to play with audio
+    muted: false,
     fluid: true,
     sources: videoSources.length > 0 ? [videoSources[currentVideoIndex]] : [],
   }), [videoSources, currentVideoIndex]);
@@ -124,6 +124,20 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
   const handlePlayerReady = useCallback((player: VideoJsPlayer) => {
     playerRef.current = player;
     player.on('ended', handleNextVideo);
+
+    const playPromise = player.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(error => {
+        console.warn("Autoplay with sound was prevented. Muting and retrying.");
+        if (!player.muted()) {
+            player.muted(true);
+        }
+        player.play().catch(finalError => {
+            console.error("Video failed to play even after muting.", finalError);
+        });
+      });
+    }
+
   }, [handleNextVideo]);
 
   if (isLoading) {
@@ -190,12 +204,12 @@ function DisplayPageContent({ params }: { params: { id: string } }) {
           </motion.div>
         )}
       </AnimatePresence>
-
-      <div className="h-[30vh] flex flex-row">
+      
+      <div className="flex flex-row h-[30vh]">
         <div className="w-1/2 bg-blue-900 p-4 overflow-hidden">
           <Card className="h-full bg-transparent border-0 text-white flex flex-col">
             <CardHeader>
-              <CardTitle className="text-lg font-bold text-center text-yellow-300">
+              <CardTitle className="text-base font-bold text-center text-yellow-300">
                 IN CONSULTATION
               </CardTitle>
             </CardHeader>
@@ -224,7 +238,7 @@ function DisplayPageContent({ params }: { params: { id: string } }) {
         <div className="w-1/2 bg-gray-800 p-4 overflow-hidden">
           <Card className="h-full bg-transparent border-0 text-white flex flex-col">
             <CardHeader>
-              <CardTitle className="text-lg font-bold text-center">
+              <CardTitle className="text-base font-bold text-center">
                 NEXT IN LINE
               </CardTitle>
             </CardHeader>
@@ -253,6 +267,7 @@ function DisplayPageContent({ params }: { params: { id: string } }) {
       <div className="h-[70vh] w-full bg-gray-800">
         <VideoPlayerDisplay advertisements={queueInfo.advertisements} />
       </div>
+
     </div>
   );
 }
