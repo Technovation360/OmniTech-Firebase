@@ -61,7 +61,7 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const adsIdRef = useRef<string | null>(null);
-  
+
   const handleNextVideo = useCallback(() => {
     setCurrentVideoIndex(prevIndex => {
         if (videoSources.length === 0) return 0;
@@ -73,7 +73,7 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
     const fetchVideoUrls = async () => {
       const newAdsId = advertisements.map(ad => ad.id).sort().join(',');
       // Only refetch if the list of ads has actually changed.
-      if (newAdsId === adsIdRef.current) {
+      if (newAdsId === adsIdRef.current && videoSources.length > 0) {
         return;
       }
       adsIdRef.current = newAdsId;
@@ -109,22 +109,51 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
     };
 
     fetchVideoUrls();
-  }, [advertisements]);
+  }, [advertisements, videoSources.length]);
 
   const playerRef = useRef<VideoJsPlayer | null>(null);
 
   const playerOptions: VideoJsPlayerOptions = useMemo(() => ({
-    autoplay: true,
+    autoplay: false, // We will control play programmatically
     controls: false,
-    muted: false,
+    muted: true, // Start muted to guarantee autoplay
     fluid: true,
     sources: videoSources.length > 0 ? [videoSources[currentVideoIndex]] : [],
   }), [videoSources, currentVideoIndex]);
   
   const handlePlayerReady = useCallback((player: VideoJsPlayer) => {
     playerRef.current = player;
+    
     player.on('ended', handleNextVideo);
+
+    const playPromise = player.play();
+    if (playPromise !== undefined) {
+        playPromise.catch(error => {
+            console.error("Video play failed:", error);
+            // Muting and retrying is a common fallback but we already start muted.
+        });
+    }
+
   }, [handleNextVideo]);
+
+  // Effect to handle source changes and play them
+  useEffect(() => {
+      const player = playerRef.current;
+      if (player && !player.isDisposed() && videoSources.length > 0) {
+          const currentSrcObj = player.currentSource();
+          const currentSrc = currentSrcObj ? currentSrcObj.src : null;
+          const newSrc = videoSources[currentVideoIndex]?.src;
+
+          if (newSrc && newSrc !== currentSrc) {
+              player.src(videoSources[currentVideoIndex]);
+              player.load();
+              const playPromise = player.play();
+              if (playPromise !== undefined) {
+                  playPromise.catch(error => console.error("Error trying to play new source:", error));
+              }
+          }
+      }
+  }, [videoSources, currentVideoIndex]);
 
 
   if (isLoading) {
@@ -165,7 +194,7 @@ function DisplayPageContent({ params }: { params: { id: string } }) {
   }, [queueInfo.nowCalling]);
 
   return (
-    <div className="flex h-screen w-screen bg-black text-white overflow-hidden">
+    <div className="flex flex-col h-screen w-screen bg-black text-white overflow-hidden">
       <AnimatePresence>
         {queueInfo.nowCalling && (
           <motion.div
@@ -192,11 +221,8 @@ function DisplayPageContent({ params }: { params: { id: string } }) {
         )}
       </AnimatePresence>
 
-      <div className="w-[70vw] h-screen bg-gray-800">
-        <VideoPlayerDisplay advertisements={queueInfo.advertisements} />
-      </div>
-      <div className="w-[30vw] h-screen flex flex-col">
-        <div className="h-[50%] bg-blue-900 p-4 overflow-hidden">
+      <div className="h-[30vh] flex flex-row">
+        <div className="w-1/2 h-full bg-blue-900 p-4 overflow-hidden">
           <Card className="h-full bg-transparent border-0 text-white flex flex-col">
             <CardHeader>
               <CardTitle className="text-lg font-bold text-center text-yellow-300">
@@ -225,7 +251,7 @@ function DisplayPageContent({ params }: { params: { id: string } }) {
             </CardContent>
           </Card>
         </div>
-        <div className="h-[50%] bg-gray-800 p-4 overflow-hidden">
+        <div className="w-1/2 h-full bg-gray-800 p-4 overflow-hidden">
           <Card className="h-full bg-transparent border-0 text-white flex flex-col">
             <CardHeader>
               <CardTitle className="text-lg font-bold text-center">
@@ -252,6 +278,10 @@ function DisplayPageContent({ params }: { params: { id: string } }) {
             </CardContent>
           </Card>
         </div>
+      </div>
+      
+      <div className="h-[70vh] w-full bg-gray-800">
+        <VideoPlayerDisplay advertisements={queueInfo.advertisements} />
       </div>
     </div>
   );
