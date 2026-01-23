@@ -61,84 +61,60 @@ function VideoPlayerDisplay({ advertisements }: { advertisements: Advertisement[
   const [videoSources, setVideoSources] = useState<{ src: string; type: string }[]>([]);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const adsIdRef = useRef<string | null>(null);
+
+  // Memoize a stable string representation of the advertisements to use as a dependency.
+  const adsId = useMemo(() => advertisements.map(ad => ad.id).sort().join(','), [advertisements]);
 
   const handleNextVideo = useCallback(() => {
     setCurrentVideoIndex(prevIndex => {
-        if (videoSources.length === 0) return 0;
-        return (prevIndex + 1) % videoSources.length;
+      if (!videoSources.length) return 0;
+      return (prevIndex + 1) % videoSources.length;
     });
   }, [videoSources.length]);
 
   useEffect(() => {
     const fetchVideoUrls = async () => {
-      const newAdsId = advertisements.map(ad => ad.id).sort().join(',');
-      // Only refetch if the list of ads has actually changed.
-      if (newAdsId === adsIdRef.current && videoSources.length > 0) {
-        return;
-      }
-      adsIdRef.current = newAdsId;
-      
-      setIsLoading(true);
-
-      if (advertisements.length === 0) {
+      if (!adsId) {
         setVideoSources([]);
         setIsLoading(false);
         return;
       }
-
-      const sources = await Promise.all(
-          advertisements.map(async (ad) => {
-              try {
-                  const { signedUrl } = await getSignedVideoUrl({ fileName: ad.videoUrl });
-                  return { src: signedUrl, type: ad.contentType || 'video/mp4' };
-              } catch (e) {
-                  console.error(`Failed to get signed URL for ${ad.videoUrl}`, e);
-                  return null;
-              }
-          })
-      );
-      const validSources = sources.filter((s): s is {src: string; type: string} => s !== null);
       
-      if (validSources.length > 0) {
-        setVideoSources(validSources);
-        setCurrentVideoIndex(0);
-      } else {
-        setVideoSources([]);
-      }
+      setIsLoading(true);
+      const sources = await Promise.all(
+        advertisements.map(async (ad) => {
+          try {
+            const { signedUrl } = await getSignedVideoUrl({ fileName: ad.videoUrl });
+            return { src: signedUrl, type: ad.contentType || 'video/mp4' };
+          } catch (e) {
+            console.error(`Failed to get signed URL for ${ad.videoUrl}`, e);
+            return null;
+          }
+        })
+      );
+      const validSources = sources.filter((s): s is { src: string; type: string } => s !== null);
+      
+      setVideoSources(validSources);
+      setCurrentVideoIndex(0);
       setIsLoading(false);
     };
 
     fetchVideoUrls();
-  }, [advertisements, videoSources.length]);
-
-  const playerRef = useRef<VideoJsPlayer | null>(null);
+  }, [adsId, advertisements]); // Dependency is now stable and correct
 
   const playerOptions: VideoJsPlayerOptions = useMemo(() => ({
+    autoplay: true, // Let video.js handle autoplay
+    muted: true,    // Muting is essential for reliable autoplay in browsers
     controls: false,
-    muted: false,
     fluid: true,
     sources: videoSources.length > 0 ? [videoSources[currentVideoIndex]] : [],
   }), [videoSources, currentVideoIndex]);
-  
+
   const handlePlayerReady = useCallback((player: VideoJsPlayer) => {
-    playerRef.current = player;
+    // Simply set up the 'ended' event listener to advance to the next video.
     player.on('ended', handleNextVideo);
-
-    const playPromise = player.play();
-    if (playPromise !== undefined) {
-      playPromise.catch(error => {
-        console.warn("Autoplay with sound was prevented. Muting and retrying.");
-        if (!player.muted()) {
-            player.muted(true);
-        }
-        player.play().catch(finalError => {
-            console.error("Video failed to play even after muting.", finalError);
-        });
-      });
-    }
-
   }, [handleNextVideo]);
+
 
   if (isLoading) {
     return <div className="w-full h-full bg-black flex items-center justify-center text-white">Loading Advertisements...</div>;
