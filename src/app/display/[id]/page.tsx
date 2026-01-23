@@ -178,7 +178,7 @@ function DisplayPageContent({ params }: { params: { id: string } }) {
   }, [queueInfo.nowCalling]);
 
   return (
-    <div className="flex flex-row h-screen w-screen bg-black text-white overflow-hidden">
+    <div className="flex flex-col h-screen w-screen bg-black text-white overflow-hidden">
       <AnimatePresence>
         {queueInfo.nowCalling && (
           <motion.div
@@ -205,27 +205,27 @@ function DisplayPageContent({ params }: { params: { id: string } }) {
         )}
       </AnimatePresence>
       
-      <div className="w-[30vw] h-full flex flex-col">
-        <div className="h-[50vh] bg-blue-900 p-2 overflow-hidden">
+      <div className="w-full flex h-[40vh]">
+        <div className="w-1/2 bg-blue-900 p-2 overflow-hidden">
           <Card className="h-full bg-transparent border-0 text-white flex flex-col">
             <CardHeader className="p-2">
               <CardTitle className="text-base font-bold text-center text-yellow-300">
                 IN CONSULTATION
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 overflow-y-auto px-2">
+            <CardContent className="flex-1 overflow-y-auto px-1">
               <Table>
                 <TableHeader>
                   <TableRow className="border-b-white/20">
-                    <TableHead className="text-white font-semibold py-1 px-2">Cabin</TableHead>
-                    <TableHead className="text-white font-semibold text-right py-1 px-2">Token</TableHead>
+                    <TableHead className="text-white font-semibold py-1 px-1">Cabin</TableHead>
+                    <TableHead className="text-white font-semibold text-right py-1 px-1">Token</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {queueInfo.inConsultation.map((p) => (
                     <TableRow key={p.id} className="border-b-white/10">
-                      <TableCell className="py-1 px-2">{p.cabinName}</TableCell>
-                      <TableCell className="py-1 px-2 font-bold text-lg text-right">{p.tokenNumber}</TableCell>
+                      <TableCell className="py-1 px-1">{p.cabinName}</TableCell>
+                      <TableCell className="py-1 px-1 font-bold text-lg text-right">{p.tokenNumber}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -233,7 +233,7 @@ function DisplayPageContent({ params }: { params: { id: string } }) {
             </CardContent>
           </Card>
         </div>
-        <div className="h-[50vh] bg-gray-800 p-2 overflow-hidden">
+        <div className="w-1/2 bg-gray-800 p-2 overflow-hidden">
           <Card className="h-full bg-transparent border-0 text-white flex flex-col">
             <CardHeader className="p-2">
               <CardTitle className="text-base font-bold text-center">
@@ -262,7 +262,7 @@ function DisplayPageContent({ params }: { params: { id: string } }) {
         </div>
       </div>
       
-      <div className="w-[70vw] h-full bg-gray-800">
+      <div className="w-full h-[60vh] bg-gray-800">
         <VideoPlayerDisplay advertisements={queueInfo.advertisements} />
       </div>
 
